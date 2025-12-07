@@ -1,15 +1,16 @@
+
 import React from 'react';
 import { UserPlus, Search, Database, FileText } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 
 export const AIJourney: React.FC = () => {
-  const { profile } = useData();
+  const { profile, decks, docs } = useData();
 
-  // Calculate dynamic status
+  // Calculate dynamic status based on REAL data
   const hasProfile = !!profile?.name;
-  const hasAutoFill = hasProfile && !!profile?.websiteUrl;
-  const hasBusinessData = hasProfile && !!profile?.competitors && profile.competitors.length > 0;
-  const hasDocs = hasProfile && (profile?.fundingGoal || 0) > 0; // Simple proxy for "Ready for docs"
+  const hasAutoFill = hasProfile && (!!profile?.websiteUrl || !!profile?.coverImageUrl);
+  const hasBusinessData = hasProfile && (decks.length > 0 || (profile?.competitors && profile.competitors.length > 0));
+  const hasDocs = hasProfile && docs.length > 0;
 
   const steps = [
     { 

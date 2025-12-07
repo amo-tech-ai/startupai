@@ -25,12 +25,12 @@ interface DataContextType {
   decks: Deck[];
   deals: Deal[];
   docs: InvestorDoc[];
-  createStartup: (data: Partial<StartupProfile>) => Promise<void>;
+  createStartup: (data: Partial<StartupProfile>) => Promise<string | null>;
   updateProfile: (data: Partial<StartupProfile>) => Promise<void>;
   setFounders: (founders: Founder[]) => void;
   addFounder: (founder: Founder) => void;
   removeFounder: (id: string) => void;
-  updateMetrics: (data: Partial<MetricsSnapshot>) => void;
+  updateMetrics: (data: Partial<MetricsSnapshot>, overrideStartupId?: string) => void;
   setInsights: (insights: AICoachInsight[]) => void;
   addInsight: (insight: AICoachInsight) => void;
   addActivity: (activity: Omit<Activity, 'id' | 'startupId' | 'timestamp'>) => void;
@@ -77,14 +77,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         try {
             const { data: { user } } = await supabase.auth.getUser();
             
-            // If no user is logged in, we might be on a public page. 
-            // We can leave the mocks for demo purposes or clear them. 
-            // For now, let's leave mocks if not logged in so the landing page works visually? 
-            // Actually, landing page doesn't use DataContext heavily. 
-            // Let's rely on App.tsx to handle redirects.
             if (!user) {
-               // Optional: Clear sensitive mocks if user is not logged in? 
-               // For this demo app, keeping mocks on public view is fine for "Preview".
                setIsLoading(false);
                return; 
             }
@@ -97,8 +90,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 setProfile(p);
                 setFoundersState(f);
                 
-                // 2. Fetch Dependent Data (Parallel)
-                const [decksData, dealsData, docsData, tasksData, metricsData, insightsData, activityData] = await Promise.all([
+                // 2. Fetch Dependent Data (Parallel with resilience)
+                const results = await Promise.allSettled([
                     DeckService.getAll(p.id),
                     CrmService.getDeals(p.id),
                     DocumentService.getAll(p.id),
@@ -108,13 +101,17 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     DashboardService.getActivities(p.id)
                 ]);
 
-                setDecks(decksData);
-                setDeals(dealsData);
-                setDocs(docsData);
-                setTasks(tasksData);
-                setMetrics(metricsData);
-                setInsights(insightsData);
-                setActivities(activityData);
+                // Helper to safely extract data from allSettled
+                const unwrap = <T,>(result: PromiseSettledResult<T>, fallback: T): T => 
+                    result.status === 'fulfilled' ? result.value : fallback;
+
+                setDecks(unwrap(results[0], []));
+                setDeals(unwrap(results[1], []));
+                setDocs(unwrap(results[2], []));
+                setTasks(unwrap(results[3], []));
+                setMetrics(unwrap(results[4], []));
+                setInsights(unwrap(results[5], []));
+                setActivities(unwrap(results[6], []));
 
                 // 3. Setup Realtime Subscriptions
                 const channel = supabase.channel('public-db-changes')
@@ -182,19 +179,22 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
   };
 
-  const createStartup = async (data: Partial<StartupProfile>) => {
+  const createStartup = async (data: Partial<StartupProfile>): Promise<string | null> => {
     if (!supabase) {
-        setProfile({ ...data, id: generateShortId(), userId: 'mock' } as StartupProfile);
-        return;
+        const id = generateShortId();
+        setProfile({ ...data, id, userId: 'mock' } as StartupProfile);
+        return id;
     }
     try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error("Not authenticated");
         const newProfile = await ProfileService.create(data, user.id);
         setProfile(newProfile);
+        return newProfile.id;
     } catch (e) {
         console.error(e);
         toastError("Failed to create profile");
+        return null;
     }
   };
 
@@ -226,8 +226,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // --- DASHBOARD DATA ---
   
-  const updateMetrics = (data: Partial<MetricsSnapshot>) => {
+  const updateMetrics = (data: Partial<MetricsSnapshot>, overrideStartupId?: string) => {
     const today = new Date().toISOString().split('T')[0];
+    const targetStartupId = overrideStartupId || profile?.id || 'temp';
     
     setMetrics(prev => {
         const last = prev[prev.length - 1];
@@ -242,7 +243,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             // Append new snapshot
             const newSnapshot = { 
                 id: generateShortId(),
-                startupId: profile?.id || 'temp',
+                startupId: targetStartupId,
                 period: new Date().toISOString(),
                 mrr: data.mrr || (last?.mrr || 0),
                 activeUsers: data.activeUsers || (last?.activeUsers || 0),
@@ -256,8 +257,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     });
     
-    if (profile?.id) {
-        DashboardService.updateMetrics(data, profile.id);
+    if (targetStartupId !== 'temp') {
+        DashboardService.updateMetrics(data, targetStartupId);
     }
   };
 

@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import ReactDOM from 'react-dom/client';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
 import Home from './components/Home';
@@ -82,13 +83,19 @@ const AppContent = () => {
         }
 
         // 2. Force Onboarding: If user has no profile data, redirect to wizard
-        // We exclude 'onboarding' from the check to prevent infinite loops
         if (!profile && isAppPage && page !== 'onboarding') {
            setPage('onboarding');
            return;
         }
+
+        // 3. Prevent re-entry to onboarding if profile exists (Logic update)
+        if (profile && page === 'onboarding') {
+            setPage('dashboard');
+            return;
+        }
+
       } else {
-        // 3. If not logged in and on protected page, go to login
+        // 4. If not logged in and on protected page, go to login
         if (isAppPage && page !== 'home') { 
            setPage('login');
         }

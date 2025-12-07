@@ -164,33 +164,44 @@ const StartupWizard: React.FC<StartupWizardProps> = ({ setPage }) => {
       };
 
       // 2. Create or Update Profile
-      if (profile?.id) {
+      // CRITICAL FIX: Capture the ID because local 'profile' state won't update in this closure
+      let startupId = profile?.id;
+
+      if (startupId) {
           await updateProfile(profileData);
       } else {
-          await createStartup(profileData);
+          const newId = await createStartup(profileData);
+          if (newId) {
+              startupId = newId;
+          } else {
+              throw new Error("Failed to create startup profile");
+          }
       }
 
       // 3. Map Founders (Fix: Only first is primary contact)
-      const foundersPayload: Founder[] = formData.founders
-        .filter(f => f.name.trim().length > 0)
-        .map((f, idx) => ({
-          id: f.id,
-          startupId: profile?.id || 'temp', // This will be handled by backend or refreshed state
-          name: f.name,
-          title: f.title,
-          bio: f.bio,
-          linkedinProfile: f.linkedin,
-          email: f.email,
-          isPrimaryContact: idx === 0 
-        }));
-      setFounders(foundersPayload);
+      // Use the resolved startupId
+      if (startupId) {
+          const foundersPayload: Founder[] = formData.founders
+            .filter(f => f.name.trim().length > 0)
+            .map((f, idx) => ({
+              id: f.id,
+              startupId: startupId!, // Use validated ID
+              name: f.name,
+              title: f.title,
+              bio: f.bio,
+              linkedinProfile: f.linkedin,
+              email: f.email,
+              isPrimaryContact: idx === 0 
+            }));
+          setFounders(foundersPayload);
 
-      // 4. Map to Metrics Structure
-      updateMetrics({
-        mrr: formData.mrr,
-        activeUsers: formData.totalUsers,
-        period: new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
-      });
+          // 4. Map to Metrics Structure
+          updateMetrics({
+            mrr: formData.mrr,
+            activeUsers: formData.totalUsers,
+            period: new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+          }, startupId); // Pass ID explicitly to override context logic
+      }
 
       // 5. Log Activity
       addActivity({

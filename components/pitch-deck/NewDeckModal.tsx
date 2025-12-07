@@ -13,6 +13,9 @@ interface NewDeckModalProps {
   onSuccess: () => void;
 }
 
+// Workaround for strict type checking issues with framer-motion in some environments
+const MotionDiv = motion.div as any;
+
 const templates = [
   { id: 'Y Combinator', name: 'Y Combinator Seed', desc: 'The gold standard for seed rounds. Clear, concise, problem-focused.', slides: 10 },
   { id: 'Sequoia', name: 'Sequoia Capital', desc: 'Story-driven structure focused on market magnitude and team.', slides: 12 },
@@ -63,14 +66,14 @@ export const NewDeckModal: React.FC<NewDeckModalProps> = ({ isOpen, onClose, onS
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <motion.div 
+      <MotionDiv 
         initial={{ opacity: 0 }} 
         animate={{ opacity: 1 }} 
         exit={{ opacity: 0 }}
         className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
         onClick={onClose}
       />
-      <motion.div 
+      <MotionDiv 
         initial={{ opacity: 0, scale: 0.95 }} 
         animate={{ opacity: 1, scale: 1 }} 
         exit={{ opacity: 0, scale: 0.95 }}
@@ -125,7 +128,7 @@ export const NewDeckModal: React.FC<NewDeckModalProps> = ({ isOpen, onClose, onS
             </button>
           </div>
         </div>
-      </motion.div>
+      </MotionDiv>
     </div>
   );
 };

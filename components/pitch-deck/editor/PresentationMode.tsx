@@ -8,6 +8,9 @@ import {
   XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip 
 } from 'recharts';
 
+// Workaround for strict type checking issues with framer-motion in some environments
+const MotionDiv = motion.div as any;
+
 interface PresentationModeProps {
   isOpen: boolean;
   onClose: () => void;
@@ -43,7 +46,7 @@ export const PresentationMode: React.FC<PresentationModeProps> = ({ isOpen, onCl
   return (
     <AnimatePresence>
       {isOpen && (
-        <motion.div 
+        <MotionDiv 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -112,7 +115,7 @@ export const PresentationMode: React.FC<PresentationModeProps> = ({ isOpen, onCl
               <span className="ml-4">ESC to Exit</span>
             </div>
           </div>
-        </motion.div>
+        </MotionDiv>
       )}
     </AnimatePresence>
   );

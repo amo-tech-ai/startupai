@@ -19,16 +19,22 @@ import {
   Wand2,
   ScanEye,
   Loader2,
-  Trash2
+  Trash2,
+  Maximize2,
+  Minimize2,
+  Check
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useData } from '../context/DataContext';
-import { GoogleGenAI } from "@google/genai";
 import { API_KEY } from '../lib/env';
 import { DocSection, InvestorDoc } from '../types';
 import { useToast } from '../context/ToastContext';
+import { DocumentAI } from '../services/documentAI';
 
 type ViewState = 'dashboard' | 'editor';
+
+// Workaround for strict type checking issues with framer-motion in some environments
+const MotionDiv = motion.div as any;
 
 const Documents: React.FC = () => {
   const [view, setView] = useState<ViewState>('dashboard');
@@ -99,7 +105,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onStartDoc, onOpenDoc }) 
   ];
 
   return (
-    <motion.div 
+    <MotionDiv 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
@@ -194,7 +200,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onStartDoc, onOpenDoc }) 
       </section>
       
       <div className="h-12"></div>
-    </motion.div>
+    </MotionDiv>
   );
 };
 
@@ -209,9 +215,10 @@ interface EditorViewProps {
 
 const EditorView: React.FC<EditorViewProps> = ({ doc, onBack }) => {
   const { profile, updateDoc } = useData();
-  const { success, error: toastError } = useToast();
+  const { success, error: toastError, info } = useToast();
   
   const [isGenerating, setIsGenerating] = useState(false);
+  const [refiningAction, setRefiningAction] = useState<string | null>(null);
   const [activeSectionId, setActiveSectionId] = useState<string>('1');
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving'>('saved');
 
@@ -239,8 +246,9 @@ const EditorView: React.FC<EditorViewProps> = ({ doc, onBack }) => {
       }
   }, [title, sections, doc.id, doc.title, doc.content.sections, updateDoc]);
 
-  // --- AI GENERATION LOGIC ---
-  const generateDocument = async () => {
+  // --- AI ACTIONS ---
+
+  const handleGenerateDraft = async () => {
     if (!profile) {
         toastError("No startup profile found. Please complete onboarding.");
         return;
@@ -253,67 +261,83 @@ const EditorView: React.FC<EditorViewProps> = ({ doc, onBack }) => {
     setIsGenerating(true);
 
     try {
-        const ai = new GoogleGenAI({ apiKey: API_KEY });
+        const profileContext = {
+            name: profile.name,
+            tagline: profile.tagline,
+            mission: profile.mission,
+            problem: profile.problemStatement,
+            solution: profile.solutionStatement,
+            targetMarket: profile.targetMarket,
+            businessModel: profile.businessModel
+        };
+
+        const newSections = await DocumentAI.generateDraft(API_KEY, doc.type, profileContext);
         
-        const context = `
-            Startup Name: ${profile.name}
-            Tagline: ${profile.tagline}
-            Mission: ${profile.mission}
-            Problem: ${profile.problemStatement}
-            Solution: ${profile.solutionStatement}
-            Target Market: ${profile.targetMarket}
-            Business Model: ${profile.businessModel}
-        `;
-
-        const prompt = `
-            You are a professional venture capital analyst and startup writer.
-            Task: Write a full ${doc.type} for the startup described below.
-            
-            Context:
-            ${context}
-
-            Requirements:
-            1. Create 4-6 distinct sections appropriate for a ${doc.type}.
-            2. For "Pitch Deck", use sections like: Problem, Solution, Market, Business Model, Team.
-            3. For "One-Pager", use sections like: Executive Summary, Market Opportunity, Traction, Ask.
-            4. Return the content as a valid JSON object containing an array of sections.
-            5. Each section object must have: "title" (string) and "content" (string, HTML formatted paragraphs/lists).
-
-            Output format:
-            {
-                "sections": [
-                    { "title": "Section Name", "content": "<p>Content...</p>" }
-                ]
-            }
-        `;
-
-        const response = await ai.models.generateContent({
-            model: 'gemini-3-pro-preview',
-            contents: prompt,
-            config: { responseMimeType: 'application/json' }
-        });
-
-        const text = response.text;
-        if (text) {
-            const data = JSON.parse(text);
-            if (data.sections && Array.isArray(data.sections)) {
-                const newSections = data.sections.map((s: any, idx: number) => ({
-                    id: String(idx + 1),
-                    title: s.title,
-                    content: s.content
-                }));
-                setSections(newSections);
-                setActiveSectionId('1');
-                success("Document draft generated!");
-            }
+        if (newSections) {
+            setSections(newSections);
+            setActiveSectionId(newSections[0]?.id || '1');
+            success("Document draft generated!");
         }
     } catch (error) {
-        console.error("Doc Generation Error:", error);
-        toastError("Failed to generate document. Please try again.");
+        toastError("Failed to generate document.");
     } finally {
         setIsGenerating(false);
     }
   };
+
+  const handleRefine = async (action: 'clearer' | 'expand' | 'shorten' | 'grammar') => {
+      if (!API_KEY) {
+          toastError("API Key missing");
+          return;
+      }
+
+      const activeSection = sections.find(s => s.id === activeSectionId);
+      if (!activeSection) return;
+
+      setRefiningAction(action);
+      info("Refining section with AI...");
+
+      try {
+          const refinedContent = await DocumentAI.refineSection(API_KEY, activeSection.content, action);
+          if (refinedContent) {
+              setSections(prev => prev.map(s => s.id === activeSectionId ? { ...s, content: refinedContent } : s));
+              success("Section updated!");
+          }
+      } catch (e) {
+          toastError("Failed to refine section.");
+      } finally {
+          setRefiningAction(null);
+      }
+  }
+
+  const handleExport = () => {
+      // Simple client-side export
+      const docContent = `
+        <html>
+          <head><title>${title}</title></head>
+          <body style="font-family: sans-serif; padding: 40px; max-width: 800px; margin: 0 auto;">
+            <h1 style="color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px;">${title}</h1>
+            <p style="color: #666; font-size: 14px;">Generated by StartupAI for ${profile?.name}</p>
+            ${sections.map(s => `
+                <div style="margin-bottom: 30px;">
+                    <h2 style="color: #4f46e5;">${s.title}</h2>
+                    <div>${s.content}</div>
+                </div>
+            `).join('')}
+          </body>
+        </html>
+      `;
+      
+      const blob = new Blob([docContent], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${title.replace(/\s+/g, '_')}.html`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      success("Exported to HTML");
+  }
 
   const updateSectionContent = (id: string, newContent: string) => {
       setSections(prev => prev.map(s => s.id === id ? { ...s, content: newContent } : s));
@@ -324,7 +348,7 @@ const EditorView: React.FC<EditorViewProps> = ({ doc, onBack }) => {
   }
 
   return (
-    <motion.div 
+    <MotionDiv 
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 20 }}
@@ -360,7 +384,7 @@ const EditorView: React.FC<EditorViewProps> = ({ doc, onBack }) => {
                 <button className="p-1.5 text-slate-500 hover:text-slate-700"><ImageIcon size={16}/></button>
              </div>
              <div className="h-6 w-px bg-slate-200"></div>
-             <button className="flex items-center gap-2 px-3 py-1.5 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700 shadow-sm">
+             <button onClick={handleExport} className="flex items-center gap-2 px-3 py-1.5 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700 shadow-sm transition-colors">
                 <Download size={16} /> Export
              </button>
          </div>
@@ -401,7 +425,7 @@ const EditorView: React.FC<EditorViewProps> = ({ doc, onBack }) => {
              <div className="w-full max-w-3xl bg-white rounded-xl shadow-sm min-h-[800px] p-8 md:p-12 relative group animate-in fade-in slide-in-from-bottom-4 duration-500">
                 
                 {isGenerating && (
-                    <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-20 flex flex-col items-center justify-center">
+                    <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-20 flex flex-col items-center justify-center rounded-xl">
                         <Loader2 size={48} className="text-indigo-600 animate-spin mb-4" />
                         <h3 className="text-xl font-bold text-slate-900">Generating {doc.type}...</h3>
                         <p className="text-slate-500">Consulting Gemini 3...</p>
@@ -410,7 +434,11 @@ const EditorView: React.FC<EditorViewProps> = ({ doc, onBack }) => {
 
                 {/* Render Sections */}
                 {sections.map((section) => (
-                    <div key={section.id} className="mb-12 group/section">
+                    <div 
+                        key={section.id} 
+                        className={`mb-12 group/section transition-opacity ${activeSectionId !== section.id ? 'opacity-50 hover:opacity-100' : 'opacity-100'}`}
+                        onClick={() => setActiveSectionId(section.id)}
+                    >
                         <input 
                             value={section.title}
                             onChange={(e) => updateSectionTitle(section.id, e.target.value)}
@@ -452,7 +480,7 @@ const EditorView: React.FC<EditorViewProps> = ({ doc, onBack }) => {
                 <div>
                    <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-3">Drafting</h4>
                    <button 
-                      onClick={generateDocument}
+                      onClick={handleGenerateDraft}
                       disabled={isGenerating}
                       className="w-full flex items-center justify-center gap-2 py-3 bg-indigo-600 text-white rounded-lg text-xs font-bold hover:bg-indigo-700 shadow-md shadow-indigo-600/20 mb-3 transition-colors disabled:opacity-50"
                    >
@@ -467,19 +495,33 @@ const EditorView: React.FC<EditorViewProps> = ({ doc, onBack }) => {
                 {/* Block 2: Refine */}
                 <div>
                    <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-3">Refinement Tools</h4>
+                   <p className="text-[10px] text-slate-400 mb-2">Acting on: <strong>{sections.find(s=>s.id === activeSectionId)?.title || "None"}</strong></p>
+                   
                    <div className="grid grid-cols-2 gap-2">
-                      <button className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-200 transition-colors">
-                         Make Clearer
-                      </button>
-                      <button className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-200 transition-colors">
-                         Expand
-                      </button>
-                      <button className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-200 transition-colors">
-                         Shorten
-                      </button>
-                      <button className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-200 transition-colors">
-                         Fix Grammar
-                      </button>
+                      <RefineButton 
+                        label="Make Clearer" 
+                        icon={<Wand2 size={14}/>} 
+                        onClick={() => handleRefine('clearer')} 
+                        loading={refiningAction === 'clearer'}
+                      />
+                      <RefineButton 
+                        label="Expand" 
+                        icon={<Maximize2 size={14}/>} 
+                        onClick={() => handleRefine('expand')} 
+                        loading={refiningAction === 'expand'}
+                      />
+                      <RefineButton 
+                        label="Shorten" 
+                        icon={<Minimize2 size={14}/>} 
+                        onClick={() => handleRefine('shorten')} 
+                        loading={refiningAction === 'shorten'}
+                      />
+                      <RefineButton 
+                        label="Fix Grammar" 
+                        icon={<Check size={14}/>} 
+                        onClick={() => handleRefine('grammar')} 
+                        loading={refiningAction === 'grammar'}
+                      />
                    </div>
                 </div>
 
@@ -498,8 +540,26 @@ const EditorView: React.FC<EditorViewProps> = ({ doc, onBack }) => {
              </div>
          </div>
       </div>
-    </motion.div>
+    </MotionDiv>
   );
 };
+
+interface RefineButtonProps {
+    label: string;
+    icon: React.ReactNode;
+    onClick: () => void;
+    loading: boolean;
+}
+
+const RefineButton: React.FC<RefineButtonProps> = ({ label, icon, onClick, loading }) => (
+    <button 
+        onClick={onClick}
+        disabled={loading}
+        className="flex flex-col items-center justify-center gap-2 p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-200 transition-colors disabled:opacity-50"
+    >
+        {loading ? <Loader2 size={14} className="animate-spin"/> : icon}
+        {label}
+    </button>
+);
 
 export default Documents;

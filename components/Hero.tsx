@@ -1,7 +1,11 @@
+
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Play, ArrowRight, BarChart3, Users, Globe, Zap } from 'lucide-react';
 import { AreaChart, Area, ResponsiveContainer, Tooltip } from 'recharts';
+
+// Workaround for strict type checking issues with framer-motion in some environments
+const MotionDiv = motion.div as any;
 
 const data = [
   { name: 'Mon', value: 40 },
@@ -24,7 +28,7 @@ const Hero: React.FC = () => {
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
           
           {/* Left Content */}
-          <motion.div
+          <MotionDiv
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
@@ -61,10 +65,10 @@ const Hero: React.FC = () => {
               </div>
               <p>Trusted by 10,000+ founders</p>
             </div>
-          </motion.div>
+          </MotionDiv>
 
           {/* Right Illustration */}
-          <motion.div
+          <MotionDiv
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
@@ -125,7 +129,7 @@ const Hero: React.FC = () => {
             </div>
 
             {/* Floating Elements */}
-            <motion.div 
+            <MotionDiv 
                 className="absolute -right-8 top-20 bg-white p-5 rounded-2xl shadow-xl border border-slate-100 hidden md:block"
                 animate={{ y: [0, -15, 0] }}
                 transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
@@ -139,9 +143,9 @@ const Hero: React.FC = () => {
                         <div className="text-xs text-slate-500">Just now</div>
                     </div>
                 </div>
-            </motion.div>
+            </MotionDiv>
 
-             <motion.div 
+             <MotionDiv 
                 className="absolute -left-12 bottom-32 bg-slate-900 p-5 rounded-2xl shadow-2xl hidden md:block"
                 animate={{ y: [0, 20, 0] }}
                 transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 1 }}
@@ -155,9 +159,9 @@ const Hero: React.FC = () => {
                         <div className="text-xs text-slate-400">Boosted by 45%</div>
                     </div>
                 </div>
-            </motion.div>
+            </MotionDiv>
 
-          </motion.div>
+          </MotionDiv>
         </div>
       </div>
     </section>

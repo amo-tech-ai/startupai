@@ -16,6 +16,9 @@ interface ToastProps {
   onClose: (id: string) => void;
 }
 
+// Workaround for strict type checking issues with framer-motion in some environments
+const MotionDiv = motion.div as any;
+
 export const Toast: React.FC<ToastProps> = ({ toast, onClose }) => {
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -37,7 +40,7 @@ export const Toast: React.FC<ToastProps> = ({ toast, onClose }) => {
   };
 
   return (
-    <motion.div
+    <MotionDiv
       initial={{ opacity: 0, y: 50, scale: 0.9 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
@@ -52,6 +55,6 @@ export const Toast: React.FC<ToastProps> = ({ toast, onClose }) => {
       >
         <X size={16} />
       </button>
-    </motion.div>
+    </MotionDiv>
   );
 };

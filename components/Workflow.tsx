@@ -1,6 +1,10 @@
+
 import React from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight, Database, Cpu, FileText, CheckCircle2 } from 'lucide-react';
+
+// Workaround for strict type checking issues with framer-motion in some environments
+const MotionDiv = motion.div as any;
 
 const Workflow: React.FC = () => {
   const steps = [
@@ -44,7 +48,7 @@ const Workflow: React.FC = () => {
           
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 relative z-10">
             {steps.map((step, index) => (
-              <motion.div
+              <MotionDiv
                 key={step.id}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -77,12 +81,12 @@ const Workflow: React.FC = () => {
                     <ArrowRight size={24} />
                   </div>
                 )}
-              </motion.div>
+              </MotionDiv>
             ))}
           </div>
 
           {/* Decorative pulse moving along the line */}
-           <motion.div 
+           <MotionDiv 
             className="hidden md:block absolute top-1/2 left-0 h-1 bg-primary-500 -translate-y-1/2 z-0 shadow-[0_0_10px_rgba(99,102,241,0.5)]"
             initial={{ width: '0%' }}
             whileInView={{ width: '100%' }}

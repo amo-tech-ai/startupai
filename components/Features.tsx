@@ -1,6 +1,10 @@
+
 import React from 'react';
 import { PenTool, BrainCircuit, BarChart2, Workflow } from 'lucide-react';
 import { motion } from 'framer-motion';
+
+// Workaround for strict type checking issues with framer-motion in some environments
+const MotionDiv = motion.div as any;
 
 const features = [
   {
@@ -40,7 +44,7 @@ const Features: React.FC = () => {
 
         <div className="grid md:grid-cols-2 gap-8 lg:gap-12">
             {features.map((feature, idx) => (
-                <motion.div
+                <MotionDiv
                     key={idx}
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
@@ -55,7 +59,7 @@ const Features: React.FC = () => {
                     <p className="text-slate-600 leading-relaxed">
                         {feature.desc}
                     </p>
-                </motion.div>
+                </MotionDiv>
             ))}
         </div>
       </div>

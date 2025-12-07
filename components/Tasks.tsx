@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { 
   CheckCircle2, 
@@ -15,6 +16,9 @@ import { useData } from '../context/DataContext';
 import { Task, TaskStatus } from '../types';
 import { GoogleGenAI } from "@google/genai";
 import { API_KEY } from '../lib/env';
+
+// Workaround for strict type checking issues with framer-motion in some environments
+const MotionDiv = motion.div as any;
 
 const Tasks: React.FC = () => {
   const { tasks, addTask, updateTask, profile, addActivity } = useData();
@@ -218,7 +222,7 @@ const Tasks: React.FC = () => {
 
 const TaskCard: React.FC<{ task: Task, onMove: (id: string, dir: number) => void }> = ({ task, onMove }) => {
     return (
-        <motion.div 
+        <MotionDiv 
             layout
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -263,7 +267,7 @@ const TaskCard: React.FC<{ task: Task, onMove: (id: string, dir: number) => void
                      <button onClick={() => onMove(task.id, 1)} className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-700">→</button>
                  </div>
             </div>
-        </motion.div>
+        </MotionDiv>
     )
 }
 

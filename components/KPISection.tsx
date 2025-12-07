@@ -1,5 +1,9 @@
+
 import React from 'react';
 import { motion } from 'framer-motion';
+
+// Workaround for strict type checking issues with framer-motion in some environments
+const MotionDiv = motion.div as any;
 
 const KPISection: React.FC = () => {
   return (
@@ -14,7 +18,7 @@ const KPISection: React.FC = () => {
             { label: 'More Investor Meetings', value: '50%', color: 'text-indigo-400' },
             { label: 'Founder Satisfaction', value: '98%', color: 'text-amber-400' }
           ].map((stat, idx) => (
-            <motion.div 
+            <MotionDiv 
                 key={idx}
                 initial={{ opacity: 0, scale: 0.9 }}
                 whileInView={{ opacity: 1, scale: 1 }}
@@ -28,7 +32,7 @@ const KPISection: React.FC = () => {
               <div className="text-lg text-slate-400 font-medium tracking-wide uppercase text-sm">
                 {stat.label}
               </div>
-            </motion.div>
+            </MotionDiv>
           ))}
         </div>
       </div>

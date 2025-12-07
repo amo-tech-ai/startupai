@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { motion } from 'framer-motion';
 import { 
@@ -6,6 +7,9 @@ import {
   Briefcase, Layers, Settings, Search, PenTool, Download, Star, Sparkles, Clock
 } from 'lucide-react';
 import FinalCTA from './FinalCTA';
+
+// Workaround for strict type checking issues with framer-motion in some environments
+const MotionDiv = motion.div as any;
 
 interface HowItWorksProps {
   setPage: (page: 'home' | 'how-it-works') => void;
@@ -21,7 +25,7 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ setPage }) => {
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
             
             {/* Text Content */}
-            <motion.div
+            <MotionDiv
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
@@ -63,10 +67,10 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ setPage }) => {
                   <div className="text-xs text-slate-500 font-medium uppercase tracking-wide">Founder Rating</div>
                 </div>
               </div>
-            </motion.div>
+            </MotionDiv>
 
             {/* Illustration */}
-            <motion.div
+            <MotionDiv
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.8, delay: 0.2 }}
@@ -114,7 +118,7 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ setPage }) => {
                   </div>
                   
                   {/* Floating elements */}
-                  <motion.div 
+                  <MotionDiv 
                     animate={{ y: [0, -10, 0] }}
                     transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
                     className="absolute -right-8 top-1/4 bg-slate-900 text-white p-4 rounded-xl shadow-xl z-20"
@@ -123,9 +127,9 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ setPage }) => {
                        <CheckCircle2 size={20} className="text-green-400" />
                        <div className="font-medium text-sm">Financials: Validated</div>
                     </div>
-                  </motion.div>
+                  </MotionDiv>
                </div>
-            </motion.div>
+            </MotionDiv>
           </div>
         </div>
       </section>
@@ -143,7 +147,7 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ setPage }) => {
 
             {/* STEP 1 */}
             <div className="relative z-10 grid lg:grid-cols-2 gap-12 items-center">
-               <motion.div 
+               <MotionDiv 
                  initial={{ opacity: 0, x: -50 }}
                  whileInView={{ opacity: 1, x: 0 }}
                  viewport={{ once: true, margin: "-100px" }}
@@ -173,8 +177,8 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ setPage }) => {
                         </div>
                      </div>
                   </div>
-               </motion.div>
-               <motion.div 
+               </MotionDiv>
+               <MotionDiv 
                  initial={{ opacity: 0, x: 50 }}
                  whileInView={{ opacity: 1, x: 0 }}
                  viewport={{ once: true, margin: "-100px" }}
@@ -204,12 +208,12 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ setPage }) => {
                   <div className="mt-8 inline-flex items-center gap-2 bg-slate-100 text-slate-600 px-3 py-1.5 rounded-full text-sm font-medium">
                      <Clock size={14} /> 5 minutes
                   </div>
-               </motion.div>
+               </MotionDiv>
             </div>
 
             {/* STEP 2 */}
             <div className="relative z-10 grid lg:grid-cols-2 gap-12 items-center">
-               <motion.div 
+               <MotionDiv 
                  initial={{ opacity: 0, x: -50 }}
                  whileInView={{ opacity: 1, x: 0 }}
                  viewport={{ once: true, margin: "-100px" }}
@@ -241,9 +245,9 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ setPage }) => {
                   <div className="mt-8 inline-flex items-center gap-2 bg-slate-100 text-slate-600 px-3 py-1.5 rounded-full text-sm font-medium">
                      <Clock size={14} /> Under 2 minutes
                   </div>
-               </motion.div>
+               </MotionDiv>
                
-               <motion.div 
+               <MotionDiv 
                  initial={{ opacity: 0, x: 50 }}
                  whileInView={{ opacity: 1, x: 0 }}
                  viewport={{ once: true, margin: "-100px" }}
@@ -258,7 +262,7 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ setPage }) => {
 
                    {/* Orbiting Docs */}
                    {[0, 72, 144, 216, 288].map((deg, i) => (
-                      <motion.div
+                      <MotionDiv
                         key={i}
                         className="absolute w-12 h-12 bg-white rounded-xl shadow-md border border-slate-100 flex items-center justify-center z-10"
                         animate={{ 
@@ -269,14 +273,14 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ setPage }) => {
                         transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
                       >
                          <FileText size={20} className="text-slate-400" />
-                      </motion.div>
+                      </MotionDiv>
                    ))}
-               </motion.div>
+               </MotionDiv>
             </div>
 
             {/* STEP 3 */}
             <div className="relative z-10 grid lg:grid-cols-2 gap-12 items-center">
-               <motion.div 
+               <MotionDiv 
                  initial={{ opacity: 0, x: -50 }}
                  whileInView={{ opacity: 1, x: 0 }}
                  viewport={{ once: true, margin: "-100px" }}
@@ -312,8 +316,8 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ setPage }) => {
                         </div>
                      </div>
                   </div>
-               </motion.div>
-               <motion.div 
+               </MotionDiv>
+               <MotionDiv 
                  initial={{ opacity: 0, x: 50 }}
                  whileInView={{ opacity: 1, x: 0 }}
                  viewport={{ once: true, margin: "-100px" }}
@@ -341,7 +345,7 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ setPage }) => {
                   <div className="mt-8 inline-flex items-center gap-2 bg-slate-100 text-slate-600 px-3 py-1.5 rounded-full text-sm font-medium">
                      <Clock size={14} /> Ready to send
                   </div>
-               </motion.div>
+               </MotionDiv>
             </div>
          </div>
       </div>
@@ -365,7 +369,7 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ setPage }) => {
                     { icon: <PenTool />, label: "Review & Edit" },
                     { icon: <Briefcase />, label: "Track Deals" },
                  ].map((step, idx) => (
-                    <motion.div 
+                    <MotionDiv 
                       key={idx}
                       initial={{ opacity: 0, y: 20 }}
                       whileInView={{ opacity: 1, y: 0 }}
@@ -377,7 +381,7 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ setPage }) => {
                           {step.icon}
                        </div>
                        <div className="font-semibold text-sm tracking-wide">{step.label}</div>
-                    </motion.div>
+                    </MotionDiv>
                  ))}
               </div>
            </div>
@@ -401,7 +405,7 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ setPage }) => {
                   { icon: <Search />, title: "Market Intelligence", desc: "Real-time data on TAM, SAM, and SOM.", tag: "Data" },
                   { icon: <Database />, title: "Secure Data Room", desc: "One link to share everything securely.", tag: "Sharing" },
                ].map((feature, idx) => (
-                  <motion.div
+                  <MotionDiv
                      key={idx}
                      initial={{ opacity: 0, y: 20 }}
                      whileInView={{ opacity: 1, y: 0 }}
@@ -416,7 +420,7 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ setPage }) => {
                      </div>
                      <h3 className="font-bold text-slate-900 text-lg mb-2">{feature.title}</h3>
                      <p className="text-slate-600 text-sm leading-relaxed">{feature.desc}</p>
-                  </motion.div>
+                  </MotionDiv>
                ))}
             </div>
          </div>

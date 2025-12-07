@@ -4,6 +4,9 @@ import { Plus, Presentation, Layers, ChevronRight, MoreHorizontal } from 'lucide
 import { motion } from 'framer-motion';
 import { Deck } from '../../types';
 
+// Workaround for strict type checking issues with framer-motion in some environments
+const MotionDiv = motion.div as any;
+
 interface PitchDeckGalleryProps {
   decks: Deck[];
   onCreateNew: () => void;
@@ -30,7 +33,7 @@ export const PitchDeckGallery: React.FC<PitchDeckGalleryProps> = ({ decks, onCre
       {/* Deck Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {decks.map((deck) => (
-          <motion.div 
+          <MotionDiv 
             key={deck.id}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -73,7 +76,7 @@ export const PitchDeckGallery: React.FC<PitchDeckGalleryProps> = ({ decks, onCre
                 </button>
               </div>
             </div>
-          </motion.div>
+          </MotionDiv>
         ))}
 
         {/* Create New Placeholder */}

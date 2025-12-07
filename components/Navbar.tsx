@@ -10,6 +10,9 @@ interface NavbarProps {
   type?: 'public' | 'app';
 }
 
+// Workaround for strict type checking issues with framer-motion in some environments
+const MotionDiv = motion.div as any;
+
 const Navbar: React.FC<NavbarProps> = ({ currentPage = 'home', setPage, type = 'public' }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -85,7 +88,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage = 'home', setPage, type = '
         {/* Mobile Menu for App Mode */}
         <AnimatePresence>
             {isMobileMenuOpen && (
-              <motion.div
+              <MotionDiv
                 initial={{ opacity: 0, x: '100%' }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: '100%' }}
@@ -118,7 +121,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage = 'home', setPage, type = '
                 <div className="mt-auto">
                     <button onClick={() => handleNav('home')} className="w-full py-3 text-rose-500 font-medium text-center">Sign Out</button>
                 </div>
-              </motion.div>
+              </MotionDiv>
             )}
         </AnimatePresence>
 
@@ -200,7 +203,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage = 'home', setPage, type = '
 
       <AnimatePresence>
         {isMobileMenuOpen && (
-          <motion.div
+          <MotionDiv
             initial={{ opacity: 0, x: '100%' }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: '100%' }}
@@ -235,7 +238,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage = 'home', setPage, type = '
                 Get Started
               </button>
             </div>
-          </motion.div>
+          </MotionDiv>
         )}
       </AnimatePresence>
     </>

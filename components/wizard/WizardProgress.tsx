@@ -2,6 +2,9 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
+// Workaround for strict type checking issues with framer-motion in some environments
+const MotionDiv = motion.div as any;
+
 interface WizardProgressProps {
   currentStep: number;
   totalSteps: number;
@@ -17,7 +20,7 @@ export const WizardProgress: React.FC<WizardProgressProps> = ({ currentStep, tot
             <span className="text-sm font-bold text-indigo-600">{stepTitle}</span>
         </div>
         <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-            <motion.div 
+            <MotionDiv 
                 className="h-full bg-indigo-600 rounded-full"
                 initial={{ width: `${((currentStep-1)/totalSteps)*100}%` }}
                 animate={{ width: `${(currentStep/totalSteps)*100}%` }}

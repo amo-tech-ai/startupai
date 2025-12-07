@@ -1,6 +1,10 @@
+
 import React from 'react';
 import { Wand2, Bot, Eye } from 'lucide-react';
 import { motion } from 'framer-motion';
+
+// Workaround for strict type checking issues with framer-motion in some environments
+const MotionDiv = motion.div as any;
 
 const AICapabilities: React.FC = () => {
   const capabilities = [
@@ -37,7 +41,7 @@ const AICapabilities: React.FC = () => {
 
         <div className="grid md:grid-cols-3 gap-8">
           {capabilities.map((cap, idx) => (
-            <motion.div
+            <MotionDiv
               key={idx}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -59,7 +63,7 @@ const AICapabilities: React.FC = () => {
 
               {/* Hover Effect Light */}
               <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-white/0 to-slate-50/50 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-300" />
-            </motion.div>
+            </MotionDiv>
           ))}
         </div>
       </div>

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { 
   Search, 
@@ -5,38 +6,17 @@ import {
   Filter, 
   LayoutGrid, 
   List, 
-  MoreHorizontal, 
-  DollarSign, 
-  Briefcase, 
-  TrendingUp, 
-  Calendar,
-  ChevronDown,
-  Building2,
-  Tag,
-  X,
-  User,
-  Check,
-  AlertCircle,
-  Mail,
-  Phone,
-  Users,
-  ArrowRight,
-  Clock
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { useData } from '../context/DataContext';
 import { Deal, DealStage } from '../types';
-
-const COLUMNS: { id: DealStage; label: string; color: string }[] = [
-  { id: 'Lead', label: 'Lead', color: 'border-slate-300' },
-  { id: 'Qualified', label: 'Qualified', color: 'border-blue-400' },
-  { id: 'Meeting', label: 'Meeting', color: 'border-amber-400' },
-  { id: 'Proposal', label: 'Proposal', color: 'border-purple-400' },
-  { id: 'Closed', label: 'Closed', color: 'border-green-400' },
-];
+import { PipelineStats } from './crm/PipelineStats';
+import { KanbanBoard } from './crm/KanbanBoard';
+import { DealListView } from './crm/DealListView';
+import { NewDealModal } from './crm/NewDealModal';
 
 const CRM: React.FC = () => {
-  const { deals, addDeal } = useData();
+  const { deals, addDeal, updateDeal } = useData();
   const [viewMode, setViewMode] = useState<'board' | 'list'>('board');
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -45,7 +25,6 @@ const CRM: React.FC = () => {
   // Stats Calculation
   const totalValue = deals.reduce((acc, deal) => acc + deal.value, 0);
   const activeDeals = deals.filter(d => d.stage !== 'Closed').length;
-  // const closedValue = deals.filter(d => d.stage === 'Closed').reduce((acc, deal) => acc + deal.value, 0);
   const winRate = deals.length > 0 ? Math.round((deals.filter(d => d.stage === 'Closed').length / deals.length) * 100) : 0;
 
   // Filtering
@@ -62,6 +41,17 @@ const CRM: React.FC = () => {
   const handleAddDeal = (newDealData: Omit<Deal, 'id' | 'startupId'>) => {
     addDeal(newDealData);
     setIsModalOpen(false);
+  };
+
+  const handleDealMove = (dealId: string, newStage: DealStage) => {
+    // Increase probability if moving forward
+    let probabilityUpdate = {};
+    if (newStage === 'Closed') probabilityUpdate = { probability: 100 };
+    else if (newStage === 'Proposal') probabilityUpdate = { probability: 75 };
+    else if (newStage === 'Meeting') probabilityUpdate = { probability: 50 };
+    else if (newStage === 'Qualified') probabilityUpdate = { probability: 25 };
+
+    updateDeal(dealId, { stage: newStage, ...probabilityUpdate });
   };
 
   return (
@@ -99,39 +89,11 @@ const CRM: React.FC = () => {
         </div>
 
         {/* Stats Bar */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-           <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 flex items-center gap-3">
-              <div className="p-2 bg-indigo-100 text-indigo-600 rounded-lg"><DollarSign size={18}/></div>
-              <div>
-                 <div className="text-xs text-slate-500 uppercase font-bold tracking-wide">Pipeline Value</div>
-                 <div className="text-lg font-bold text-slate-900">${(totalValue / 1000000).toFixed(2)}M</div>
-              </div>
-           </div>
-           <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 flex items-center gap-3">
-              <div className="p-2 bg-amber-100 text-amber-600 rounded-lg"><Briefcase size={18}/></div>
-              <div>
-                 <div className="text-xs text-slate-500 uppercase font-bold tracking-wide">Active Deals</div>
-                 <div className="text-lg font-bold text-slate-900">{activeDeals}</div>
-              </div>
-           </div>
-           <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 flex items-center gap-3">
-              <div className="p-2 bg-green-100 text-green-600 rounded-lg"><TrendingUp size={18}/></div>
-              <div>
-                 <div className="text-xs text-slate-500 uppercase font-bold tracking-wide">Win Rate</div>
-                 <div className="text-lg font-bold text-slate-900">{winRate}%</div>
-              </div>
-           </div>
-             <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                 <div className="p-2 bg-purple-100 text-purple-600 rounded-lg"><Calendar size={18}/></div>
-                 <div>
-                    <div className="text-xs text-slate-500 uppercase font-bold tracking-wide">Forecast</div>
-                    <div className="text-lg font-bold text-slate-900">Q4 '24</div>
-                 </div>
-              </div>
-              <ChevronDown className="text-slate-400" size={16} />
-           </div>
-        </div>
+        <PipelineStats 
+          totalValue={totalValue} 
+          activeDeals={activeDeals} 
+          winRate={winRate} 
+        />
         
         {/* View Toggles */}
         <div className="flex items-center gap-2 mt-6 border-b border-slate-200">
@@ -153,76 +115,15 @@ const CRM: React.FC = () => {
       {/* 2. Content Area (Board or List) */}
       <div className="flex-1 overflow-hidden p-6 md:p-8 bg-slate-50/50">
         {viewMode === 'board' ? (
-            // KANBAN BOARD VIEW
-            <div className="flex h-full gap-6 min-w-[1200px] overflow-x-auto pb-4">
-            {COLUMNS.map((col) => {
-                const colDeals = filteredDeals.filter(d => d.stage === col.id);
-                const colValue = colDeals.reduce((acc, d) => acc + d.value, 0);
-
-                return (
-                <div key={col.id} className="flex flex-col w-80 h-full shrink-0">
-                    {/* Column Header */}
-                    <div className={`flex items-center justify-between mb-4 pb-2 border-b-2 ${col.color}`}>
-                    <div>
-                        <h3 className="font-bold text-slate-700">{col.label}</h3>
-                        <p className="text-xs text-slate-500">${(colValue / 1000).toFixed(0)}k • {colDeals.length} Deals</p>
-                    </div>
-                    <div className="p-1 rounded hover:bg-slate-200 cursor-pointer text-slate-400">
-                        <MoreHorizontal size={16} />
-                    </div>
-                    </div>
-
-                    {/* Column Body */}
-                    <div className="flex-1 overflow-y-auto space-y-3 pb-20 pr-2 custom-scrollbar">
-                    {colDeals.length === 0 ? (
-                        <div className="h-24 border-2 border-dashed border-slate-200 rounded-xl flex items-center justify-center text-slate-400 text-sm italic">
-                            No deals
-                        </div>
-                    ) : (
-                        colDeals.map((deal) => (
-                            <DealCard key={deal.id} deal={deal} layout="board" />
-                        ))
-                    )}
-                    
-                    {/* Add Button per Column */}
-                    <button 
-                        onClick={() => handleOpenModal(col.id)}
-                        className="w-full py-3 border border-dashed border-slate-300 rounded-xl text-slate-500 text-sm font-medium hover:border-indigo-400 hover:text-indigo-600 hover:bg-white transition-all flex items-center justify-center gap-2"
-                    >
-                        <Plus size={16} /> Add to {col.label}
-                    </button>
-                    </div>
-                </div>
-                );
-            })}
-            </div>
+            <KanbanBoard 
+              deals={filteredDeals} 
+              onAddDeal={handleOpenModal}
+              onDealMove={handleDealMove} 
+            />
         ) : (
-            // LIST VIEW
-            <div className="h-full overflow-y-auto custom-scrollbar">
-                <div className="min-w-[1000px]">
-                    {/* Table Header */}
-                    <div className="flex items-center px-6 py-3 bg-slate-100 rounded-t-xl border-b border-slate-200 text-xs font-bold text-slate-500 uppercase tracking-wide">
-                        <div className="w-1/4">Company</div>
-                        <div className="w-1/6">Stage</div>
-                        <div className="w-1/6">Value</div>
-                        <div className="w-1/6">Probability</div>
-                        <div className="w-1/6">Next Action</div>
-                        <div className="w-12 text-center">Owner</div>
-                        <div className="w-8"></div>
-                    </div>
-                    
-                    {/* List Items */}
-                    <div className="bg-white border-x border-b border-slate-200 rounded-b-xl shadow-sm">
-                        {filteredDeals.length === 0 ? (
-                            <div className="text-center py-12 text-slate-400">No deals found matching your search.</div>
-                        ) : (
-                            filteredDeals.map(deal => (
-                                <DealCard key={deal.id} deal={deal} layout="list" />
-                            ))
-                        )}
-                    </div>
-                </div>
-            </div>
+            <DealListView 
+              deals={filteredDeals} 
+            />
         )}
       </div>
 
@@ -237,405 +138,6 @@ const CRM: React.FC = () => {
           />
         )}
       </AnimatePresence>
-    </div>
-  );
-};
-
-// ----------------------------------------------------------------------
-// SUB-COMPONENT: Deal Card
-// ----------------------------------------------------------------------
-
-interface DealCardProps {
-    deal: Deal;
-    layout?: 'board' | 'list';
-}
-
-const DealCard: React.FC<DealCardProps> = ({ deal, layout = 'board' }) => {
-  const getActionIcon = (text: string) => {
-    const t = text ? text.toLowerCase() : '';
-    if (t.includes('email') || t.includes('send')) return <Mail size={12} />;
-    if (t.includes('call') || t.includes('phone')) return <Phone size={12} />;
-    if (t.includes('meet') || t.includes('schedule')) return <Users size={12} />;
-    return <Calendar size={12} />;
-  };
-
-  // LIST LAYOUT
-  if (layout === 'list') {
-      return (
-        <motion.div 
-            layout
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="flex items-center px-6 py-4 border-b border-slate-100 last:border-0 hover:bg-indigo-50/30 transition-colors group cursor-pointer"
-        >
-            <div className="w-1/4 flex items-center gap-3">
-                <div className="w-8 h-8 bg-slate-50 rounded-lg flex items-center justify-center border border-slate-100 text-slate-400 group-hover:bg-white group-hover:text-indigo-600 transition-colors">
-                    <Building2 size={16} />
-                </div>
-                <div>
-                    <h4 className="font-bold text-slate-900 text-sm">{deal.company}</h4>
-                    <div className="text-xs text-slate-500">{deal.sector}</div>
-                </div>
-            </div>
-            
-            <div className="w-1/6">
-                <span className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${
-                    deal.stage === 'Lead' ? 'bg-slate-50 text-slate-600 border-slate-200' :
-                    deal.stage === 'Qualified' ? 'bg-blue-50 text-blue-600 border-blue-200' :
-                    deal.stage === 'Meeting' ? 'bg-amber-50 text-amber-600 border-amber-200' :
-                    deal.stage === 'Proposal' ? 'bg-purple-50 text-purple-600 border-purple-200' :
-                    'bg-green-50 text-green-600 border-green-200'
-                }`}>
-                    {deal.stage}
-                </span>
-            </div>
-            
-            <div className="w-1/6 font-bold text-slate-900 text-sm">
-                ${deal.value.toLocaleString()}
-            </div>
-            
-            <div className="w-1/6 pr-8">
-                <div className="flex items-center gap-2 mb-1">
-                    <div className="flex-1 bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                        <div className={`h-full rounded-full ${
-                            deal.probability > 75 ? 'bg-green-500' : 
-                            deal.probability > 40 ? 'bg-indigo-500' : 'bg-amber-400'
-                        }`} style={{ width: `${deal.probability}%` }}></div>
-                    </div>
-                    <span className="text-xs text-slate-500 font-medium">{deal.probability}%</span>
-                </div>
-            </div>
-            
-            <div className="w-1/6 flex flex-col justify-center">
-                <div className="flex items-center gap-1.5 text-xs font-medium text-slate-700 mb-0.5">
-                    {getActionIcon(deal.nextAction)}
-                    <span className="truncate">{deal.nextAction}</span>
-                </div>
-                <div className={`text-[10px] flex items-center gap-1 ${
-                    deal.dueDate === 'Urgent' ? 'text-red-600 font-bold' : 'text-slate-400'
-                }`}>
-                    <Clock size={10} /> {deal.dueDate}
-                </div>
-            </div>
-            
-            <div className="w-12 flex justify-center">
-                <div className={`w-8 h-8 rounded-full ${deal.ownerColor} flex items-center justify-center text-xs text-white font-bold ring-2 ring-white shadow-sm`}>
-                    {deal.ownerInitial}
-                </div>
-            </div>
-            
-            <div className="w-8 flex justify-end">
-                <button className="text-slate-300 hover:text-slate-600 p-1 rounded-full hover:bg-slate-100">
-                    <MoreHorizontal size={16} />
-                </button>
-            </div>
-        </motion.div>
-      );
-  }
-
-  // BOARD LAYOUT
-  return (
-    <motion.div 
-      layout
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-indigo-200 transition-all cursor-pointer group"
-    >
-      <div className="flex justify-between items-start mb-3">
-         <div className="flex items-center gap-3">
-             <div className="w-10 h-10 bg-slate-50 rounded-lg flex items-center justify-center border border-slate-100 text-slate-400 group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors">
-                <Building2 size={20} />
-             </div>
-             <div>
-                <h4 className="font-bold text-slate-900 text-sm">{deal.company}</h4>
-                <div className="text-xs text-slate-500 flex items-center gap-1">
-                   {deal.sector}
-                </div>
-             </div>
-         </div>
-         <button className="text-slate-300 hover:text-slate-600">
-            <MoreHorizontal size={16} />
-         </button>
-      </div>
-
-      <div className="mb-4">
-         <div className="flex justify-between text-xs mb-1">
-            <span className="text-slate-500 font-medium">Probability</span>
-            <span className="text-slate-900 font-bold">{deal.probability}%</span>
-         </div>
-         <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
-            <div 
-               className={`h-full rounded-full ${
-                  deal.probability > 75 ? 'bg-green-500' : 
-                  deal.probability > 40 ? 'bg-indigo-500' : 'bg-amber-400'
-               }`} 
-               style={{ width: `${deal.probability}%` }}
-            ></div>
-         </div>
-      </div>
-
-      <div className="flex items-center justify-between pt-3 border-t border-slate-100">
-         <div className="font-bold text-slate-900 text-sm">
-            ${deal.value.toLocaleString()}
-         </div>
-         <div className={`w-6 h-6 rounded-full ${deal.ownerColor} flex items-center justify-center text-[10px] text-white font-bold ring-2 ring-white shadow-sm`}>
-            {deal.ownerInitial}
-         </div>
-      </div>
-      
-      {/* Enhanced Next Action Card with Hover Effect */}
-      <div className="mt-3 bg-slate-50 rounded-lg p-2.5 border border-slate-100 flex items-center gap-3 group-hover:bg-indigo-50 group-hover:border-indigo-100 transition-all">
-          <div className="p-1.5 bg-white rounded-md border border-slate-200 text-slate-400 group-hover:text-indigo-600 group-hover:border-indigo-200 transition-colors">
-             {getActionIcon(deal.nextAction)}
-          </div>
-          <div className="flex-1 min-w-0">
-              <div className="text-xs font-semibold text-slate-700 truncate group-hover:text-indigo-900">{deal.nextAction}</div>
-              <div className={`text-[10px] flex items-center gap-1 mt-0.5 ${
-                 deal.dueDate === 'Urgent' ? 'text-red-600 font-bold' : 'text-slate-500'
-              }`}>
-                 <Clock size={10} />
-                 {deal.dueDate}
-              </div>
-          </div>
-          <div className="opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-indigo-500">
-             <ArrowRight size={14} />
-          </div>
-      </div>
-    </motion.div>
-  );
-};
-
-// ----------------------------------------------------------------------
-// SUB-COMPONENT: New Deal Modal
-// ----------------------------------------------------------------------
-
-interface NewDealModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSubmit: (data: Omit<Deal, 'id' | 'startupId'>) => void;
-  defaultStage: DealStage;
-}
-
-const NewDealModal: React.FC<NewDealModalProps> = ({ isOpen, onClose, onSubmit, defaultStage }) => {
-  const [formData, setFormData] = useState({
-    company: '',
-    sector: '',
-    value: '',
-    stage: defaultStage,
-    probability: 20,
-    nextAction: '',
-    dueDate: 'Next Week',
-    ownerInitial: 'ME',
-    ownerColor: 'bg-indigo-500'
-  });
-
-  const [errors, setErrors] = useState<Record<string, string>>({});
-
-  const owners = [
-    { initial: 'ME', color: 'bg-indigo-500' },
-    { initial: 'JD', color: 'bg-emerald-500' },
-    { initial: 'AR', color: 'bg-rose-500' },
-    { initial: 'MS', color: 'bg-amber-500' },
-  ];
-
-  const validate = () => {
-    const newErrors: Record<string, string> = {};
-    if (!formData.company.trim()) newErrors.company = "Company name is required";
-    if (!formData.sector.trim()) newErrors.sector = "Sector is required";
-    if (!formData.value || Number(formData.value) <= 0) newErrors.value = "Valid deal value is required";
-    if (!formData.nextAction.trim()) newErrors.nextAction = "Next action is required";
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (validate()) {
-      onSubmit({
-        ...formData,
-        value: Number(formData.value)
-      });
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <motion.div 
-        initial={{ opacity: 0 }} 
-        animate={{ opacity: 1 }} 
-        exit={{ opacity: 0 }}
-        className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
-        onClick={onClose}
-      />
-      
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.95, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        className="relative bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden z-50"
-      >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
-          <h2 className="text-lg font-bold text-slate-900">Add New Deal</h2>
-          <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors">
-            <X size={20} />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          <div className="grid grid-cols-2 gap-4">
-             <div className="col-span-2">
-                <label className="block text-sm font-medium text-slate-700 mb-1">Company Name</label>
-                <div className="relative">
-                   <Building2 className={`absolute left-3 top-1/2 -translate-y-1/2 ${errors.company ? 'text-red-400' : 'text-slate-400'}`} size={18} />
-                   <input 
-                      type="text" 
-                      autoFocus
-                      className={`w-full pl-10 pr-10 py-2.5 border rounded-lg focus:outline-none focus:ring-2 text-slate-900 transition-all ${errors.company ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20' : 'border-slate-200 focus:ring-indigo-500/20 focus:border-indigo-500'}`}
-                      placeholder="e.g. Acme Corp"
-                      value={formData.company}
-                      onChange={(e) => {
-                         setFormData({...formData, company: e.target.value});
-                         if (errors.company) setErrors({...errors, company: ''});
-                      }}
-                   />
-                   {errors.company && <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500" size={18} />}
-                </div>
-                {errors.company && <p className="text-xs text-red-500 mt-1 ml-1">{errors.company}</p>}
-             </div>
-
-             <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Sector</label>
-                <div className="relative">
-                   <Tag className={`absolute left-3 top-1/2 -translate-y-1/2 ${errors.sector ? 'text-red-400' : 'text-slate-400'}`} size={18} />
-                   <input 
-                      type="text" 
-                      className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 text-slate-900 transition-all ${errors.sector ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20' : 'border-slate-200 focus:ring-indigo-500/20 focus:border-indigo-500'}`}
-                      placeholder="e.g. SaaS"
-                      value={formData.sector}
-                      onChange={(e) => {
-                         setFormData({...formData, sector: e.target.value});
-                         if (errors.sector) setErrors({...errors, sector: ''});
-                      }}
-                   />
-                </div>
-                {errors.sector && <p className="text-xs text-red-500 mt-1 ml-1">{errors.sector}</p>}
-             </div>
-
-             <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Value ($)</label>
-                <div className="relative">
-                   <DollarSign className={`absolute left-3 top-1/2 -translate-y-1/2 ${errors.value ? 'text-red-400' : 'text-slate-400'}`} size={18} />
-                   <input 
-                      type="number" 
-                      min="0"
-                      className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 text-slate-900 transition-all ${errors.value ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20' : 'border-slate-200 focus:ring-indigo-500/20 focus:border-indigo-500'}`}
-                      placeholder="50000"
-                      value={formData.value}
-                      onChange={(e) => {
-                         setFormData({...formData, value: e.target.value});
-                         if (errors.value) setErrors({...errors, value: ''});
-                      }}
-                   />
-                </div>
-                {errors.value && <p className="text-xs text-red-500 mt-1 ml-1">{errors.value}</p>}
-             </div>
-
-             <div className="col-span-2 space-y-3">
-                 <div className="flex justify-between">
-                     <label className="block text-sm font-medium text-slate-700">Probability</label>
-                     <span className={`text-sm font-bold ${formData.probability > 75 ? 'text-green-600' : formData.probability > 40 ? 'text-indigo-600' : 'text-amber-500'}`}>{formData.probability}%</span>
-                 </div>
-                 <input 
-                    type="range" 
-                    min="0" 
-                    max="100" 
-                    step="5"
-                    value={formData.probability}
-                    onChange={(e) => setFormData({...formData, probability: Number(e.target.value)})}
-                    className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
-                 />
-                 <div className="flex justify-between text-xs text-slate-400 px-1">
-                    <span>Low</span>
-                    <span>High</span>
-                 </div>
-             </div>
-             
-             <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Stage</label>
-                <select 
-                   className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-slate-900 bg-white"
-                   value={formData.stage}
-                   onChange={(e) => setFormData({...formData, stage: e.target.value as DealStage})}
-                >
-                   {COLUMNS.map(col => <option key={col.id} value={col.id}>{col.label}</option>)}
-                </select>
-             </div>
-
-             <div>
-                 <label className="block text-sm font-medium text-slate-700 mb-1">Due Date</label>
-                 <input 
-                    type="text" 
-                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-slate-900" 
-                    placeholder="e.g. Next Week"
-                    value={formData.dueDate}
-                    onChange={(e) => setFormData({...formData, dueDate: e.target.value})}
-                 />
-             </div>
-
-             <div className="col-span-2">
-                 <label className="block text-sm font-medium text-slate-700 mb-1">Next Action</label>
-                 <input 
-                    type="text" 
-                    className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 text-slate-900 transition-all ${errors.nextAction ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20' : 'border-slate-200 focus:ring-indigo-500/20 focus:border-indigo-500'}`}
-                    placeholder="e.g. Schedule follow-up call"
-                    value={formData.nextAction}
-                    onChange={(e) => {
-                         setFormData({...formData, nextAction: e.target.value});
-                         if (errors.nextAction) setErrors({...errors, nextAction: ''});
-                    }}
-                 />
-                 {errors.nextAction && <p className="text-xs text-red-500 mt-1 ml-1">{errors.nextAction}</p>}
-             </div>
-
-             <div className="col-span-2">
-                <label className="block text-sm font-medium text-slate-700 mb-2">Owner</label>
-                <div className="flex gap-3">
-                   {owners.map((owner, idx) => (
-                      <div 
-                         key={idx}
-                         onClick={() => setFormData({...formData, ownerInitial: owner.initial, ownerColor: owner.color})}
-                         className={`relative w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold text-white cursor-pointer transition-transform hover:scale-110 ${owner.color} ${formData.ownerInitial === owner.initial ? 'ring-2 ring-offset-2 ring-slate-900' : ''}`}
-                      >
-                         {owner.initial}
-                         {formData.ownerInitial === owner.initial && (
-                            <div className="absolute -top-1 -right-1 w-4 h-4 bg-white rounded-full flex items-center justify-center border border-slate-200">
-                               <Check size={10} className="text-slate-900" />
-                            </div>
-                         )}
-                      </div>
-                   ))}
-                </div>
-             </div>
-          </div>
-
-          <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-100">
-             <button 
-                type="button" 
-                onClick={onClose}
-                className="px-5 py-2.5 border border-slate-200 rounded-lg text-slate-600 font-medium hover:bg-slate-50 transition-colors"
-             >
-                Cancel
-             </button>
-             <button 
-                type="submit" 
-                className="px-5 py-2.5 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 shadow-lg shadow-indigo-600/20 transition-all active:scale-95"
-             >
-                Create Deal
-             </button>
-          </div>
-        </form>
-      </motion.div>
     </div>
   );
 };

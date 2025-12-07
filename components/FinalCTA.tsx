@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
@@ -8,6 +9,9 @@ interface FinalCTAProps {
   primaryCta?: string;
   secondaryCta?: string;
 }
+
+// Workaround for strict type checking issues with framer-motion in some environments
+const MotionDiv = motion.div as any;
 
 const FinalCTA: React.FC<FinalCTAProps> = ({
   headline = "Ready to Build Faster?",
@@ -21,7 +25,7 @@ const FinalCTA: React.FC<FinalCTAProps> = ({
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[600px] bg-indigo-50/50 rounded-full blur-3xl -z-10" />
 
         <div className="container mx-auto px-6 text-center relative z-10">
-            <motion.div
+            <MotionDiv
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
@@ -42,7 +46,7 @@ const FinalCTA: React.FC<FinalCTAProps> = ({
                         {secondaryCta}
                     </button>
                 </div>
-            </motion.div>
+            </MotionDiv>
         </div>
     </section>
   );

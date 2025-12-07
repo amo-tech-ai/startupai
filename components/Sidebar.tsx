@@ -9,6 +9,7 @@ import {
   LogOut,
   Files
 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 interface SidebarProps {
   currentPage: string;
@@ -16,6 +17,13 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ currentPage, setPage }) => {
+  const { signOut } = useAuth();
+
+  const handleLogout = async () => {
+    await signOut();
+    setPage('home');
+  };
+
   const menuItems = [
     { id: 'dashboard', icon: <LayoutDashboard size={20} />, label: 'Dashboard' },
     { id: 'pitch-decks', icon: <FileText size={20} />, label: 'Pitch Decks' },
@@ -65,7 +73,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, setPage }) => {
       {/* Footer / Logout */}
       <div className="p-4 border-t border-slate-800/50">
         <button 
-            onClick={() => setPage('home')}
+            onClick={handleLogout}
             className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-slate-400 hover:bg-slate-800/50 hover:text-rose-400 transition-colors"
         >
           <LogOut size={20} />

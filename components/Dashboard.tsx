@@ -10,8 +10,6 @@ import {
   ArrowDownRight,
   Sparkles,
   ArrowRight,
-  MoreHorizontal,
-  Clock,
   ChevronRight,
   Search,
   Database,
@@ -21,20 +19,21 @@ import {
   Loader2,
   RefreshCw,
   Trophy,
-  AlertTriangle
+  AlertTriangle,
+  Clock
 } from 'lucide-react';
 import { 
   AreaChart, 
   Area, 
   ResponsiveContainer, 
   BarChart, 
-  Bar, 
-  Cell
+  Bar
 } from 'recharts';
 import { motion } from 'framer-motion';
 import { useData } from '../context/DataContext';
 import { GoogleGenAI } from "@google/genai";
 import { AICoachInsight, StartupProfile } from '../types';
+import { API_KEY } from '../lib/env';
 
 const Dashboard: React.FC = () => {
   const { profile, metrics, insights, activities, setInsights, addActivity } = useData();
@@ -49,7 +48,6 @@ const Dashboard: React.FC = () => {
   const fundingGoal = profile?.fundingGoal || 1000000;
   
   // Calculate Progress towards funding
-  // Mock 'raised' amount (could be added to schema later)
   const raisedAmount = 150000; 
   const fundingProgress = Math.min((raisedAmount / fundingGoal) * 100, 100);
 
@@ -85,15 +83,13 @@ const Dashboard: React.FC = () => {
   }, [profile]);
 
   // Dynamic Chart Data Generation
-  // Creates a realistic looking "growth" curve based on the current MRR
   const generateChartData = (currentValue: number, points: number = 7) => {
     if (currentValue === 0) return Array(points).fill({ v: 0 });
     
     return Array.from({ length: points }, (_, i) => {
-      // Create a gentle upward curve ending at the current value
       const reverseIndex = points - 1 - i;
-      const volatility = Math.random() * 0.1 - 0.05; // +/- 5% random noise
-      const trendFactor = 1 - (reverseIndex * 0.1); // Linear growth simulation
+      const volatility = Math.random() * 0.1 - 0.05; 
+      const trendFactor = 1 - (reverseIndex * 0.1); 
       let val = currentValue * trendFactor * (1 + volatility);
       return { v: Math.max(0, val) };
     });
@@ -116,15 +112,15 @@ const Dashboard: React.FC = () => {
 
   // --- AI COACH LOGIC ---
   const refreshInsights = async () => {
-    if (!profile || !process.env.API_KEY) {
-        if (!process.env.API_KEY) alert("API Key missing");
+    if (!profile || !API_KEY) {
+        if (!API_KEY) alert("API Key missing");
         return;
     }
 
     setIsGeneratingInsights(true);
 
     try {
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+        const ai = new GoogleGenAI({ apiKey: API_KEY });
         
         const context = `
             Startup: ${profile.name}
@@ -328,7 +324,6 @@ const Dashboard: React.FC = () => {
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 divide-y divide-slate-100 max-h-[400px] overflow-y-auto">
                {activities.length > 0 ? (
                  activities.map((item, idx) => {
-                    // Determine Icon and Color based on type
                     let icon = <Activity size={16} />;
                     let bg = "bg-slate-50";
                     let text = "text-slate-600";
@@ -361,7 +356,7 @@ const Dashboard: React.FC = () => {
          {/* Right Column: Profile Score & AI Coach (40% -> 2 cols) */}
          <div className="lg:col-span-2 space-y-6">
             
-            {/* NEW: Profile Strength Widget */}
+            {/* Profile Strength Widget */}
             <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm relative overflow-hidden">
                 <div className="flex justify-between items-start mb-4">
                     <div>
@@ -425,7 +420,6 @@ const Dashboard: React.FC = () => {
 
                 <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl border border-indigo-100 p-1">
                    <div className="bg-white/60 backdrop-blur-sm rounded-xl p-6 space-y-6 min-h-[300px]">
-                      {/* Dynamic Insights Map */}
                       {isGeneratingInsights ? (
                          <div className="flex flex-col items-center justify-center h-64 text-slate-400 gap-3">
                             <Loader2 size={24} className="animate-spin text-purple-600" />
@@ -486,41 +480,6 @@ const Dashboard: React.FC = () => {
          </div>
       </section>
 
-      {/* 7️⃣ WORKFLOW DIAGRAM */}
-      <section className="space-y-6 pt-8 border-t border-slate-100">
-         <h3 className="text-lg font-bold text-slate-900">System Workflow</h3>
-         
-         <div className="bg-white rounded-2xl border border-slate-200 p-8 md:p-12 overflow-x-auto">
-            <div className="flex items-center min-w-[800px] justify-between relative">
-               {/* Background Line */}
-               <div className="absolute top-1/2 left-0 w-full h-0.5 bg-slate-100 -translate-y-1/2 z-0"></div>
-
-               {[
-                  { icon: <FileText />, label: "Choose Doc" },
-                  { icon: <Database />, label: "Input Info" },
-                  { icon: <Sparkles />, label: "AI Draft" },
-                  { icon: <PenTool />, label: "Editor" },
-                  { icon: <CheckSquare />, label: "Review" },
-                  { icon: <Download />, label: "Export" },
-               ].map((step, idx) => (
-                  <div key={idx} className="relative z-10 flex flex-col items-center gap-3 group">
-                     <div className="w-14 h-14 bg-white rounded-xl border-2 border-slate-100 shadow-sm flex items-center justify-center text-slate-400 group-hover:border-indigo-500 group-hover:text-indigo-500 group-hover:shadow-md transition-all duration-300">
-                        {step.icon}
-                     </div>
-                     <span className="text-xs font-bold text-slate-500 uppercase tracking-wide group-hover:text-indigo-600 transition-colors">{step.label}</span>
-                     
-                     {/* Connector Arrow */}
-                     {idx < 5 && (
-                        <div className="absolute top-1/2 -right-12 -translate-y-1/2 text-slate-300">
-                           <ArrowRight size={20} />
-                        </div>
-                     )}
-                  </div>
-               ))}
-            </div>
-         </div>
-      </section>
-
       {/* 8️⃣ AI JOURNEY GRID */}
       <section className="space-y-6">
          <div className="flex items-center justify-between">
@@ -529,7 +488,6 @@ const Dashboard: React.FC = () => {
          </div>
 
          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-             {/* Row 1 */}
              {[
                 { title: "User Inputs Info", icon: <UserPlus size={18}/>, status: "Completed" },
                 { title: "URL Context Analysis", icon: <Search size={18}/>, status: "Completed" },

@@ -1,3 +1,4 @@
+
 /**
  * Database Schema Definitions
  * ---------------------------
@@ -95,6 +96,23 @@ export interface Task {
   aiGenerated: boolean;
 }
 
+// Table: crm_deals (New)
+export type DealStage = 'Lead' | 'Qualified' | 'Meeting' | 'Proposal' | 'Closed';
+
+export interface Deal {
+  id: string;
+  startupId: string;
+  company: string;
+  value: number;
+  stage: DealStage;
+  probability: number;
+  sector: string;
+  nextAction: string;
+  dueDate: string;
+  ownerInitial: string;
+  ownerColor: string;
+}
+
 // Table: activity_log (New for Dashboard Feed)
 export interface Activity {
   id: string;
@@ -113,6 +131,8 @@ export interface Slide {
     bullets: string[];
     visualDescription?: string; // AI suggestion for image/chart
     imageUrl?: string; // Base64 or URL of generated image
+    chartType?: string; // AI suggestion for chart type (line, bar, pie, etc.)
+    chartData?: { label: string; value: number }[]; // Structured data for charts
 }
 
 export interface Deck {
@@ -133,6 +153,7 @@ export interface StartupDatabaseSchema {
   metrics: MetricsSnapshot[];
   insights: AICoachInsight[];
   tasks: Task[];
+  deals: Deal[];
   activities: Activity[];
   decks: Deck[];
 }

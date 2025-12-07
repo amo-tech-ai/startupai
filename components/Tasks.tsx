@@ -5,19 +5,19 @@ import {
   Plus, 
   MoreHorizontal, 
   Clock, 
-  AlertCircle, 
   Sparkles,
   Loader2,
   List,
   LayoutGrid
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useData } from '../context/DataContext';
 import { Task, TaskStatus } from '../types';
 import { GoogleGenAI } from "@google/genai";
+import { API_KEY } from '../lib/env';
 
 const Tasks: React.FC = () => {
-  const { tasks, addTask, updateTask, deleteTask, profile, addActivity } = useData();
+  const { tasks, addTask, updateTask, profile, addActivity } = useData();
   const [viewMode, setViewMode] = useState<'board' | 'list'>('board');
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
@@ -44,7 +44,7 @@ const Tasks: React.FC = () => {
 
   const generateAiRoadmap = async () => {
     if (!profile) return;
-    if (!process.env.API_KEY) {
+    if (!API_KEY) {
         alert("API Key missing");
         return;
     }
@@ -52,7 +52,7 @@ const Tasks: React.FC = () => {
     setIsAiLoading(true);
 
     try {
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+        const ai = new GoogleGenAI({ apiKey: API_KEY });
         const prompt = `
             Context: Startup named "${profile.name}" in "${profile.stage}" stage.
             Sector: ${profile.targetMarket}

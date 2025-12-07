@@ -1,0 +1,32 @@
+/**
+ * Environment Variable Manager
+ * ----------------------------
+ * Safely retrieves environment variables in both browser (Vite) and 
+ * server/shimmed (Node) environments to prevent "process is not defined" errors.
+ */
+
+const getSafeEnv = (key: string): string => {
+  // 1. Try Vite's import.meta.env
+  if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env[key]) {
+    return import.meta.env[key];
+  }
+  
+  // 2. Try global process.env (safely)
+  try {
+    if (typeof process !== 'undefined' && process.env && process.env[key]) {
+      return process.env[key];
+    }
+  } catch (e) {
+    // Ignore ReferenceError if process is undefined
+  }
+
+  return '';
+};
+
+// Application Secrets
+export const API_KEY = getSafeEnv('VITE_API_KEY') || getSafeEnv('API_KEY');
+export const SUPABASE_URL = getSafeEnv('VITE_SUPABASE_URL');
+export const SUPABASE_ANON_KEY = getSafeEnv('VITE_SUPABASE_ANON_KEY');
+
+// Helper to check if AI is available
+export const isAiConfigured = () => !!API_KEY;

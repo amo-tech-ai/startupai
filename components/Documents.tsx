@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { 
   ArrowLeft, 
-  MoreHorizontal, 
   Sparkles, 
   Image as ImageIcon, 
   AlignLeft, 
@@ -14,19 +13,16 @@ import {
   Rocket,
   BarChart4,
   Map,
-  Clock,
   ChevronRight,
   Bot,
   Wand2,
   ScanEye,
-  ArrowRight,
-  Loader2,
-  Save
+  Loader2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useData } from '../context/DataContext';
 import { GoogleGenAI } from "@google/genai";
-import { StartupProfile } from '../types';
+import { API_KEY } from '../lib/env';
 
 type ViewState = 'dashboard' | 'editor';
 
@@ -215,7 +211,7 @@ const EditorView: React.FC<EditorViewProps> = ({ docType, onBack }) => {
         alert("No startup profile found. Please complete onboarding.");
         return;
     }
-    if (!process.env.API_KEY) {
+    if (!API_KEY) {
         alert("API Key missing");
         return;
     }
@@ -223,7 +219,7 @@ const EditorView: React.FC<EditorViewProps> = ({ docType, onBack }) => {
     setIsGenerating(true);
 
     try {
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+        const ai = new GoogleGenAI({ apiKey: API_KEY });
         
         const context = `
             Startup Name: ${profile.name}

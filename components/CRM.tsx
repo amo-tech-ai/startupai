@@ -24,33 +24,8 @@ import {
   Clock
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-
-// --- Types ---
-type DealStage = 'Lead' | 'Qualified' | 'Meeting' | 'Proposal' | 'Closed';
-
-interface Deal {
-  id: string;
-  company: string;
-  value: number;
-  stage: DealStage;
-  probability: number;
-  sector: string;
-  nextAction: string;
-  dueDate: string;
-  ownerInitial: string;
-  ownerColor: string;
-}
-
-// --- Mock Data ---
-const INITIAL_DEALS: Deal[] = [
-  { id: '1', company: 'TechNova', value: 150000, stage: 'Lead', probability: 20, sector: 'SaaS', nextAction: 'Research market fit', dueDate: 'Tomorrow', ownerInitial: 'JD', ownerColor: 'bg-indigo-500' },
-  { id: '2', company: 'GreenLeaf', value: 75000, stage: 'Lead', probability: 15, sector: 'CleanTech', nextAction: 'Find intro path', dueDate: 'Oct 30', ownerInitial: 'AR', ownerColor: 'bg-emerald-500' },
-  { id: '3', company: 'Quantum AI', value: 500000, stage: 'Qualified', probability: 40, sector: 'AI/ML', nextAction: 'Schedule intro call', dueDate: 'Today', ownerInitial: 'JD', ownerColor: 'bg-indigo-500' },
-  { id: '4', company: 'Starlight Ventures', value: 250000, stage: 'Meeting', probability: 60, sector: 'VC', nextAction: 'Send deck v2', dueDate: 'Nov 2', ownerInitial: 'MS', ownerColor: 'bg-rose-500' },
-  { id: '5', company: 'BlueOcean Corp', value: 120000, stage: 'Meeting', probability: 55, sector: 'Retail', nextAction: 'Prep demo', dueDate: 'Nov 5', ownerInitial: 'AR', ownerColor: 'bg-emerald-500' },
-  { id: '6', company: 'Apex Dynamics', value: 300000, stage: 'Proposal', probability: 85, sector: 'Robotics', nextAction: 'Review term sheet', dueDate: 'Urgent', ownerInitial: 'JD', ownerColor: 'bg-indigo-500' },
-  { id: '7', company: 'Nebula Inc', value: 90000, stage: 'Closed', probability: 100, sector: 'SaaS', nextAction: 'Onboarding', dueDate: 'Done', ownerInitial: 'MS', ownerColor: 'bg-rose-500' },
-];
+import { useData } from '../context/DataContext';
+import { Deal, DealStage } from '../types';
 
 const COLUMNS: { id: DealStage; label: string; color: string }[] = [
   { id: 'Lead', label: 'Lead', color: 'border-slate-300' },
@@ -61,17 +36,17 @@ const COLUMNS: { id: DealStage; label: string; color: string }[] = [
 ];
 
 const CRM: React.FC = () => {
+  const { deals, addDeal } = useData();
   const [viewMode, setViewMode] = useState<'board' | 'list'>('board');
   const [searchQuery, setSearchQuery] = useState('');
-  const [deals, setDeals] = useState<Deal[]>(INITIAL_DEALS);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [initialStage, setInitialStage] = useState<DealStage>('Lead');
 
   // Stats Calculation
   const totalValue = deals.reduce((acc, deal) => acc + deal.value, 0);
   const activeDeals = deals.filter(d => d.stage !== 'Closed').length;
-  const closedValue = deals.filter(d => d.stage === 'Closed').reduce((acc, deal) => acc + deal.value, 0);
-  const winRate = Math.round((deals.filter(d => d.stage === 'Closed').length / Math.max(1, deals.length)) * 100);
+  // const closedValue = deals.filter(d => d.stage === 'Closed').reduce((acc, deal) => acc + deal.value, 0);
+  const winRate = deals.length > 0 ? Math.round((deals.filter(d => d.stage === 'Closed').length / deals.length) * 100) : 0;
 
   // Filtering
   const filteredDeals = deals.filter(deal => 
@@ -84,12 +59,8 @@ const CRM: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleAddDeal = (newDealData: Omit<Deal, 'id'>) => {
-    const newDeal: Deal = {
-      ...newDealData,
-      id: Math.random().toString(36).substr(2, 9),
-    };
-    setDeals([...deals, newDeal]);
+  const handleAddDeal = (newDealData: Omit<Deal, 'id' | 'startupId'>) => {
+    addDeal(newDealData);
     setIsModalOpen(false);
   };
 
@@ -281,7 +252,7 @@ interface DealCardProps {
 
 const DealCard: React.FC<DealCardProps> = ({ deal, layout = 'board' }) => {
   const getActionIcon = (text: string) => {
-    const t = text.toLowerCase();
+    const t = text ? text.toLowerCase() : '';
     if (t.includes('email') || t.includes('send')) return <Mail size={12} />;
     if (t.includes('call') || t.includes('phone')) return <Phone size={12} />;
     if (t.includes('meet') || t.includes('schedule')) return <Users size={12} />;
@@ -441,7 +412,7 @@ const DealCard: React.FC<DealCardProps> = ({ deal, layout = 'board' }) => {
 interface NewDealModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: Omit<Deal, 'id'>) => void;
+  onSubmit: (data: Omit<Deal, 'id' | 'startupId'>) => void;
   defaultStage: DealStage;
 }
 

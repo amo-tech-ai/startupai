@@ -16,6 +16,7 @@ import Settings from './components/Settings';
 import StartupWizard from './components/StartupWizard';
 import Footer from './components/Footer';
 import { DataProvider } from './context/DataContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 
 export type PageType = 
   | 'home' 
@@ -34,6 +35,7 @@ export type PageType =
 
 const AppContent: React.FC = () => {
   const [page, setPage] = useState<PageType>('home');
+  const { user, loading } = useAuth();
 
   // Define which pages are part of the "App" (require sidebar + auth layout)
   const appPages: PageType[] = [
@@ -42,16 +44,42 @@ const AppContent: React.FC = () => {
     'crm', 
     'documents', 
     'tasks', 
-    'settings'
+    'settings',
+    'onboarding'
   ];
 
   const isAppPage = appPages.includes(page);
   const isWizard = page === 'onboarding';
 
+  // Auth Redirection Logic
+  useEffect(() => {
+    if (!loading) {
+      if (user) {
+        // If logged in and on public auth pages, go to dashboard
+        if (page === 'login' || page === 'signup') {
+          setPage('dashboard');
+        }
+      } else {
+        // If not logged in and on protected page, go to login
+        if (isAppPage && page !== 'home') { // Allow home, but protect others
+           setPage('login');
+        }
+      }
+    }
+  }, [user, loading, page, isAppPage]);
+
   // Scroll to top on page change
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [page]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      </div>
+    );
+  }
 
   const renderContent = () => {
     switch (page) {
@@ -80,7 +108,7 @@ const AppContent: React.FC = () => {
     )
   }
 
-  if (isAppPage) {
+  if (isAppPage && user) {
     return (
       <div className="flex min-h-screen bg-slate-50 font-sans text-slate-900">
         <Sidebar currentPage={page} setPage={setPage} />
@@ -107,9 +135,11 @@ const AppContent: React.FC = () => {
 
 const App: React.FC = () => {
   return (
-    <DataProvider>
-      <AppContent />
-    </DataProvider>
+    <AuthProvider>
+      <DataProvider>
+        <AppContent />
+      </DataProvider>
+    </AuthProvider>
   );
 };
 

@@ -1,4 +1,4 @@
-import { StartupDatabaseSchema, StartupProfile, Founder, Competitor, AICoachInsight, Activity, Task, Deck } from '../types';
+import { StartupDatabaseSchema, StartupProfile, Founder, Competitor, AICoachInsight, Activity, Task, Deck, Deal } from '../types';
 
 /**
  * Mock Data Validation
@@ -135,6 +135,35 @@ const mockDecks: Deck[] = [
     }
 ];
 
+const mockDeals: Deal[] = [
+  {
+    id: "deal_1",
+    startupId: "st_123456",
+    company: "Acme Corp",
+    value: 50000,
+    stage: 'Qualified',
+    probability: 40,
+    sector: "SaaS",
+    nextAction: "Schedule Demo",
+    dueDate: "Next Week",
+    ownerInitial: "ME",
+    ownerColor: "bg-indigo-500"
+  },
+  {
+    id: "deal_2",
+    startupId: "st_123456",
+    company: "Stark Industries",
+    value: 120000,
+    stage: 'Proposal',
+    probability: 70,
+    sector: "Enterprise",
+    nextAction: "Send Contract",
+    dueDate: "Tomorrow",
+    ownerInitial: "JD",
+    ownerColor: "bg-emerald-500"
+  }
+];
+
 // Initial Store State
 export const initialDatabaseState: StartupDatabaseSchema = {
   profile: mockProfile,
@@ -144,7 +173,8 @@ export const initialDatabaseState: StartupDatabaseSchema = {
   insights: mockInsights,
   tasks: mockTasks,
   activities: mockActivities,
-  decks: mockDecks
+  decks: mockDecks,
+  deals: mockDeals
 };
 
 // Validation log (simulating DB check)

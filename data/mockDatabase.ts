@@ -16,6 +16,7 @@ const mockProfile: StartupProfile = {
   description: "The all-in-one AI platform that helps founders raise funding, close deals, and scale faster.",
   mission: "To democratize access to capital for founders globally.",
   stage: "Seed",
+  plan: 'free',
   problemStatement: "Founders spend 60+ hours on documentation instead of building product.",
   solutionStatement: "AI-generated decks, models, and strategy docs in minutes.",
   businessModel: "B2B SaaS Subscription",

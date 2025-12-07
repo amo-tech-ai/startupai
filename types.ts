@@ -34,6 +34,7 @@ export interface StartupProfile {
   mission: string;
   stage: StartupStage;
   yearFounded?: number; // New
+  plan?: 'free' | 'founder' | 'growth'; // New: Subscription Plan
   problemStatement: string;
   solutionStatement: string;
   businessModel: string; // e.g., "B2B SaaS", "Marketplace"

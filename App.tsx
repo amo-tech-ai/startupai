@@ -109,7 +109,7 @@ const AppContent = () => {
       case 'home': return <Home setPage={setPage} />;
       case 'how-it-works': return <HowItWorks setPage={setPage} />;
       case 'features': return <FeaturesPage />;
-      case 'pricing': return <Pricing />;
+      case 'pricing': return <Pricing setPage={setPage} />;
       case 'login': return <Login setPage={setPage} />;
       case 'signup': return <Signup setPage={setPage} />;
       case 'onboarding': return <StartupWizard setPage={setPage} />;

@@ -4,6 +4,7 @@ import { Sparkles, Loader2, Maximize2, Minimize2, Wand2, Zap } from 'lucide-reac
 import { Slide } from '../../../types';
 import { slideAIEdge } from '../../../services/edgeFunctions';
 import { API_KEY } from '../../../lib/env';
+import { useToast } from '../../../context/ToastContext';
 
 interface AICopilotSidebarProps {
   slide: Slide;
@@ -12,21 +13,27 @@ interface AICopilotSidebarProps {
 
 export const AICopilotSidebar: React.FC<AICopilotSidebarProps> = ({ slide, onUpdate }) => {
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
+  const { toast, error, success } = useToast();
 
   const handleAction = async (action: 'refine' | 'expand' | 'shorten') => {
     if (!API_KEY) {
-        alert("API Key missing");
+        error("API Key missing");
         return;
     }
     setLoadingAction(action);
+    toast(`AI is working to ${action} your content...`, "info");
+    
     try {
         const newBullets = await slideAIEdge(API_KEY, slide.bullets, action);
         if (newBullets) {
             onUpdate({ ...slide, bullets: newBullets });
+            success("Content updated successfully!");
+        } else {
+            error("AI didn't return any changes.");
         }
     } catch (e) {
         console.error(e);
-        alert("AI Error: Could not process text.");
+        error("AI Error: Could not process text.");
     } finally {
         setLoadingAction(null);
     }

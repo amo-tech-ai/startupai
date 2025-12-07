@@ -1,7 +1,8 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { StartupProfile, MetricsSnapshot, AICoachInsight, Founder, StartupStage, Activity, Task, Deck, Deal } from '../types';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { StartupProfile, MetricsSnapshot, AICoachInsight, Founder, StartupStage, Activity, Task, Deck, Deal, InvestorDoc } from '../types';
 import { initialDatabaseState } from '../data/mockDatabase';
 import { supabase } from '../lib/supabaseClient';
+import { useToast } from './ToastContext';
 
 interface DataContextType {
   profile: StartupProfile | null;
@@ -11,6 +12,7 @@ interface DataContextType {
   tasks: Task[];
   decks: Deck[];
   deals: Deal[];
+  docs: InvestorDoc[];
   updateProfile: (data: Partial<StartupProfile>) => void;
   updateMetrics: (data: Partial<MetricsSnapshot>) => void;
   setInsights: (insights: AICoachInsight[]) => void;
@@ -23,12 +25,15 @@ interface DataContextType {
   updateDeck: (id: string, updates: Partial<Deck>) => void;
   addDeal: (deal: Omit<Deal, 'id' | 'startupId'>) => void;
   updateDeal: (id: string, updates: Partial<Deal>) => void;
+  addDoc: (doc: Omit<InvestorDoc, 'id' | 'startupId' | 'updatedAt'>) => Promise<string | null>;
+  updateDoc: (id: string, updates: Partial<InvestorDoc>) => void;
+  deleteDoc: (id: string) => void;
   isLoading: boolean;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
-export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Initialize with the mock DB state
   const [profile, setProfile] = useState<StartupProfile | null>(initialDatabaseState.profile);
   const [metrics, setMetrics] = useState<MetricsSnapshot[]>(initialDatabaseState.metrics);
@@ -36,8 +41,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [activities, setActivities] = useState<Activity[]>(initialDatabaseState.activities);
   const [tasks, setTasks] = useState<Task[]>(initialDatabaseState.tasks);
   const [decks, setDecks] = useState<Deck[]>(initialDatabaseState.decks);
-  const [deals, setDeals] = useState<Deal[]>([]);
+  const [deals, setDeals] = useState<Deal[]>(initialDatabaseState.deals); // Fixed initial state usage
+  const [docs, setDocs] = useState<InvestorDoc[]>(initialDatabaseState.docs);
   const [isLoading, setIsLoading] = useState(false);
+  const { toast, error: toastError } = useToast();
 
   // --- SUPABASE SYNC ---
   useEffect(() => {
@@ -71,11 +78,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             // 4. Fetch Deals
             const { data: dealData } = await supabase.from('crm_deals').select('*');
             if (dealData) {
-                // Map DB columns (snake_case) to App types (camelCase) if needed, or rely on TS compatibility if columns match
-                // Assuming DB table `crm_deals` matches needed fields or we map them.
-                // For MVP, if names differ, we map manually. 
-                // Let's assume schema matches or we use what we have.
-                // The DB schema in docs shows `expected_close` instead of `dueDate`, etc.
                 const formattedDeals = dealData.map((d: any) => ({
                     id: d.id,
                     startupId: d.startup_id,
@@ -92,8 +94,25 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 setDeals(formattedDeals);
             }
 
+            // 5. Fetch Docs
+            const { data: docData } = await supabase.from('investor_docs').select('*');
+            if (docData) {
+                // Map snake_case DB columns to camelCase types
+                const formattedDocs = docData.map((d: any) => ({
+                    id: d.id,
+                    startupId: d.startup_id,
+                    title: d.title,
+                    type: d.type,
+                    content: d.content,
+                    status: d.status,
+                    updatedAt: d.updated_at
+                }));
+                setDocs(formattedDocs);
+            }
+
         } catch (e) {
             console.error("Supabase Sync Error:", e);
+            toastError("Failed to sync data with server.");
         } finally {
             setIsLoading(false);
         }
@@ -202,20 +221,26 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
               // 2. Insert Slides
               const slidesPayload = data.slides.map((s, idx) => ({
+                  id: s.id, // Use generated UUIDs from Edge Function
                   deck_id: deckRes.id,
                   title: s.title,
-                  content: JSON.stringify(s.bullets), // Store as string/json
+                  bullets: s.bullets, // Store as JSONB
                   position: idx,
-                  type: 'generic'
+                  type: 'generic',
+                  chart_type: s.chartType,
+                  chart_data: s.chartData
               }));
 
-              await supabase.from('slides').insert(slidesPayload);
+              const { data: slidesRes, error: slidesErr } = await supabase.from('slides').insert(slidesPayload).select();
               
-              // Update local ID with real ID
-              setDecks(prev => prev.map(d => d.id === tempId ? { ...d, id: deckRes.id } : d));
+              if (slidesErr) throw slidesErr;
+
+              // Update local IDs with real IDs (though should match if we provided UUIDs)
+              setDecks(prev => prev.map(d => d.id === tempId ? { ...d, id: deckRes.id, slides: slidesRes as any } : d));
 
           } catch (e) {
               console.error("Failed to save deck to Supabase", e);
+              toastError("Failed to save deck to server.");
           }
       }
   }
@@ -225,11 +250,38 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setDecks(prev => prev.map(d => d.id === id ? { ...d, ...updates, updatedAt: new Date().toISOString() } : d));
 
       if (supabase) {
-          if (updates.slides) {
-              await supabase.from('decks').update({ 
-                  title: updates.title, 
-                  updated_at: new Date().toISOString() 
-              }).eq('id', id);
+          try {
+              // Update Deck Metadata
+              const { slides, ...deckMeta } = updates;
+              if (Object.keys(deckMeta).length > 0) {
+                  const dbPayload: any = {};
+                  if (deckMeta.title) dbPayload.title = deckMeta.title;
+                  dbPayload.updated_at = new Date().toISOString();
+                  
+                  const { error } = await supabase.from('decks').update(dbPayload).eq('id', id);
+                  if (error) throw error;
+              }
+
+              // Update Slides (Upsert)
+              if (slides) {
+                  const slidesPayload = slides.map((s, idx) => ({
+                      id: s.id,
+                      deck_id: id,
+                      title: s.title,
+                      bullets: s.bullets,
+                      image_url: s.imageUrl,
+                      chart_type: s.chartType,
+                      chart_data: s.chartData,
+                      position: idx,
+                      type: 'generic'
+                  }));
+
+                  const { error } = await supabase.from('slides').upsert(slidesPayload);
+                  if (error) throw error;
+              }
+          } catch (e) {
+              console.error("Failed to update deck in Supabase", e);
+              toastError("Failed to sync changes.");
           }
       }
   }
@@ -281,6 +333,70 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
   }
 
+  const addDoc = async (data: Omit<InvestorDoc, 'id' | 'startupId' | 'updatedAt'>) => {
+      const tempId = Math.random().toString(36).substr(2, 9);
+      const newDoc: InvestorDoc = {
+          ...data,
+          id: tempId,
+          startupId: profile?.id || 'unknown',
+          updatedAt: new Date().toISOString()
+      };
+
+      setDocs(prev => [newDoc, ...prev]);
+
+      if (supabase && profile?.id) {
+          // Only sync if user context is available
+          try {
+              const { data: res, error } = await supabase.from('investor_docs').insert({
+                  startup_id: profile.id,
+                  user_id: profile.userId, // We need to ensure we have this or rely on RLS default if auth is set
+                  title: data.title,
+                  type: data.type,
+                  content: data.content,
+                  status: data.status
+              }).select().single();
+
+              if (error) throw error;
+              
+              if (res) {
+                  setDocs(prev => prev.map(d => d.id === tempId ? { ...d, id: res.id } : d));
+                  return res.id;
+              }
+          } catch (e) {
+              console.error("Failed to create doc in Supabase", e);
+              toastError("Failed to save document to server.");
+          }
+      }
+      return tempId; // Return temp ID if offline/mock
+  }
+
+  const updateDoc = async (id: string, updates: Partial<InvestorDoc>) => {
+      setDocs(prev => prev.map(d => d.id === id ? { ...d, ...updates, updatedAt: new Date().toISOString() } : d));
+
+      if (supabase) {
+          try {
+              const dbPayload: any = {};
+              if (updates.title) dbPayload.title = updates.title;
+              if (updates.status) dbPayload.status = updates.status;
+              if (updates.content) dbPayload.content = updates.content;
+              dbPayload.updated_at = new Date().toISOString();
+
+              const { error } = await supabase.from('investor_docs').update(dbPayload).eq('id', id);
+              if (error) throw error;
+          } catch (e) {
+              console.error("Failed to update doc in Supabase", e);
+              toastError("Failed to sync document changes.");
+          }
+      }
+  }
+
+  const deleteDoc = async (id: string) => {
+      setDocs(prev => prev.filter(d => d.id !== id));
+      if (supabase) {
+          await supabase.from('investor_docs').delete().eq('id', id);
+      }
+  }
+
   return (
     <DataContext.Provider value={{ 
       profile, 
@@ -290,6 +406,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       tasks,
       decks,
       deals,
+      docs,
       updateProfile, 
       updateMetrics, 
       setInsights,
@@ -302,6 +419,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       updateDeck,
       addDeal,
       updateDeal,
+      addDoc,
+      updateDoc,
+      deleteDoc,
       isLoading 
     }}>
       {children}

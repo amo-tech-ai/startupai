@@ -1,9 +1,11 @@
+
 import React, { useState } from 'react';
 import { LayoutTemplate, Loader2, Sparkles, X } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useData } from '../../context/DataContext';
 import { generateDeckEdge } from '../../services/edgeFunctions';
 import { API_KEY } from '../../lib/env';
+import { useToast } from '../../context/ToastContext';
 
 interface NewDeckModalProps {
   isOpen: boolean;
@@ -19,17 +21,19 @@ const templates = [
 
 export const NewDeckModal: React.FC<NewDeckModalProps> = ({ isOpen, onClose, onSuccess }) => {
   const { profile, addDeck, addActivity } = useData();
+  const { toast, success, error } = useToast();
   const [selectedTemplate, setSelectedTemplate] = useState<'Y Combinator' | 'Sequoia' | 'Custom'>('Y Combinator');
   const [isGenerating, setIsGenerating] = useState(false);
 
   const handleCreateDeck = async () => {
     if (!profile) return;
     if (!API_KEY) {
-      alert("API Key missing");
+      error("API Key missing");
       return;
     }
 
     setIsGenerating(true);
+    toast("AI is generating your deck structure...", "info");
 
     try {
       const deckData = await generateDeckEdge(API_KEY, profile, selectedTemplate);
@@ -41,12 +45,15 @@ export const NewDeckModal: React.FC<NewDeckModalProps> = ({ isOpen, onClose, onS
           title: 'Pitch Deck Created', 
           description: `Generated ${deckData.slides.length} slides using ${selectedTemplate} template.` 
         });
+        success("Deck created successfully!");
         onSuccess();
         onClose();
+      } else {
+        error("AI failed to generate deck content.");
       }
-    } catch (error) {
-      console.error("Deck Gen Error", error);
-      alert("Failed to generate deck. Please try again.");
+    } catch (err) {
+      console.error("Deck Gen Error", err);
+      error("Failed to generate deck. Please try again.");
     } finally {
       setIsGenerating(false);
     }

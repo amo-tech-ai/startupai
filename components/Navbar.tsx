@@ -1,21 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { Menu, X, Zap, Bell, Search, Sparkles, Settings } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
 
-type PageType = 
-  | 'home' 
-  | 'how-it-works' 
-  | 'features' 
-  | 'pricing' 
-  | 'login' 
-  | 'signup' 
-  | 'onboarding'
-  | 'dashboard'
-  | 'pitch-decks'
-  | 'crm'
-  | 'documents'
-  | 'tasks'
-  | 'settings';
+import React, { useState, useEffect } from 'react';
+import { Menu, X, Zap, Bell, Search, Sparkles } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { PageType } from '../types';
 
 interface NavbarProps {
   currentPage?: PageType;
@@ -38,7 +25,6 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage = 'home', setPage, type = '
   const handleNav = (page: PageType) => {
     if (setPage) setPage(page);
     setIsMobileMenuOpen(false);
-    window.scrollTo(0, 0);
   };
 
   // APP MODE: Render as a sticky top bar with utilities

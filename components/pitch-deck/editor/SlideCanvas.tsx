@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { 
   Trash2, Loader2, Wand2, RefreshCw, Sparkles, Image as ImageIcon,
@@ -10,6 +11,7 @@ import {
 import { Slide } from '../../../types';
 import { slideAIEdge, imageAIEdge } from '../../../services/edgeFunctions';
 import { API_KEY } from '../../../lib/env';
+import { useToast } from '../../../context/ToastContext';
 
 interface SlideCanvasProps {
   slide: Slide;
@@ -28,6 +30,7 @@ export const SlideCanvas: React.FC<SlideCanvasProps> = ({
 }) => {
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [isRefiningText, setIsRefiningText] = useState(false);
+  const { toast, error, success } = useToast();
 
   // --- Helpers ---
   const getChartIcon = (type: string) => {
@@ -43,36 +46,44 @@ export const SlideCanvas: React.FC<SlideCanvasProps> = ({
   // --- Actions ---
   const handleGenerateImage = async () => {
     if (!API_KEY) {
-      alert("API Key missing");
+      error("API Key missing");
       return;
     }
 
     setIsGeneratingImage(true);
+    toast("Generating image from slide context...", "info");
+    
     try {
       const imageUrl = await imageAIEdge(API_KEY, slide.title, slide.visualDescription || '');
       if (imageUrl) {
         onUpdate({ ...slide, imageUrl });
+        success("Image generated successfully!");
       } else {
-        alert("AI generated a response but no image data found. Please try again.");
+        error("AI generated a response but no image data found. Please try again.");
       }
-    } catch (error) {
-      console.error("Image Generation Error:", error);
-      alert("Failed to generate image.");
+    } catch (err) {
+      console.error("Image Generation Error:", err);
+      error("Failed to generate image.");
     } finally {
       setIsGeneratingImage(false);
     }
   };
 
   const handleRefineText = async () => {
-    if (!API_KEY) return;
+    if (!API_KEY) {
+      error("API Key missing");
+      return;
+    }
     setIsRefiningText(true);
     try {
       const newBullets = await slideAIEdge(API_KEY, slide.bullets, 'refine');
       if (newBullets) {
         onUpdate({ ...slide, bullets: newBullets });
+        success("Text refined!");
       }
-    } catch (error) {
-      console.error("Refine Text Error:", error);
+    } catch (err) {
+      console.error("Refine Text Error:", err);
+      error("Failed to refine text.");
     } finally {
       setIsRefiningText(false);
     }
@@ -130,7 +141,7 @@ export const SlideCanvas: React.FC<SlideCanvasProps> = ({
               <button 
                 onClick={handleRefineText}
                 disabled={isRefiningText}
-                className="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 p-2 rounded-full shadow-sm border border-indigo-200"
+                className="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 p-2 rounded-full shadow-sm border border-indigo-200 transition-colors"
                 title="Magic Rewrite"
               >
                 {isRefiningText ? <Loader2 size={16} className="animate-spin"/> : <Wand2 size={16} />}

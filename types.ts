@@ -7,6 +7,21 @@
  * structure of the backend tables.
  */
 
+export type PageType = 
+  | 'home' 
+  | 'how-it-works' 
+  | 'features' 
+  | 'pricing' 
+  | 'login' 
+  | 'signup' 
+  | 'onboarding'
+  | 'dashboard'
+  | 'pitch-decks'
+  | 'crm'
+  | 'documents'
+  | 'tasks'
+  | 'settings';
+
 export type StartupStage = 'Idea' | 'MVP' | 'Seed' | 'Series A' | 'Growth' | 'Scale';
 
 // Table: startups
@@ -113,6 +128,23 @@ export interface Deal {
   ownerColor: string;
 }
 
+// Table: investor_docs (New)
+export interface DocSection {
+  id: string;
+  title: string;
+  content: string; // HTML string
+}
+
+export interface InvestorDoc {
+  id: string;
+  startupId: string;
+  title: string;
+  type: 'Pitch Deck' | 'One-Pager' | 'GTM Strategy' | 'Market Research' | 'Financial Model' | 'Product Roadmap' | 'Other';
+  content: { sections: DocSection[] }; // JSONB structure
+  status: 'Draft' | 'Review' | 'Final';
+  updatedAt: string;
+}
+
 // Table: activity_log (New for Dashboard Feed)
 export interface Activity {
   id: string;
@@ -154,6 +186,7 @@ export interface StartupDatabaseSchema {
   insights: AICoachInsight[];
   tasks: Task[];
   deals: Deal[];
+  docs: InvestorDoc[]; // Added docs
   activities: Activity[];
   decks: Deck[];
 }

@@ -7,6 +7,7 @@ import { SlideSidebar } from './editor/SlideSidebar';
 import { SlideCanvas } from './editor/SlideCanvas';
 import { PresentationMode } from './editor/PresentationMode';
 import { AICopilotSidebar } from './editor/AICopilotSidebar';
+import { useToast } from '../../context/ToastContext';
 
 interface DeckEditorProps {
   deck: Deck;
@@ -15,6 +16,7 @@ interface DeckEditorProps {
 
 export const DeckEditor: React.FC<DeckEditorProps> = ({ deck, onBack }) => {
   const { updateDeck } = useData();
+  const { success } = useToast();
   const [slides, setSlides] = useState<Slide[]>(deck.slides);
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving'>('saved');
@@ -48,8 +50,10 @@ export const DeckEditor: React.FC<DeckEditorProps> = ({ deck, onBack }) => {
   };
 
   const handleAddSlide = () => {
+    // Generate valid UUID for Supabase compatibility
+    const newId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `slide_${Date.now()}`;
     const newSlide: Slide = {
-      id: `slide_new_${Date.now()}`,
+      id: newId,
       title: "New Slide",
       bullets: ["Add point 1", "Add point 2"],
       visualDescription: "Placeholder visual"
@@ -93,7 +97,7 @@ export const DeckEditor: React.FC<DeckEditorProps> = ({ deck, onBack }) => {
     setIsExporting(true);
     setTimeout(() => {
       setIsExporting(false);
-      alert("Export complete! PDF downloaded.");
+      success("Export complete! PDF downloaded.");
     }, 2000);
   };
 

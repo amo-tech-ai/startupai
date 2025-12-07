@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { 
   LayoutDashboard, 
@@ -10,10 +11,11 @@ import {
   Files
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { PageType } from '../types';
 
 interface SidebarProps {
-  currentPage: string;
-  setPage: (page: any) => void;
+  currentPage: PageType;
+  setPage: (page: PageType) => void;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ currentPage, setPage }) => {
@@ -24,7 +26,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, setPage }) => {
     setPage('home');
   };
 
-  const menuItems = [
+  const menuItems: { id: PageType; icon: React.ReactNode; label: string }[] = [
     { id: 'dashboard', icon: <LayoutDashboard size={20} />, label: 'Dashboard' },
     { id: 'pitch-decks', icon: <FileText size={20} />, label: 'Pitch Decks' },
     { id: 'crm', icon: <Users size={20} />, label: 'CRM' },

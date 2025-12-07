@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
@@ -17,25 +18,43 @@ import StartupWizard from './components/StartupWizard';
 import Footer from './components/Footer';
 import { DataProvider } from './context/DataContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ToastProvider } from './context/ToastContext';
+import { PageType } from './types';
 
-export type PageType = 
-  | 'home' 
-  | 'how-it-works' 
-  | 'features' 
-  | 'pricing' 
-  | 'login' 
-  | 'signup' 
-  | 'onboarding'
-  | 'dashboard'
-  | 'pitch-decks'
-  | 'crm'
-  | 'documents'
-  | 'tasks'
-  | 'settings';
-
-const AppContent: React.FC = () => {
-  const [page, setPage] = useState<PageType>('home');
+const AppContent = () => {
   const { user, loading } = useAuth();
+  
+  // Initialize state based on URL path
+  const getInitialPage = (): PageType => {
+    const path = window.location.pathname.substring(1); // Remove leading slash
+    const validPages: PageType[] = [
+      'home', 'how-it-works', 'features', 'pricing', 'login', 'signup',
+      'onboarding', 'dashboard', 'pitch-decks', 'crm', 'documents', 'tasks', 'settings'
+    ];
+    
+    if (path === '' || path === '/') return 'home';
+    if (validPages.includes(path as PageType)) return path as PageType;
+    return 'home';
+  };
+
+  const [page, setPageState] = useState<PageType>(getInitialPage());
+
+  // Custom setPage to handle URL updates
+  const setPage = (newPage: PageType) => {
+    setPageState(newPage);
+    const path = newPage === 'home' ? '/' : `/${newPage}`;
+    window.history.pushState(null, '', path);
+    window.scrollTo(0, 0);
+  };
+
+  // Handle browser back/forward buttons
+  useEffect(() => {
+    const handlePopState = () => {
+      setPageState(getInitialPage());
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   // Define which pages are part of the "App" (require sidebar + auth layout)
   const appPages: PageType[] = [
@@ -67,11 +86,6 @@ const AppContent: React.FC = () => {
       }
     }
   }, [user, loading, page, isAppPage]);
-
-  // Scroll to top on page change
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [page]);
 
   if (loading) {
     return (
@@ -133,13 +147,15 @@ const AppContent: React.FC = () => {
   );
 };
 
-const App: React.FC = () => {
+const App = () => {
   return (
-    <AuthProvider>
-      <DataProvider>
-        <AppContent />
-      </DataProvider>
-    </AuthProvider>
+    <ToastProvider>
+      <AuthProvider>
+        <DataProvider>
+          <AppContent />
+        </DataProvider>
+      </AuthProvider>
+    </ToastProvider>
   );
 };
 

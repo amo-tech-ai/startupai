@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { 
   ArrowLeft, 
   Sparkles, 
@@ -17,38 +18,59 @@ import {
   Bot,
   Wand2,
   ScanEye,
-  Loader2
+  Loader2,
+  Trash2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useData } from '../context/DataContext';
 import { GoogleGenAI } from "@google/genai";
 import { API_KEY } from '../lib/env';
+import { DocSection, InvestorDoc } from '../types';
+import { useToast } from '../context/ToastContext';
 
 type ViewState = 'dashboard' | 'editor';
 
-// Types for Document Structure
-interface DocSection {
-  id: string;
-  title: string;
-  content: string; // HTML string
-}
-
 const Documents: React.FC = () => {
   const [view, setView] = useState<ViewState>('dashboard');
-  const [selectedDocType, setSelectedDocType] = useState<string>('One-Pager');
+  const [activeDocId, setActiveDocId] = useState<string | null>(null);
+  const { docs, addDoc } = useData();
+  const { toast } = useToast();
 
-  const handleStartDoc = (type: string) => {
-    setSelectedDocType(type);
-    setView('editor');
+  const handleStartDoc = async (type: string) => {
+    // Create new document in DB
+    const newTitle = `Untitled ${type}`;
+    const id = await addDoc({
+        title: newTitle,
+        type: type as any,
+        status: 'Draft',
+        content: { sections: [] }
+    });
+    
+    if (id) {
+        setActiveDocId(id);
+        setView('editor');
+    }
   };
+
+  const handleOpenDoc = (id: string) => {
+      setActiveDocId(id);
+      setView('editor');
+  }
+
+  // Find the active document object
+  const activeDoc = docs.find(d => d.id === activeDocId);
 
   return (
     <div className="flex flex-col h-full bg-slate-50 relative overflow-hidden">
       <AnimatePresence mode="wait">
         {view === 'dashboard' ? (
-          <DashboardView key="dashboard" onStartDoc={handleStartDoc} />
+          <DashboardView key="dashboard" onStartDoc={handleStartDoc} onOpenDoc={handleOpenDoc} />
         ) : (
-          <EditorView key="editor" docType={selectedDocType} onBack={() => setView('dashboard')} />
+          activeDoc ? (
+            <EditorView key="editor" doc={activeDoc} onBack={() => setView('dashboard')} />
+          ) : (
+            <div className="flex items-center justify-center h-full">Document not found.</div>
+          )
         )}
       </AnimatePresence>
     </div>
@@ -61,9 +83,12 @@ const Documents: React.FC = () => {
 
 interface DashboardViewProps {
   onStartDoc: (type: string) => void;
+  onOpenDoc: (id: string) => void;
 }
 
-const DashboardView: React.FC<DashboardViewProps> = ({ onStartDoc }) => {
+const DashboardView: React.FC<DashboardViewProps> = ({ onStartDoc, onOpenDoc }) => {
+  const { docs, deleteDoc } = useData();
+  
   const docTemplates = [
     { title: "Pitch Deck", desc: "Secure funding with a compelling story.", icon: <Presentation size={24} className="text-indigo-600"/>, color: "bg-indigo-50" },
     { title: "One-Pager", desc: "Summarize your business in one page.", icon: <FileText size={24} className="text-pink-600"/>, color: "bg-pink-50" },
@@ -126,59 +151,45 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onStartDoc }) => {
         </div>
       </section>
 
-      {/* SECTION: AI CAPABILITIES */}
-      <section>
-        <h2 className="text-xl font-bold text-slate-900 mb-6">AI Capabilities</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {[
-            { name: "AI Document Generator", icon: <Wand2 size={20}/>, desc: "Draft full docs from simple prompts" },
-            { name: "AI Reviewer", icon: <ScanEye size={20}/>, desc: "Check for clarity and investor fit" },
-            { name: "AI Insights Panel", icon: <Bot size={20}/>, desc: "Real-time contextual suggestions" }
-          ].map((item, idx) => (
-             <div key={idx} className="flex items-center gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                <div className="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600">
-                   {item.icon}
-                </div>
-                <div>
-                   <div className="font-bold text-slate-900 text-sm">{item.name}</div>
-                   <div className="text-xs text-slate-500">{item.desc}</div>
-                </div>
-             </div>
-          ))}
-        </div>
-      </section>
-
       {/* SECTION: RECENT DOCUMENTS */}
       <section>
          <h2 className="text-xl font-bold text-slate-900 mb-6">Recent Documents</h2>
-         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-            {[
-               { name: "Series A Pitch Deck", type: "Presentation", date: "2 hours ago", status: "Draft", score: 85 },
-               { name: "Q3 Financial Projections", type: "Financial Model", date: "Yesterday", status: "Review", score: 92 },
-               { name: "Competitor Analysis - Fintech", type: "Market Research", date: "3 days ago", status: "Final", score: 100 },
-            ].map((doc, idx) => (
-               <div key={idx} className="flex items-center justify-between p-4 border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors cursor-pointer">
-                  <div className="flex items-center gap-4">
-                     <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500">
-                        {doc.type === 'Presentation' ? <Presentation size={20}/> : <FileText size={20}/>}
-                     </div>
-                     <div>
-                        <div className="font-bold text-slate-900 text-sm">{doc.name}</div>
-                        <div className="text-xs text-slate-500">{doc.type} • Edited {doc.date}</div>
-                     </div>
-                  </div>
-                  <div className="flex items-center gap-6">
-                     <div className={`px-2 py-1 rounded text-xs font-bold ${
-                        doc.status === 'Draft' ? 'bg-slate-100 text-slate-600' :
-                        doc.status === 'Review' ? 'bg-amber-100 text-amber-700' :
-                        'bg-green-100 text-green-700'
-                     }`}>
-                        {doc.status}
-                     </div>
-                     <ChevronRight size={18} className="text-slate-400" />
-                  </div>
-               </div>
-            ))}
+         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden min-h-[200px]">
+            {docs.length === 0 ? (
+                <div className="flex items-center justify-center h-48 text-slate-400 text-sm italic">
+                    No documents created yet. Start one above.
+                </div>
+            ) : (
+                docs.map((doc) => (
+                <div key={doc.id} className="flex items-center justify-between p-4 border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors cursor-pointer group">
+                    <div className="flex items-center gap-4" onClick={() => onOpenDoc(doc.id)}>
+                        <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500">
+                            {doc.type === 'Pitch Deck' ? <Presentation size={20}/> : <FileText size={20}/>}
+                        </div>
+                        <div>
+                            <div className="font-bold text-slate-900 text-sm group-hover:text-indigo-600 transition-colors">{doc.title}</div>
+                            <div className="text-xs text-slate-500">{doc.type} • Edited {new Date(doc.updatedAt).toLocaleDateString()}</div>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-6">
+                        <div className={`px-2 py-1 rounded text-xs font-bold ${
+                            doc.status === 'Draft' ? 'bg-slate-100 text-slate-600' :
+                            doc.status === 'Review' ? 'bg-amber-100 text-amber-700' :
+                            'bg-green-100 text-green-700'
+                        }`}>
+                            {doc.status}
+                        </div>
+                        <button 
+                            onClick={(e) => { e.stopPropagation(); deleteDoc(doc.id); }}
+                            className="text-slate-300 hover:text-red-500 p-2 rounded-full hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all"
+                        >
+                            <Trash2 size={16} />
+                        </button>
+                        <ChevronRight size={18} className="text-slate-400" />
+                    </div>
+                </div>
+                ))
+            )}
          </div>
       </section>
       
@@ -192,27 +203,50 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onStartDoc }) => {
 // ----------------------------------------------------------------------
 
 interface EditorViewProps {
-  docType: string;
+  doc: InvestorDoc;
   onBack: () => void;
 }
 
-const EditorView: React.FC<EditorViewProps> = ({ docType, onBack }) => {
-  const { profile } = useData();
+const EditorView: React.FC<EditorViewProps> = ({ doc, onBack }) => {
+  const { profile, updateDoc } = useData();
+  const { success, error: toastError } = useToast();
+  
   const [isGenerating, setIsGenerating] = useState(false);
-  const [sections, setSections] = useState<DocSection[]>([
-    { id: '1', title: 'Problem', content: '<p>Describe the primary pain point your customer faces.</p>' },
-    { id: '2', title: 'Solution', content: '<p>How does your product solve this problem?</p>' },
-  ]);
   const [activeSectionId, setActiveSectionId] = useState<string>('1');
+  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving'>('saved');
+
+  // Local state for immediate editing
+  const [title, setTitle] = useState(doc.title);
+  const [sections, setSections] = useState<DocSection[]>(doc.content.sections.length > 0 ? doc.content.sections : [
+      { id: '1', title: 'Introduction', content: '<p>Start typing...</p>' }
+  ]);
+
+  // Debounced Save
+  useEffect(() => {
+      // Check for changes
+      const hasChanged = title !== doc.title || JSON.stringify(sections) !== JSON.stringify(doc.content.sections);
+      
+      if (hasChanged) {
+          setSaveStatus('saving');
+          const timer = setTimeout(() => {
+              updateDoc(doc.id, { 
+                  title, 
+                  content: { sections } 
+              });
+              setSaveStatus('saved');
+          }, 1000);
+          return () => clearTimeout(timer);
+      }
+  }, [title, sections, doc.id, doc.title, doc.content.sections, updateDoc]);
 
   // --- AI GENERATION LOGIC ---
   const generateDocument = async () => {
     if (!profile) {
-        alert("No startup profile found. Please complete onboarding.");
+        toastError("No startup profile found. Please complete onboarding.");
         return;
     }
     if (!API_KEY) {
-        alert("API Key missing");
+        toastError("API Key missing");
         return;
     }
 
@@ -233,13 +267,13 @@ const EditorView: React.FC<EditorViewProps> = ({ docType, onBack }) => {
 
         const prompt = `
             You are a professional venture capital analyst and startup writer.
-            Task: Write a full ${docType} for the startup described below.
+            Task: Write a full ${doc.type} for the startup described below.
             
             Context:
             ${context}
 
             Requirements:
-            1. Create 4-6 distinct sections appropriate for a ${docType}.
+            1. Create 4-6 distinct sections appropriate for a ${doc.type}.
             2. For "Pitch Deck", use sections like: Problem, Solution, Market, Business Model, Team.
             3. For "One-Pager", use sections like: Executive Summary, Market Opportunity, Traction, Ask.
             4. Return the content as a valid JSON object containing an array of sections.
@@ -270,15 +304,24 @@ const EditorView: React.FC<EditorViewProps> = ({ docType, onBack }) => {
                 }));
                 setSections(newSections);
                 setActiveSectionId('1');
+                success("Document draft generated!");
             }
         }
     } catch (error) {
         console.error("Doc Generation Error:", error);
-        alert("Failed to generate document. Please try again.");
+        toastError("Failed to generate document. Please try again.");
     } finally {
         setIsGenerating(false);
     }
   };
+
+  const updateSectionContent = (id: string, newContent: string) => {
+      setSections(prev => prev.map(s => s.id === id ? { ...s, content: newContent } : s));
+  }
+
+  const updateSectionTitle = (id: string, newTitle: string) => {
+      setSections(prev => prev.map(s => s.id === id ? { ...s, title: newTitle } : s));
+  }
 
   return (
     <motion.div 
@@ -296,10 +339,18 @@ const EditorView: React.FC<EditorViewProps> = ({ docType, onBack }) => {
             </button>
             <div>
                <div className="flex items-center gap-2">
-                  <h2 className="text-sm font-bold text-slate-900">{profile?.name || 'Untitled'} - {docType}</h2>
-                  <span className="px-2 py-0.5 bg-slate-100 text-slate-500 text-[10px] uppercase font-bold rounded">Draft</span>
+                  <input 
+                    type="text" 
+                    value={title} 
+                    onChange={(e) => setTitle(e.target.value)}
+                    className="text-sm font-bold text-slate-900 bg-transparent border-none focus:ring-0 p-0 hover:text-indigo-600 transition-colors w-64"
+                  />
+                  <span className="px-2 py-0.5 bg-slate-100 text-slate-500 text-[10px] uppercase font-bold rounded">{doc.status}</span>
                </div>
-               <p className="text-xs text-slate-500">Auto-saved</p>
+               <div className="flex items-center gap-2">
+                   <p className="text-xs text-slate-500">{doc.type}</p>
+                   {saveStatus === 'saving' && <span className="text-[10px] text-slate-400 flex items-center gap-1"><Loader2 size={8} className="animate-spin"/> Saving...</span>}
+               </div>
             </div>
          </div>
          <div className="flex items-center gap-3">
@@ -352,7 +403,7 @@ const EditorView: React.FC<EditorViewProps> = ({ docType, onBack }) => {
                 {isGenerating && (
                     <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-20 flex flex-col items-center justify-center">
                         <Loader2 size={48} className="text-indigo-600 animate-spin mb-4" />
-                        <h3 className="text-xl font-bold text-slate-900">Generating {docType}...</h3>
+                        <h3 className="text-xl font-bold text-slate-900">Generating {doc.type}...</h3>
                         <p className="text-slate-500">Consulting Gemini 3...</p>
                     </div>
                 )}
@@ -360,18 +411,17 @@ const EditorView: React.FC<EditorViewProps> = ({ docType, onBack }) => {
                 {/* Render Sections */}
                 {sections.map((section) => (
                     <div key={section.id} className="mb-12 group/section">
-                        <h2 
-                            className="text-2xl font-bold text-slate-900 mb-4 outline-none border-b border-transparent hover:border-slate-200 pb-1" 
-                            contentEditable 
-                            suppressContentEditableWarning
-                        >
-                            {section.title}
-                        </h2>
+                        <input 
+                            value={section.title}
+                            onChange={(e) => updateSectionTitle(section.id, e.target.value)}
+                            className="text-2xl font-bold text-slate-900 mb-4 outline-none border-b border-transparent hover:border-slate-200 pb-1 w-full" 
+                        />
                         
                         <div 
-                            className="prose prose-slate max-w-none text-lg text-slate-600 outline-none"
+                            className="prose prose-slate max-w-none text-lg text-slate-600 outline-none p-2 rounded hover:bg-slate-50/50 focus:bg-white"
                             contentEditable
                             suppressContentEditableWarning
+                            onBlur={(e) => updateSectionContent(section.id, e.currentTarget.innerHTML)}
                             dangerouslySetInnerHTML={{ __html: section.content }}
                         />
                     </div>
@@ -407,7 +457,7 @@ const EditorView: React.FC<EditorViewProps> = ({ docType, onBack }) => {
                       className="w-full flex items-center justify-center gap-2 py-3 bg-indigo-600 text-white rounded-lg text-xs font-bold hover:bg-indigo-700 shadow-md shadow-indigo-600/20 mb-3 transition-colors disabled:opacity-50"
                    >
                       {isGenerating ? <Loader2 size={14} className="animate-spin"/> : <Sparkles size={14} />}
-                      {isGenerating ? 'Drafting...' : `Auto-Generate ${docType}`}
+                      {isGenerating ? 'Drafting...' : `Auto-Generate ${doc.type}`}
                    </button>
                    <p className="text-xs text-slate-400 leading-relaxed text-center">
                        Uses your profile data ({profile?.name}) to create a structured draft instantly.

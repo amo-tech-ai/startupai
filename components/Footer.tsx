@@ -1,12 +1,14 @@
+
 import React from 'react';
 import { Zap, Twitter, Linkedin, Github } from 'lucide-react';
+import { PageType } from '../types';
 
 interface FooterProps {
-  setPage?: (page: any) => void;
+  setPage?: (page: PageType) => void;
 }
 
 const Footer: React.FC<FooterProps> = ({ setPage }) => {
-  const handleNav = (page: string) => {
+  const handleNav = (page: PageType) => {
     if (setPage) {
       setPage(page);
       window.scrollTo(0, 0);

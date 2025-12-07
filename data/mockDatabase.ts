@@ -1,4 +1,5 @@
-import { StartupDatabaseSchema, StartupProfile, Founder, Competitor, AICoachInsight, Activity, Task, Deck, Deal } from '../types';
+
+import { StartupDatabaseSchema, StartupProfile, Founder, Competitor, AICoachInsight, Activity, Task, Deck, Deal, InvestorDoc } from '../types';
 
 /**
  * Mock Data Validation
@@ -164,6 +165,32 @@ const mockDeals: Deal[] = [
   }
 ];
 
+const mockDocs: InvestorDoc[] = [
+    {
+        id: "doc_1",
+        startupId: "st_123456",
+        title: "Series A One-Pager",
+        type: "One-Pager",
+        status: "Draft",
+        updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
+        content: {
+            sections: [
+                { id: "1", title: "Executive Summary", content: "<p>StartupAI is the operating system for modern founders.</p>" },
+                { id: "2", title: "Market Opportunity", content: "<p>The market for AI productivity tools is estimated at $50B.</p>" }
+            ]
+        }
+    },
+    {
+        id: "doc_2",
+        startupId: "st_123456",
+        title: "Q3 Financials",
+        type: "Financial Model",
+        status: "Final",
+        updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString(),
+        content: { sections: [] }
+    }
+];
+
 // Initial Store State
 export const initialDatabaseState: StartupDatabaseSchema = {
   profile: mockProfile,
@@ -174,7 +201,8 @@ export const initialDatabaseState: StartupDatabaseSchema = {
   tasks: mockTasks,
   activities: mockActivities,
   decks: mockDecks,
-  deals: mockDeals
+  deals: mockDeals,
+  docs: mockDocs
 };
 
 // Validation log (simulating DB check)

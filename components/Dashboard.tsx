@@ -27,6 +27,7 @@ import {
   Cell
 } from 'recharts';
 import { motion } from 'framer-motion';
+import { useData } from '../context/DataContext';
 
 // Mock data for charts
 const sparklineData1 = [
@@ -37,17 +38,27 @@ const sparklineData2 = [
 ];
 
 const Dashboard: React.FC = () => {
+  const { profile, metrics, insights } = useData();
+
+  // Derived Values
+  const startupName = profile?.name || "My Startup";
+  const mrr = metrics[0]?.mrr || 0;
+  const activeUsers = metrics[0]?.activeUsers || 0;
+  const fundingGoal = profile?.fundingGoal || 1000000;
+  const pipelineValue = 1200000; // Static for now until CRM is bound
+
   return (
     <div className="p-6 md:p-8 lg:p-12 max-w-7xl mx-auto space-y-12">
       
       {/* 4️⃣ WELCOME SECTION */}
       <section className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-           <h1 className="text-3xl font-bold text-slate-900">Good morning, Founder 👋</h1>
-           <p className="text-slate-500 mt-1 flex items-center gap-2">
-             <span>Tuesday, Oct 24</span>
-             <span className="w-1 h-1 rounded-full bg-slate-300"></span>
-             <span className="text-indigo-600 font-medium">12 Day Streak 🔥</span>
+           <div className="flex items-center gap-2 mb-1">
+             <h1 className="text-3xl font-bold text-slate-900">Good morning, {startupName} team 👋</h1>
+             {profile?.stage && <span className="px-2 py-1 bg-indigo-100 text-indigo-700 text-xs font-bold rounded uppercase">{profile.stage}</span>}
+           </div>
+           <p className="text-slate-500 flex items-center gap-2">
+             <span>{profile?.tagline || "Ready to build something great?"}</span>
            </p>
         </div>
         
@@ -77,8 +88,8 @@ const Dashboard: React.FC = () => {
                </div>
             </div>
             <div className="mb-4">
-               <div className="text-slate-500 text-sm font-medium mb-1">Pitch Decks</div>
-               <div className="text-3xl font-bold text-slate-900">42</div>
+               <div className="text-slate-500 text-sm font-medium mb-1">Monthly Revenue</div>
+               <div className="text-3xl font-bold text-slate-900">${mrr.toLocaleString()}</div>
             </div>
             <div className="h-10 w-full opacity-50">
                <ResponsiveContainer width="100%" height="100%">
@@ -100,13 +111,14 @@ const Dashboard: React.FC = () => {
                </div>
             </div>
             <div className="mb-4">
-               <div className="text-slate-500 text-sm font-medium mb-1">Pipeline Value</div>
-               <div className="text-3xl font-bold text-slate-900">$1.2M</div>
+               <div className="text-slate-500 text-sm font-medium mb-1">Funding Target</div>
+               <div className="text-3xl font-bold text-slate-900">${fundingGoal.toLocaleString()}</div>
             </div>
             <div className="w-full bg-slate-100 rounded-full h-1.5 mb-2 overflow-hidden">
-               <div className="bg-purple-500 h-1.5 rounded-full" style={{ width: '65%' }}></div>
+               {/* Mock progress towards funding */}
+               <div className="bg-purple-500 h-1.5 rounded-full" style={{ width: '15%' }}></div>
             </div>
-            <div className="text-xs text-slate-400">Target: $2M</div>
+            <div className="text-xs text-slate-400">Pre-Seed Round</div>
          </div>
 
          {/* Card 3 */}
@@ -120,8 +132,8 @@ const Dashboard: React.FC = () => {
                </div>
             </div>
              <div className="mb-4">
-               <div className="text-slate-500 text-sm font-medium mb-1">Tasks Due</div>
-               <div className="text-3xl font-bold text-slate-900">18</div>
+               <div className="text-slate-500 text-sm font-medium mb-1">Active Users</div>
+               <div className="text-3xl font-bold text-slate-900">{activeUsers.toLocaleString()}</div>
             </div>
             <div className="flex gap-1 mt-auto">
                {[1,2,3,4,5].map(i => (
@@ -142,7 +154,7 @@ const Dashboard: React.FC = () => {
             </div>
              <div className="mb-4">
                <div className="text-slate-500 text-sm font-medium mb-1">Docs Generated</div>
-               <div className="text-3xl font-bold text-slate-900">156</div>
+               <div className="text-3xl font-bold text-slate-900">12</div>
             </div>
             <div className="h-10 w-full opacity-50">
                <ResponsiveContainer width="100%" height="100%">
@@ -195,39 +207,27 @@ const Dashboard: React.FC = () => {
 
             <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl border border-indigo-100 p-1">
                <div className="bg-white/60 backdrop-blur-sm rounded-xl p-6 space-y-6">
-                  {/* Insight 1 */}
-                  <div className="flex gap-4">
-                     <div className="mt-1">
-                        <span className="flex h-2 w-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)] animate-pulse"></span>
-                     </div>
-                     <div className="space-y-2">
-                        <span className="text-xs font-bold text-red-500 uppercase tracking-wide">High Priority</span>
-                        <p className="text-sm text-slate-700 leading-relaxed font-medium">
-                           Your Series A Deck is missing a "Competition" slide. Investors usually look for this after "Market Size".
-                        </p>
-                        <button className="text-xs bg-white border border-slate-200 shadow-sm px-3 py-1.5 rounded-md font-medium text-slate-700 hover:text-indigo-600 hover:border-indigo-200 transition-colors">
-                           Auto-Generate Slide
-                        </button>
-                     </div>
-                  </div>
-
-                  <div className="h-px bg-slate-200/50 w-full"></div>
-
-                  {/* Insight 2 */}
-                   <div className="flex gap-4">
-                     <div className="mt-1">
-                        <span className="flex h-2 w-2 rounded-full bg-amber-500"></span>
-                     </div>
-                     <div className="space-y-2">
-                        <span className="text-xs font-bold text-amber-500 uppercase tracking-wide">Optimization</span>
-                        <p className="text-sm text-slate-700 leading-relaxed font-medium">
-                           Follow up with <strong>Jane Doe</strong> from TechStars. It's been 5 days since your last email.
-                        </p>
-                        <button className="text-xs bg-white border border-slate-200 shadow-sm px-3 py-1.5 rounded-md font-medium text-slate-700 hover:text-indigo-600 hover:border-indigo-200 transition-colors">
-                           Draft Follow-up
-                        </button>
-                     </div>
-                  </div>
+                  {/* Dynamic Insights Map */}
+                  {insights.length > 0 ? (
+                    insights.map((insight) => (
+                      <div key={insight.id} className="flex gap-4">
+                          <div className="mt-1">
+                              <span className={`flex h-2 w-2 rounded-full ${insight.priority === 'High' ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)] animate-pulse' : 'bg-amber-500'}`}></span>
+                          </div>
+                          <div className="space-y-2">
+                              <span className={`text-xs font-bold uppercase tracking-wide ${insight.priority === 'High' ? 'text-red-500' : 'text-amber-500'}`}>{insight.title}</span>
+                              <p className="text-sm text-slate-700 leading-relaxed font-medium">
+                                {insight.description}
+                              </p>
+                              <button className="text-xs bg-white border border-slate-200 shadow-sm px-3 py-1.5 rounded-md font-medium text-slate-700 hover:text-indigo-600 hover:border-indigo-200 transition-colors">
+                                Act Now
+                              </button>
+                          </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-slate-500 text-sm">No new insights. Great job!</p>
+                  )}
                </div>
                <button className="w-full py-3 text-center text-xs font-bold text-indigo-600 uppercase tracking-wide hover:bg-white/50 rounded-b-xl transition-colors">
                   Get More Insights →

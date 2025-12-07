@@ -9,6 +9,7 @@ type PageType =
   | 'pricing' 
   | 'login' 
   | 'signup' 
+  | 'onboarding'
   | 'dashboard'
   | 'pitch-decks'
   | 'crm'

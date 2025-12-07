@@ -13,7 +13,9 @@ import CRM from './components/CRM';
 import Documents from './components/Documents';
 import Tasks from './components/Tasks';
 import Settings from './components/Settings';
+import StartupWizard from './components/StartupWizard';
 import Footer from './components/Footer';
+import { DataProvider } from './context/DataContext';
 
 export type PageType = 
   | 'home' 
@@ -22,6 +24,7 @@ export type PageType =
   | 'pricing' 
   | 'login' 
   | 'signup' 
+  | 'onboarding'
   | 'dashboard'
   | 'pitch-decks'
   | 'crm'
@@ -29,7 +32,7 @@ export type PageType =
   | 'tasks'
   | 'settings';
 
-const App: React.FC = () => {
+const AppContent: React.FC = () => {
   const [page, setPage] = useState<PageType>('home');
 
   // Define which pages are part of the "App" (require sidebar + auth layout)
@@ -43,6 +46,7 @@ const App: React.FC = () => {
   ];
 
   const isAppPage = appPages.includes(page);
+  const isWizard = page === 'onboarding';
 
   // Scroll to top on page change
   useEffect(() => {
@@ -57,6 +61,7 @@ const App: React.FC = () => {
       case 'pricing': return <Pricing />;
       case 'login': return <Login setPage={setPage} />;
       case 'signup': return <Signup setPage={setPage} />;
+      case 'onboarding': return <StartupWizard setPage={setPage} />;
       case 'dashboard': return <Dashboard />;
       case 'pitch-decks': return <PitchDecks />;
       case 'crm': return <CRM />;
@@ -66,6 +71,14 @@ const App: React.FC = () => {
       default: return <Home />;
     }
   };
+
+  if (isWizard) {
+    return (
+      <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
+         {renderContent()}
+      </div>
+    )
+  }
 
   if (isAppPage) {
     return (
@@ -89,6 +102,14 @@ const App: React.FC = () => {
       </main>
       <Footer setPage={setPage} />
     </div>
+  );
+};
+
+const App: React.FC = () => {
+  return (
+    <DataProvider>
+      <AppContent />
+    </DataProvider>
   );
 };
 

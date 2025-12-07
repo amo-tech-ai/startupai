@@ -1,4 +1,16 @@
+
 # Changelog
+
+## [v1.5.1] - AI Enrichment
+### Added
+- **AI Auto-Fill**: Implemented "Magic Wand" feature in Startup Wizard to auto-generate profile data from a website URL or company name using Gemini 3 Search Grounding.
+- **Context-Aware Refinement**: Updated `refineWithAI` to use cross-field context (e.g. Solution knows about Problem) for better results.
+
+## [v1.5.0] - Startup Wizard
+### Added
+- **Profile Wizard**: Implemented the 9-step onboarding flow.
+- **AI Integration**: Added Gemini 3 (Pro Preview) integration for refining Mission, Problem, and Solution statements.
+- **Navigation**: Added 'Onboarding' route to App routing logic.
 
 ## [v1.4.1] - CRM Enhancements
 ### Added

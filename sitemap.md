@@ -1,6 +1,7 @@
+
 # StartupAI - Core Sitemap
 
-**Version:** 1.0 | **Status:** Planning
+**Version:** 1.1 | **Status:** Planning
 
 ---
 
@@ -17,6 +18,7 @@ flowchart TB
     end
 
     subgraph App["📱 APP"]
+        WIZARD["/onboarding"]
         DASH["/dashboard"]
         DECKS["/pitch-decks"]
         CRM["/crm"]
@@ -25,8 +27,8 @@ flowchart TB
         SETTINGS["/settings"]
     end
 
-    HOME --> LOGIN --> DASH
-    SIGNUP --> DASH
+    HOME --> LOGIN --> WIZARD
+    SIGNUP --> WIZARD --> DASH
 ```
 
 ---
@@ -43,10 +45,11 @@ flowchart TB
 | `/login` | Login | Email/password + Google OAuth |
 | `/signup` | Sign Up | Registration form |
 
-### App (6 sections)
+### App (7 sections)
 
 | Route | Page | Purpose |
 |-------|------|---------|
+| `/onboarding` | **Startup Wizard** | Initial data collection & AI setup |
 | `/dashboard` | Dashboard | KPIs, recent activity, quick actions |
 | `/pitch-decks` | Pitch Decks | Deck list, wizard, editor |
 | `/crm` | CRM | Contacts, deals pipeline |
@@ -140,6 +143,21 @@ Kanban: Backlog → In Progress → Review → Done
 Style: Clean cards, progress indicators
 ```
 
+### 🧙‍♂️ Startup Wizard (New)
+
+```
+Create a multi-step onboarding wizard.
+
+Steps:
+1. Company Basics
+2. Problem/Solution
+3. Market & Metrics
+4. Team
+5. AI Review
+
+Style: Focused, single-column, progress steps on top.
+```
+
 ---
 
 ## Navigation
@@ -158,9 +176,9 @@ Style: Clean cards, progress indicators
 ### User Flow
 
 ```
-Home → Sign Up → Dashboard → Create Deck → Editor → Export
-                    ↓
-              Add Contacts → Pipeline → Tasks
+Home → Sign Up → Onboarding Wizard → Dashboard → Create Deck
+                                       ↓
+                                 Populate CRM/Docs
 ```
 
 ---
@@ -169,10 +187,10 @@ Home → Sign Up → Dashboard → Create Deck → Editor → Export
 
 | Priority | Pages | Status |
 |----------|-------|--------|
-| **P0** | Home, Login, Dashboard, Pitch Decks | 🟡 WIP |
-| **P1** | Pricing, CRM, Documents | 🔴 Todo |
-| **P2** | Tasks, Settings, Features | 🔴 Todo |
+| **P0** | Home, Login, Dashboard, Pitch Decks, **Wizard** | 🟡 WIP |
+| **P1** | Pricing, CRM, Documents | 🟢 Done |
+| **P2** | Tasks, Settings, Features | 🟡 WIP |
 
 ---
 
-**Total: 11 core pages**
+**Total: 12 core pages**

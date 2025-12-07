@@ -16,13 +16,14 @@ import Tasks from './components/Tasks';
 import Settings from './components/Settings';
 import StartupWizard from './components/StartupWizard';
 import Footer from './components/Footer';
-import { DataProvider } from './context/DataContext';
+import { DataProvider, useData } from './context/DataContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
 import { PageType } from './types';
 
 const AppContent = () => {
-  const { user, loading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const { profile, isLoading: dataLoading } = useData();
   
   // Initialize state based on URL path
   const getInitialPage = (): PageType => {
@@ -70,24 +71,32 @@ const AppContent = () => {
   const isAppPage = appPages.includes(page);
   const isWizard = page === 'onboarding';
 
-  // Auth Redirection Logic
+  // Auth & Data Redirection Logic
   useEffect(() => {
-    if (!loading) {
+    if (!authLoading && !dataLoading) {
       if (user) {
-        // If logged in and on public auth pages, go to dashboard
+        // 1. If logged in and on public auth pages, go to dashboard (or onboarding)
         if (page === 'login' || page === 'signup') {
-          setPage('dashboard');
+          setPage(profile ? 'dashboard' : 'onboarding');
+          return;
+        }
+
+        // 2. Force Onboarding: If user has no profile data, redirect to wizard
+        // We exclude 'onboarding' from the check to prevent infinite loops
+        if (!profile && isAppPage && page !== 'onboarding') {
+           setPage('onboarding');
+           return;
         }
       } else {
-        // If not logged in and on protected page, go to login
-        if (isAppPage && page !== 'home') { // Allow home, but protect others
+        // 3. If not logged in and on protected page, go to login
+        if (isAppPage && page !== 'home') { 
            setPage('login');
         }
       }
     }
-  }, [user, loading, page, isAppPage]);
+  }, [user, profile, authLoading, dataLoading, page, isAppPage]);
 
-  if (loading) {
+  if (authLoading || (user && dataLoading)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>

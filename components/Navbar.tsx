@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Menu, X, Zap, Bell, Search, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PageType } from '../types';
+import { useToast } from '../context/ToastContext';
 
 interface NavbarProps {
   currentPage?: PageType;
@@ -16,6 +17,8 @@ const MotionDiv = motion.div as any;
 const Navbar: React.FC<NavbarProps> = ({ currentPage = 'home', setPage, type = 'public' }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const { toast } = useToast();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -30,6 +33,17 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage = 'home', setPage, type = '
     setIsMobileMenuOpen(false);
   };
 
+  const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+        if (searchQuery.trim()) {
+            toast(`Searching for: "${searchQuery}"`, 'info');
+            // Here you would typically dispatch a search action or navigate to a results page
+            // e.g., setPage('search-results');
+            setSearchQuery(''); // Clear input for feedback
+        }
+    }
+  };
+
   // APP MODE: Render as a sticky top bar with utilities
   if (type === 'app') {
     return (
@@ -41,6 +55,9 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage = 'home', setPage, type = '
                 <input 
                     type="text" 
                     placeholder="Search docs, deals, or ask AI..." 
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={handleSearch}
                     className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
                 />
             </div>
@@ -108,6 +125,20 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage = 'home', setPage, type = '
                   >
                     <X size={24} className="text-slate-600" />
                   </button>
+                </div>
+                
+                <div className="mb-6">
+                    <div className="relative w-full">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                        <input 
+                            type="text" 
+                            placeholder="Search..." 
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onKeyDown={handleSearch}
+                            className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
+                        />
+                    </div>
                 </div>
                 
                 <div className="space-y-2">

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useData } from '../context/DataContext';
 import { useToast } from '../context/ToastContext';
 
@@ -23,12 +23,39 @@ interface StartupWizardProps {
   setPage: (page: any) => void;
 }
 
+const STORAGE_KEY = 'startup_wizard_progress';
+
 const StartupWizard: React.FC<StartupWizardProps> = ({ setPage }) => {
   const { updateProfile, updateMetrics, addActivity, setFounders } = useData();
   const { success, error } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<WizardFormData>(INITIAL_WIZARD_STATE);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  // --- Persistence ---
+  useEffect(() => {
+    // Load saved state
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        setFormData(prev => ({ ...prev, ...parsed }));
+        // Optional: restore step if saved
+        // setCurrentStep(parsed._currentStep || 1); 
+      } catch (e) {
+        console.error("Failed to load wizard progress", e);
+      }
+    }
+    setIsLoaded(true);
+  }, []);
+
+  useEffect(() => {
+    // Save state on change
+    if (isLoaded) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
+    }
+  }, [formData, isLoaded]);
 
   // --- Validation ---
 
@@ -88,7 +115,7 @@ const StartupWizard: React.FC<StartupWizardProps> = ({ setPage }) => {
       setCurrentStep(prev => prev - 1);
       window.scrollTo(0,0);
     } else {
-      if (confirm("Exit wizard? Your progress will be lost.")) {
+      if (confirm("Exit wizard? Your progress will be lost if you clear your cache.")) {
         setPage('home'); 
       }
     }
@@ -126,22 +153,22 @@ const StartupWizard: React.FC<StartupWizardProps> = ({ setPage }) => {
         useOfFunds: formData.useOfFunds,
         
         // Default others
-        stage: formData.stage as any || 'Seed', 
+        stage: (formData.stage as any) || 'Seed', 
         createdAt: new Date().toISOString(),
       });
 
-      // 2. Map Founders
+      // 2. Map Founders (Fix: Only first is primary contact)
       const foundersPayload: Founder[] = formData.founders
         .filter(f => f.name.trim().length > 0)
-        .map(f => ({
+        .map((f, idx) => ({
           id: f.id,
-          startupId: 'temp_startup_id', // Would be replaced by actual ID in real DB logic
+          startupId: 'temp_startup_id',
           name: f.name,
           title: f.title,
           bio: f.bio,
           linkedinProfile: f.linkedin,
           email: f.email,
-          isPrimaryContact: true // First one usually
+          isPrimaryContact: idx === 0 
         }));
       setFounders(foundersPayload);
 
@@ -159,6 +186,8 @@ const StartupWizard: React.FC<StartupWizardProps> = ({ setPage }) => {
         description: `${formData.name} profile is ready.`,
       });
       
+      // 5. Cleanup
+      localStorage.removeItem(STORAGE_KEY);
       success("Profile setup complete! Welcome to your dashboard.");
 
       // Small delay for UX

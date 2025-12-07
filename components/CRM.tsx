@@ -16,7 +16,12 @@ import {
   X,
   User,
   Check,
-  AlertCircle
+  AlertCircle,
+  Mail,
+  Phone,
+  Users,
+  ArrowRight,
+  Clock
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -92,7 +97,7 @@ const CRM: React.FC = () => {
     <div className="flex flex-col h-full bg-slate-50 overflow-hidden relative">
       
       {/* 1. Header & Controls */}
-      <div className="px-6 py-6 md:px-8 border-b border-slate-200 bg-white z-10">
+      <div className="px-6 py-6 md:px-8 border-b border-slate-200 bg-white z-10 shrink-0">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Deal Pipeline</h1>
@@ -157,7 +162,7 @@ const CRM: React.FC = () => {
            </div>
         </div>
         
-        {/* View Toggles (Visual Only) */}
+        {/* View Toggles */}
         <div className="flex items-center gap-2 mt-6 border-b border-slate-200">
            <button 
              onClick={() => setViewMode('board')}
@@ -174,50 +179,80 @@ const CRM: React.FC = () => {
         </div>
       </div>
 
-      {/* 2. Kanban Board Area */}
-      <div className="flex-1 overflow-x-auto overflow-y-hidden p-6 md:p-8">
-        <div className="flex h-full gap-6 min-w-[1200px]">
-          {COLUMNS.map((col) => {
-            const colDeals = filteredDeals.filter(d => d.stage === col.id);
-            const colValue = colDeals.reduce((acc, d) => acc + d.value, 0);
+      {/* 2. Content Area (Board or List) */}
+      <div className="flex-1 overflow-hidden p-6 md:p-8 bg-slate-50/50">
+        {viewMode === 'board' ? (
+            // KANBAN BOARD VIEW
+            <div className="flex h-full gap-6 min-w-[1200px] overflow-x-auto pb-4">
+            {COLUMNS.map((col) => {
+                const colDeals = filteredDeals.filter(d => d.stage === col.id);
+                const colValue = colDeals.reduce((acc, d) => acc + d.value, 0);
 
-            return (
-              <div key={col.id} className="flex flex-col w-80 h-full">
-                {/* Column Header */}
-                <div className={`flex items-center justify-between mb-4 pb-2 border-b-2 ${col.color}`}>
-                   <div>
-                      <h3 className="font-bold text-slate-700">{col.label}</h3>
-                      <p className="text-xs text-slate-500">${(colValue / 1000).toFixed(0)}k • {colDeals.length} Deals</p>
-                   </div>
-                   <div className="p-1 rounded hover:bg-slate-200 cursor-pointer text-slate-400">
-                      <MoreHorizontal size={16} />
-                   </div>
-                </div>
+                return (
+                <div key={col.id} className="flex flex-col w-80 h-full shrink-0">
+                    {/* Column Header */}
+                    <div className={`flex items-center justify-between mb-4 pb-2 border-b-2 ${col.color}`}>
+                    <div>
+                        <h3 className="font-bold text-slate-700">{col.label}</h3>
+                        <p className="text-xs text-slate-500">${(colValue / 1000).toFixed(0)}k • {colDeals.length} Deals</p>
+                    </div>
+                    <div className="p-1 rounded hover:bg-slate-200 cursor-pointer text-slate-400">
+                        <MoreHorizontal size={16} />
+                    </div>
+                    </div>
 
-                {/* Column Body */}
-                <div className="flex-1 overflow-y-auto space-y-3 pb-20 pr-2 custom-scrollbar">
-                   {colDeals.length === 0 ? (
-                      <div className="h-24 border-2 border-dashed border-slate-200 rounded-xl flex items-center justify-center text-slate-400 text-sm italic">
-                         No deals
-                      </div>
-                   ) : (
-                      colDeals.map((deal) => (
-                         <DealCard key={deal.id} deal={deal} />
-                      ))
-                   )}
-                   
-                   {/* Add Button per Column */}
-                   <button 
-                      onClick={() => handleOpenModal(col.id)}
-                      className="w-full py-3 border border-dashed border-slate-300 rounded-xl text-slate-500 text-sm font-medium hover:border-indigo-400 hover:text-indigo-600 hover:bg-white transition-all flex items-center justify-center gap-2"
-                   >
-                      <Plus size={16} /> Add to {col.label}
-                   </button>
+                    {/* Column Body */}
+                    <div className="flex-1 overflow-y-auto space-y-3 pb-20 pr-2 custom-scrollbar">
+                    {colDeals.length === 0 ? (
+                        <div className="h-24 border-2 border-dashed border-slate-200 rounded-xl flex items-center justify-center text-slate-400 text-sm italic">
+                            No deals
+                        </div>
+                    ) : (
+                        colDeals.map((deal) => (
+                            <DealCard key={deal.id} deal={deal} layout="board" />
+                        ))
+                    )}
+                    
+                    {/* Add Button per Column */}
+                    <button 
+                        onClick={() => handleOpenModal(col.id)}
+                        className="w-full py-3 border border-dashed border-slate-300 rounded-xl text-slate-500 text-sm font-medium hover:border-indigo-400 hover:text-indigo-600 hover:bg-white transition-all flex items-center justify-center gap-2"
+                    >
+                        <Plus size={16} /> Add to {col.label}
+                    </button>
+                    </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+                );
+            })}
+            </div>
+        ) : (
+            // LIST VIEW
+            <div className="h-full overflow-y-auto custom-scrollbar">
+                <div className="min-w-[1000px]">
+                    {/* Table Header */}
+                    <div className="flex items-center px-6 py-3 bg-slate-100 rounded-t-xl border-b border-slate-200 text-xs font-bold text-slate-500 uppercase tracking-wide">
+                        <div className="w-1/4">Company</div>
+                        <div className="w-1/6">Stage</div>
+                        <div className="w-1/6">Value</div>
+                        <div className="w-1/6">Probability</div>
+                        <div className="w-1/6">Next Action</div>
+                        <div className="w-12 text-center">Owner</div>
+                        <div className="w-8"></div>
+                    </div>
+                    
+                    {/* List Items */}
+                    <div className="bg-white border-x border-b border-slate-200 rounded-b-xl shadow-sm">
+                        {filteredDeals.length === 0 ? (
+                            <div className="text-center py-12 text-slate-400">No deals found matching your search.</div>
+                        ) : (
+                            filteredDeals.map(deal => (
+                                <DealCard key={deal.id} deal={deal} layout="list" />
+                            ))
+                        )}
+                    </div>
+                </div>
+            </div>
+        )}
       </div>
 
       {/* 3. New Deal Modal */}
@@ -239,7 +274,95 @@ const CRM: React.FC = () => {
 // SUB-COMPONENT: Deal Card
 // ----------------------------------------------------------------------
 
-const DealCard: React.FC<{ deal: Deal }> = ({ deal }) => {
+interface DealCardProps {
+    deal: Deal;
+    layout?: 'board' | 'list';
+}
+
+const DealCard: React.FC<DealCardProps> = ({ deal, layout = 'board' }) => {
+  const getActionIcon = (text: string) => {
+    const t = text.toLowerCase();
+    if (t.includes('email') || t.includes('send')) return <Mail size={12} />;
+    if (t.includes('call') || t.includes('phone')) return <Phone size={12} />;
+    if (t.includes('meet') || t.includes('schedule')) return <Users size={12} />;
+    return <Calendar size={12} />;
+  };
+
+  // LIST LAYOUT
+  if (layout === 'list') {
+      return (
+        <motion.div 
+            layout
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="flex items-center px-6 py-4 border-b border-slate-100 last:border-0 hover:bg-indigo-50/30 transition-colors group cursor-pointer"
+        >
+            <div className="w-1/4 flex items-center gap-3">
+                <div className="w-8 h-8 bg-slate-50 rounded-lg flex items-center justify-center border border-slate-100 text-slate-400 group-hover:bg-white group-hover:text-indigo-600 transition-colors">
+                    <Building2 size={16} />
+                </div>
+                <div>
+                    <h4 className="font-bold text-slate-900 text-sm">{deal.company}</h4>
+                    <div className="text-xs text-slate-500">{deal.sector}</div>
+                </div>
+            </div>
+            
+            <div className="w-1/6">
+                <span className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${
+                    deal.stage === 'Lead' ? 'bg-slate-50 text-slate-600 border-slate-200' :
+                    deal.stage === 'Qualified' ? 'bg-blue-50 text-blue-600 border-blue-200' :
+                    deal.stage === 'Meeting' ? 'bg-amber-50 text-amber-600 border-amber-200' :
+                    deal.stage === 'Proposal' ? 'bg-purple-50 text-purple-600 border-purple-200' :
+                    'bg-green-50 text-green-600 border-green-200'
+                }`}>
+                    {deal.stage}
+                </span>
+            </div>
+            
+            <div className="w-1/6 font-bold text-slate-900 text-sm">
+                ${deal.value.toLocaleString()}
+            </div>
+            
+            <div className="w-1/6 pr-8">
+                <div className="flex items-center gap-2 mb-1">
+                    <div className="flex-1 bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                        <div className={`h-full rounded-full ${
+                            deal.probability > 75 ? 'bg-green-500' : 
+                            deal.probability > 40 ? 'bg-indigo-500' : 'bg-amber-400'
+                        }`} style={{ width: `${deal.probability}%` }}></div>
+                    </div>
+                    <span className="text-xs text-slate-500 font-medium">{deal.probability}%</span>
+                </div>
+            </div>
+            
+            <div className="w-1/6 flex flex-col justify-center">
+                <div className="flex items-center gap-1.5 text-xs font-medium text-slate-700 mb-0.5">
+                    {getActionIcon(deal.nextAction)}
+                    <span className="truncate">{deal.nextAction}</span>
+                </div>
+                <div className={`text-[10px] flex items-center gap-1 ${
+                    deal.dueDate === 'Urgent' ? 'text-red-600 font-bold' : 'text-slate-400'
+                }`}>
+                    <Clock size={10} /> {deal.dueDate}
+                </div>
+            </div>
+            
+            <div className="w-12 flex justify-center">
+                <div className={`w-8 h-8 rounded-full ${deal.ownerColor} flex items-center justify-center text-xs text-white font-bold ring-2 ring-white shadow-sm`}>
+                    {deal.ownerInitial}
+                </div>
+            </div>
+            
+            <div className="w-8 flex justify-end">
+                <button className="text-slate-300 hover:text-slate-600 p-1 rounded-full hover:bg-slate-100">
+                    <MoreHorizontal size={16} />
+                </button>
+            </div>
+        </motion.div>
+      );
+  }
+
+  // BOARD LAYOUT
   return (
     <motion.div 
       layout
@@ -284,23 +407,28 @@ const DealCard: React.FC<{ deal: Deal }> = ({ deal }) => {
          <div className="font-bold text-slate-900 text-sm">
             ${deal.value.toLocaleString()}
          </div>
-         <div className="flex items-center gap-2">
-            <div className={`text-[10px] px-1.5 py-0.5 rounded border ${
-               deal.dueDate === 'Urgent' ? 'bg-red-50 text-red-600 border-red-100' :
-               deal.dueDate === 'Done' ? 'bg-green-50 text-green-600 border-green-100' :
-               'bg-slate-50 text-slate-500 border-slate-100'
-            }`}>
-               {deal.dueDate}
-            </div>
-            <div className={`w-6 h-6 rounded-full ${deal.ownerColor} flex items-center justify-center text-[10px] text-white font-bold ring-2 ring-white`}>
-               {deal.ownerInitial}
-            </div>
+         <div className={`w-6 h-6 rounded-full ${deal.ownerColor} flex items-center justify-center text-[10px] text-white font-bold ring-2 ring-white shadow-sm`}>
+            {deal.ownerInitial}
          </div>
       </div>
       
-      {/* Hover Action */}
-      <div className="mt-2 text-xs text-slate-400 group-hover:text-indigo-600 transition-colors flex items-center gap-1">
-         <Calendar size={12} /> Next: {deal.nextAction}
+      {/* Enhanced Next Action Card with Hover Effect */}
+      <div className="mt-3 bg-slate-50 rounded-lg p-2.5 border border-slate-100 flex items-center gap-3 group-hover:bg-indigo-50 group-hover:border-indigo-100 transition-all">
+          <div className="p-1.5 bg-white rounded-md border border-slate-200 text-slate-400 group-hover:text-indigo-600 group-hover:border-indigo-200 transition-colors">
+             {getActionIcon(deal.nextAction)}
+          </div>
+          <div className="flex-1 min-w-0">
+              <div className="text-xs font-semibold text-slate-700 truncate group-hover:text-indigo-900">{deal.nextAction}</div>
+              <div className={`text-[10px] flex items-center gap-1 mt-0.5 ${
+                 deal.dueDate === 'Urgent' ? 'text-red-600 font-bold' : 'text-slate-500'
+              }`}>
+                 <Clock size={10} />
+                 {deal.dueDate}
+              </div>
+          </div>
+          <div className="opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-indigo-500">
+             <ArrowRight size={14} />
+          </div>
       </div>
     </motion.div>
   );

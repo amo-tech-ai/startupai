@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Menu, X, Zap, Bell, Search, Sparkles } from 'lucide-react';
+import { Menu, X, Zap, Bell, Search, Sparkles, Settings as SettingsIcon, LogOut } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PageType } from '../types';
 import { useToast } from '../context/ToastContext';
@@ -20,7 +20,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage = 'home', setPage, type = '
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -35,13 +35,16 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage = 'home', setPage, type = '
     setIsMobileMenuOpen(false);
   };
 
+  const handleLogout = async () => {
+    await signOut();
+    handleNav('home');
+  };
+
   const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
         if (searchQuery.trim()) {
             toast(`Searching for: "${searchQuery}"`, 'info');
-            // Here you would typically dispatch a search action or navigate to a results page
-            // e.g., setPage('search-results');
-            setSearchQuery(''); // Clear input for feedback
+            setSearchQuery(''); 
         }
     }
   };
@@ -150,14 +153,29 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage = 'home', setPage, type = '
                 
                 <div className="space-y-2">
                     <button onClick={() => handleNav('dashboard')} className="w-full text-left py-3 px-4 rounded-xl bg-slate-50 font-medium">Dashboard</button>
-                    <button onClick={() => handleNav('pitch-decks')} className="w-full text-left py-3 px-4 text-slate-600 font-medium">Pitch Decks</button>
-                    <button onClick={() => handleNav('documents')} className="w-full text-left py-3 px-4 text-slate-600 font-medium">Documents</button>
-                    <button onClick={() => handleNav('crm')} className="w-full text-left py-3 px-4 text-slate-600 font-medium">CRM</button>
-                     <button onClick={() => handleNav('tasks')} className="w-full text-left py-3 px-4 text-slate-600 font-medium">Tasks</button>
+                    <button onClick={() => handleNav('pitch-decks')} className="w-full text-left py-3 px-4 text-slate-600 font-medium hover:bg-slate-50 rounded-xl">Pitch Decks</button>
+                    <button onClick={() => handleNav('documents')} className="w-full text-left py-3 px-4 text-slate-600 font-medium hover:bg-slate-50 rounded-xl">Documents</button>
+                    <button onClick={() => handleNav('crm')} className="w-full text-left py-3 px-4 text-slate-600 font-medium hover:bg-slate-50 rounded-xl">CRM</button>
+                    <button onClick={() => handleNav('tasks')} className="w-full text-left py-3 px-4 text-slate-600 font-medium hover:bg-slate-50 rounded-xl">Tasks</button>
+                    <button onClick={() => handleNav('settings')} className="w-full text-left py-3 px-4 text-slate-600 font-medium hover:bg-slate-50 rounded-xl flex items-center gap-2">
+                        <SettingsIcon size={18} /> Settings
+                    </button>
                 </div>
 
-                <div className="mt-auto">
-                    <button onClick={() => handleNav('home')} className="w-full py-3 text-rose-500 font-medium text-center">Sign Out</button>
+                <div className="mt-auto border-t border-slate-100 pt-4">
+                    <div className="flex items-center gap-3 mb-4 px-2">
+                        <img src={userAvatar} alt="User" className="w-10 h-10 rounded-full object-cover border border-slate-200" />
+                        <div>
+                            <div className="font-bold text-slate-900 text-sm">{user?.user_metadata?.full_name || 'User'}</div>
+                            <div className="text-xs text-slate-500">{user?.email}</div>
+                        </div>
+                    </div>
+                    <button 
+                        onClick={handleLogout} 
+                        className="w-full py-3 text-rose-500 font-medium text-center bg-rose-50 rounded-xl flex items-center justify-center gap-2"
+                    >
+                        <LogOut size={18} /> Sign Out
+                    </button>
                 </div>
               </MotionDiv>
             )}

@@ -16,7 +16,7 @@ const Pricing: React.FC<PricingProps> = ({ setPage }) => {
   const handleAction = (planId: string) => {
     if (setPage) {
       if (user) {
-        // Logged in: Go to billing settings to upgrade
+        // Logged in: Go to billing settings to upgrade or manage
         localStorage.setItem('settings_tab', 'billing');
         setPage('settings'); 
       } else {
@@ -28,7 +28,7 @@ const Pricing: React.FC<PricingProps> = ({ setPage }) => {
 
   const getButtonText = (planId: string) => {
     if (!user) return 'Get Started';
-    if (profile?.plan === planId) return 'Current Plan';
+    if (profile?.plan === planId) return 'Manage Plan';
     if (planId === 'free' && profile?.plan !== 'free') return 'Downgrade';
     return 'Upgrade Now';
   };
@@ -49,8 +49,11 @@ const Pricing: React.FC<PricingProps> = ({ setPage }) => {
                 <div className="text-4xl font-bold text-slate-900 mb-6">$0<span className="text-sm font-normal text-slate-500">/mo</span></div>
                 <button 
                     onClick={() => handleAction('free')} 
-                    className={`w-full py-3 rounded-lg border font-semibold mb-8 transition-colors ${profile?.plan === 'free' ? 'bg-indigo-100 text-indigo-700 border-indigo-200 cursor-default' : 'border-slate-200 text-slate-700 hover:bg-slate-50'}`}
-                    disabled={profile?.plan === 'free'}
+                    className={`w-full py-3 rounded-lg border font-semibold mb-8 transition-colors ${
+                      profile?.plan === 'free' 
+                      ? 'bg-indigo-100 text-indigo-700 border-indigo-200 hover:bg-indigo-200' 
+                      : 'border-slate-200 text-slate-700 hover:bg-slate-50'
+                    }`}
                 >
                     {getButtonText('free')}
                 </button>
@@ -70,8 +73,11 @@ const Pricing: React.FC<PricingProps> = ({ setPage }) => {
                 <div className="text-4xl font-bold text-slate-900 mb-6">$29<span className="text-sm font-normal text-slate-500">/mo</span></div>
                 <button 
                     onClick={() => handleAction('founder')} 
-                    className={`w-full py-3 rounded-lg font-semibold mb-8 shadow-lg shadow-primary-600/20 transition-colors ${profile?.plan === 'founder' ? 'bg-indigo-100 text-indigo-700 border border-indigo-200 cursor-default shadow-none' : 'bg-primary-600 text-white hover:bg-primary-700'}`}
-                    disabled={profile?.plan === 'founder'}
+                    className={`w-full py-3 rounded-lg font-semibold mb-8 shadow-lg shadow-primary-600/20 transition-colors ${
+                      profile?.plan === 'founder' 
+                      ? 'bg-indigo-100 text-indigo-700 border border-indigo-200 hover:bg-indigo-200 shadow-none' 
+                      : 'bg-primary-600 text-white hover:bg-primary-700'
+                    }`}
                 >
                     {getButtonText('founder')}
                 </button>
@@ -91,8 +97,11 @@ const Pricing: React.FC<PricingProps> = ({ setPage }) => {
                 <div className="text-4xl font-bold text-slate-900 mb-6">$79<span className="text-sm font-normal text-slate-500">/mo</span></div>
                 <button 
                     onClick={() => handleAction('growth')} 
-                    className={`w-full py-3 rounded-lg border font-semibold mb-8 transition-colors ${profile?.plan === 'growth' ? 'bg-indigo-100 text-indigo-700 border-indigo-200 cursor-default' : 'border-slate-200 text-slate-700 hover:bg-slate-50'}`}
-                    disabled={profile?.plan === 'growth'}
+                    className={`w-full py-3 rounded-lg border font-semibold mb-8 transition-colors ${
+                      profile?.plan === 'growth' 
+                      ? 'bg-indigo-100 text-indigo-700 border-indigo-200 hover:bg-indigo-200' 
+                      : 'border-slate-200 text-slate-700 hover:bg-slate-50'
+                    }`}
                 >
                     {getButtonText('growth')}
                 </button>

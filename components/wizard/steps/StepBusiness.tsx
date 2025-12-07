@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Tag, Globe, Linkedin, Twitter, Github, FileText, Sparkles, Loader2 } from 'lucide-react';
+import { Tag, Globe, Linkedin, Twitter, Github, FileText, Sparkles, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { WizardService } from '../../../services/wizardAI';
 import { API_KEY } from '../../../lib/env';
 
@@ -65,82 +65,121 @@ export const StepBusiness: React.FC<StepBusinessProps> = ({ formData, setFormDat
 
   return (
     <div className="grid lg:grid-cols-2 gap-8 animate-in slide-in-from-right-4 duration-500">
-      {/* LEFT: FUNDAMENTALS */}
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-6">
-         <div className="flex justify-between items-center">
-            <h2 className="text-xl font-bold text-slate-900">Business Fundamentals</h2>
-            <button 
-                onClick={handleAiSuggest}
-                disabled={isGenerating}
-                className="text-xs flex items-center gap-1 text-purple-600 font-bold hover:bg-purple-50 px-2 py-1 rounded transition-colors disabled:opacity-50"
-            >
-                {isGenerating ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
-                Auto-Suggest
-            </button>
-         </div>
-
-         <div className="grid grid-cols-2 gap-4">
+      {/* LEFT: STRATEGIC NARRATIVE & FUNDAMENTALS */}
+      <div className="space-y-6">
+        
+        {/* Strategic Narrative */}
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-6">
+            <h2 className="text-xl font-bold text-slate-900 mb-2">Strategic Narrative</h2>
+            
             <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Business Model</label>
-                <select 
-                    value={formData.businessModel}
-                    onChange={(e) => update('businessModel', e.target.value)}
-                    className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none bg-white"
-                >
-                    <option value="">Select...</option>
-                    <option value="SaaS">SaaS</option>
-                    <option value="Marketplace">Marketplace</option>
-                    <option value="Transactional">Transactional</option>
-                    <option value="Subscription">Subscription</option>
-                </select>
+                <div className="flex items-center gap-2 mb-2">
+                    <AlertCircle size={16} className="text-red-500" />
+                    <label className="block text-sm font-bold text-slate-700">Problem Statement</label>
+                </div>
+                <textarea 
+                    value={formData.problem}
+                    onChange={(e) => update('problem', e.target.value)}
+                    className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none h-24 resize-none leading-relaxed"
+                    placeholder="What pain point are you solving?"
+                />
             </div>
+
             <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Pricing Model</label>
-                <select 
-                    value={formData.pricingModel}
-                    onChange={(e) => update('pricingModel', e.target.value)}
-                    className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none bg-white"
-                >
-                    <option value="">Select...</option>
-                    <option value="Freemium">Freemium</option>
-                    <option value="Tiered">Tiered</option>
-                    <option value="Usage Based">Usage Based</option>
-                    <option value="Enterprise">Enterprise</option>
-                </select>
+                <div className="flex items-center gap-2 mb-2">
+                    <CheckCircle2 size={16} className="text-green-500" />
+                    <label className="block text-sm font-bold text-slate-700">Solution Statement</label>
+                </div>
+                <textarea 
+                    value={formData.solution}
+                    onChange={(e) => update('solution', e.target.value)}
+                    className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none h-24 resize-none leading-relaxed"
+                    placeholder="How do you solve it uniquely?"
+                />
             </div>
-         </div>
+        </div>
 
-         <TagInput 
-            label="Customer Segments" 
-            values={formData.customerSegments} 
-            onChange={(vals: string[]) => update('customerSegments', vals)} 
-         />
+        {/* Fundamentals */}
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-6">
+            <div className="flex justify-between items-center">
+                <h2 className="text-xl font-bold text-slate-900">Fundamentals</h2>
+                <button 
+                    onClick={handleAiSuggest}
+                    disabled={isGenerating}
+                    className="text-xs flex items-center gap-1 text-purple-600 font-bold hover:bg-purple-50 px-2 py-1 rounded transition-colors disabled:opacity-50"
+                >
+                    {isGenerating ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+                    Auto-Suggest
+                </button>
+            </div>
 
-         <TagInput 
-            label="Key Features" 
-            values={formData.keyFeatures} 
-            onChange={(vals: string[]) => update('keyFeatures', vals)} 
-         />
+            <div className="grid grid-cols-2 gap-4">
+                <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-2">Business Model</label>
+                    <select 
+                        value={formData.businessModel}
+                        onChange={(e) => update('businessModel', e.target.value)}
+                        className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none bg-white"
+                    >
+                        <option value="">Select...</option>
+                        <option value="SaaS">SaaS</option>
+                        <option value="Marketplace">Marketplace</option>
+                        <option value="Transactional">Transactional</option>
+                        <option value="Subscription">Subscription</option>
+                    </select>
+                </div>
+                <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-2">Pricing Model</label>
+                    <select 
+                        value={formData.pricingModel}
+                        onChange={(e) => update('pricingModel', e.target.value)}
+                        className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none bg-white"
+                    >
+                        <option value="">Select...</option>
+                        <option value="Freemium">Freemium</option>
+                        <option value="Tiered">Tiered</option>
+                        <option value="Usage Based">Usage Based</option>
+                        <option value="Enterprise">Enterprise</option>
+                    </select>
+                </div>
+            </div>
 
-         <TagInput 
-            label="Competitors" 
-            values={formData.competitors} 
-            onChange={(vals: string[]) => update('competitors', vals)} 
-         />
-
-         <div>
-            <label className="block text-sm font-bold text-slate-700 mb-2">Core Differentiator</label>
-            <textarea 
-                value={formData.coreDifferentiator}
-                onChange={(e) => update('coreDifferentiator', e.target.value)}
-                className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none h-24 resize-none"
-                placeholder="What makes you 10x better?"
+            <TagInput 
+                label="Customer Segments" 
+                values={formData.customerSegments} 
+                onChange={(vals: string[]) => update('customerSegments', vals)} 
             />
-         </div>
+        </div>
       </div>
 
-      {/* RIGHT: SOCIAL & ASSETS */}
+      {/* RIGHT: DIFFERENTIATION & SOCIAL */}
       <div className="space-y-6">
+         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-6">
+            <h2 className="text-xl font-bold text-slate-900">Market & Features</h2>
+
+            <TagInput 
+                label="Key Features" 
+                values={formData.keyFeatures} 
+                onChange={(vals: string[]) => update('keyFeatures', vals)} 
+            />
+
+            <TagInput 
+                label="Competitors" 
+                values={formData.competitors} 
+                onChange={(vals: string[]) => update('competitors', vals)} 
+            />
+
+            <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Core Differentiator</label>
+                <textarea 
+                    value={formData.coreDifferentiator}
+                    onChange={(e) => update('coreDifferentiator', e.target.value)}
+                    className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none h-24 resize-none"
+                    placeholder="What makes you 10x better?"
+                />
+            </div>
+         </div>
+
          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-6">
             <h2 className="text-xl font-bold text-slate-900">Social Presence</h2>
             
@@ -171,26 +210,6 @@ export const StepBusiness: React.FC<StepBusinessProps> = ({ formData, setFormDat
                         placeholder="Twitter / X Handle"
                         value={formData.socialLinks.twitter}
                         onChange={(e) => update('socialLinks', { ...formData.socialLinks, twitter: e.target.value })}
-                        className="w-full pl-10 p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none"
-                    />
-                </div>
-                <div className="relative">
-                    <Github className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                    <input 
-                        type="url" 
-                        placeholder="GitHub Organization"
-                        value={formData.socialLinks.github}
-                        onChange={(e) => update('socialLinks', { ...formData.socialLinks, github: e.target.value })}
-                        className="w-full pl-10 p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none"
-                    />
-                </div>
-                <div className="relative">
-                    <FileText className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                    <input 
-                        type="url" 
-                        placeholder="Pitch Deck Link (DocSend/Slides)"
-                        value={formData.socialLinks.pitchDeck}
-                        onChange={(e) => update('socialLinks', { ...formData.socialLinks, pitchDeck: e.target.value })}
                         className="w-full pl-10 p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none"
                     />
                 </div>

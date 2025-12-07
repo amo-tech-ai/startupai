@@ -4,6 +4,7 @@ import { ArrowRight, Zap, CheckCircle } from 'lucide-react';
 import { StartupStage } from '../types';
 import { useData } from '../context/DataContext';
 import { WizardProgress } from './wizard/WizardProgress';
+import { useToast } from '../context/ToastContext';
 
 // Updated Steps
 import { StepContext } from './wizard/steps/StepContext';
@@ -26,6 +27,7 @@ const STEPS = [
 
 const StartupWizard: React.FC<StartupWizardProps> = ({ setPage }) => {
   const { updateProfile, updateMetrics, addActivity } = useData();
+  const { success } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
   
   // Consolidated Form Data
@@ -42,6 +44,8 @@ const StartupWizard: React.FC<StartupWizardProps> = ({ setPage }) => {
     founders: [{ id: '1', name: '', title: '', bio: '', linkedin: '', email: '', website: '' }],
     
     // Business
+    problem: '', // New: Critical for Deck Gen
+    solution: '', // New: Critical for Deck Gen
     businessModel: '',
     pricingModel: '',
     customerSegments: [] as string[],
@@ -64,7 +68,21 @@ const StartupWizard: React.FC<StartupWizardProps> = ({ setPage }) => {
 
   // --- Actions ---
 
+  const validateStep = (step: number) => {
+    switch (step) {
+      case 1:
+        return formData.name.length > 0;
+      default:
+        return true;
+    }
+  };
+
   const handleNext = () => {
+    if (!validateStep(currentStep)) {
+      alert("Please complete required fields (Name is mandatory).");
+      return;
+    }
+
     if (currentStep < 5) {
       setCurrentStep(prev => prev + 1);
       window.scrollTo(0,0);
@@ -91,17 +109,24 @@ const StartupWizard: React.FC<StartupWizardProps> = ({ setPage }) => {
       name: formData.name,
       websiteUrl: formData.website,
       tagline: formData.tagline,
+      industry: formData.industry,
+      coverImageUrl: formData.coverImage,
       yearFounded: formData.yearFounded,
+      
+      problemStatement: formData.problem,
+      solutionStatement: formData.solution,
       businessModel: formData.businessModel,
       pricingModel: formData.pricingModel,
       customerSegments: formData.customerSegments,
       keyFeatures: formData.keyFeatures,
       coreDifferentiator: formData.coreDifferentiator,
       socialLinks: formData.socialLinks,
+      
       fundingHistory: formData.fundingHistory,
       isRaising: formData.isRaising,
       fundingGoal: formData.targetRaise,
       useOfFunds: formData.useOfFunds,
+      
       // Default others
       stage: 'Seed', 
       createdAt: new Date().toISOString(),
@@ -121,9 +146,11 @@ const StartupWizard: React.FC<StartupWizardProps> = ({ setPage }) => {
       description: `${formData.name} profile is ready.`,
     });
     
+    success("Profile setup complete! Welcome to your dashboard.");
+
     setTimeout(() => {
       setPage('dashboard');
-    }, 800);
+    }, 1000);
   };
 
   const renderStepContent = () => {

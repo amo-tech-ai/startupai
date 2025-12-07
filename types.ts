@@ -39,6 +39,7 @@ export interface StartupProfile {
   businessModel: string; // e.g., "B2B SaaS", "Marketplace"
   pricingModel?: string; // New
   targetMarket: string;
+  industry?: string; // Added to match Wizard
   customerSegments?: string[]; // New
   keyFeatures?: string[]; // New
   coreDifferentiator?: string; // New

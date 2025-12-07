@@ -25,7 +25,8 @@ export const StepContext: React.FC<StepContextProps> = ({ formData, setFormData 
           ...prev,
           tagline: result.tagline || prev.tagline,
           industry: result.industry || prev.industry,
-          pricingModel: result.pricing_model_hint || prev.pricingModel
+          pricingModel: result.pricing_model_hint || prev.pricingModel,
+          problem: result.core_problem || prev.problem // Capture inferred problem
         }));
         setDetectedSignals({
           audience: result.target_audience,
@@ -41,8 +42,12 @@ export const StepContext: React.FC<StepContextProps> = ({ formData, setFormData 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      const imageUrl = URL.createObjectURL(file);
-      update('coverImage', imageUrl);
+      // Convert to Base64 for persistence
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        update('coverImage', reader.result as string);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -118,6 +123,8 @@ export const StepContext: React.FC<StepContextProps> = ({ formData, setFormData 
                       <option value="AI/ML">AI / ML</option>
                       <option value="Ecommerce">Ecommerce</option>
                       <option value="Marketplace">Marketplace</option>
+                      <option value="Hardware">Hardware</option>
+                      <option value="DeepTech">DeepTech</option>
                    </select>
                 </div>
                 <div>

@@ -1,4 +1,4 @@
-import { StartupDatabaseSchema, StartupProfile, Founder, Competitor, AICoachInsight } from '../types';
+import { StartupDatabaseSchema, StartupProfile, Founder, Competitor, AICoachInsight, Activity, Task, Deck } from '../types';
 
 /**
  * Mock Data Validation
@@ -70,13 +70,81 @@ const mockInsights: AICoachInsight[] = [
   }
 ];
 
+const mockTasks: Task[] = [
+    {
+        id: "tsk_1",
+        startupId: "st_123456",
+        title: "Incorporate Delaware C-Corp",
+        description: "File articles of incorporation using Clerky or Stripe Atlas.",
+        status: "Done",
+        priority: "High",
+        dueDate: "2023-11-01",
+        aiGenerated: false
+    },
+    {
+        id: "tsk_2",
+        startupId: "st_123456",
+        title: "Finalize Pitch Deck v1",
+        description: "Review generated deck and add financial projections.",
+        status: "In Progress",
+        priority: "High",
+        dueDate: "2023-11-15",
+        aiGenerated: true
+    },
+    {
+        id: "tsk_3",
+        startupId: "st_123456",
+        title: "Reach $10k MRR",
+        description: "Close pending deals in pipeline.",
+        status: "Backlog",
+        priority: "Medium",
+        aiGenerated: false
+    }
+];
+
+const mockActivities: Activity[] = [
+  {
+    id: "act_1",
+    startupId: "st_123456",
+    type: "system",
+    title: "Account Created",
+    description: "Welcome to StartupAI! Your workspace is ready.",
+    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString() // 1 day ago
+  },
+  {
+    id: "act_2",
+    startupId: "st_123456",
+    type: "milestone",
+    title: "Metrics Updated",
+    description: "Monthly revenue updated to $150k.",
+    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString() // 2 hours ago
+  }
+];
+
+const mockDecks: Deck[] = [
+    {
+        id: "deck_1",
+        startupId: "st_123456",
+        title: "Seed Round - YC Template",
+        template: "Y Combinator",
+        updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(),
+        slides: [
+            { id: "s1", title: "Problem", bullets: ["Manual fundraising is slow", "Founders hate documentation"], visualDescription: "Chart showing hours wasted" },
+            { id: "s2", title: "Solution", bullets: ["AI Operating System", "Auto-generate assets"], visualDescription: "Screenshot of StartupAI dashboard" }
+        ]
+    }
+];
+
 // Initial Store State
 export const initialDatabaseState: StartupDatabaseSchema = {
   profile: mockProfile,
   founders: mockFounders,
   competitors: mockCompetitors,
   metrics: [],
-  insights: mockInsights
+  insights: mockInsights,
+  tasks: mockTasks,
+  activities: mockActivities,
+  decks: mockDecks
 };
 
 // Validation log (simulating DB check)

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   BarChart3, 
   FileText, 
@@ -16,7 +16,12 @@ import {
   Search,
   Database,
   PenTool,
-  Download
+  Download,
+  Activity,
+  Loader2,
+  RefreshCw,
+  Trophy,
+  AlertTriangle
 } from 'lucide-react';
 import { 
   AreaChart, 
@@ -28,27 +33,171 @@ import {
 } from 'recharts';
 import { motion } from 'framer-motion';
 import { useData } from '../context/DataContext';
-
-// Mock data for charts
-const sparklineData1 = [
-  { v: 10 }, { v: 20 }, { v: 18 }, { v: 25 }, { v: 30 }, { v: 40 }, { v: 35 }, { v: 42 }
-];
-const sparklineData2 = [
-  { v: 100 }, { v: 120 }, { v: 110 }, { v: 140 }, { v: 130 }, { v: 160 }, { v: 180 }, { v: 200 }
-];
+import { GoogleGenAI } from "@google/genai";
+import { AICoachInsight, StartupProfile } from '../types';
 
 const Dashboard: React.FC = () => {
-  const { profile, metrics, insights } = useData();
+  const { profile, metrics, insights, activities, setInsights, addActivity } = useData();
+  const [isGeneratingInsights, setIsGeneratingInsights] = useState(false);
+  const [profileStrength, setProfileStrength] = useState(0);
+  const [missingFields, setMissingFields] = useState<string[]>([]);
 
   // Derived Values
   const startupName = profile?.name || "My Startup";
   const mrr = metrics[0]?.mrr || 0;
   const activeUsers = metrics[0]?.activeUsers || 0;
   const fundingGoal = profile?.fundingGoal || 1000000;
-  const pipelineValue = 1200000; // Static for now until CRM is bound
+  
+  // Calculate Progress towards funding
+  // Mock 'raised' amount (could be added to schema later)
+  const raisedAmount = 150000; 
+  const fundingProgress = Math.min((raisedAmount / fundingGoal) * 100, 100);
+
+  // --- Profile Strength Logic ---
+  useEffect(() => {
+    if (!profile) return;
+
+    const calculateStrength = (p: StartupProfile) => {
+        let score = 0;
+        const missing: string[] = [];
+
+        // Weighting: Core Basics (40%)
+        if (p.name) score += 10; else missing.push("Company Name");
+        if (p.stage) score += 10; else missing.push("Stage");
+        if (p.tagline) score += 10; else missing.push("Tagline");
+        if (p.websiteUrl) score += 10; else missing.push("Website URL");
+
+        // Weighting: Strategic Narrative (40%)
+        if (p.problemStatement && p.problemStatement.length > 20) score += 15; else missing.push("Problem Statement");
+        if (p.solutionStatement && p.solutionStatement.length > 20) score += 15; else missing.push("Solution Statement");
+        if (p.targetMarket) score += 10; else missing.push("Target Market");
+
+        // Weighting: Financials & Biz Model (20%)
+        if (p.businessModel) score += 10; else missing.push("Business Model");
+        if (p.fundingGoal > 0) score += 10; else missing.push("Funding Goal");
+
+        return { score: Math.min(score, 100), missing };
+    };
+
+    const result = calculateStrength(profile);
+    setProfileStrength(result.score);
+    setMissingFields(result.missing);
+  }, [profile]);
+
+  // Dynamic Chart Data Generation
+  // Creates a realistic looking "growth" curve based on the current MRR
+  const generateChartData = (currentValue: number, points: number = 7) => {
+    if (currentValue === 0) return Array(points).fill({ v: 0 });
+    
+    return Array.from({ length: points }, (_, i) => {
+      // Create a gentle upward curve ending at the current value
+      const reverseIndex = points - 1 - i;
+      const volatility = Math.random() * 0.1 - 0.05; // +/- 5% random noise
+      const trendFactor = 1 - (reverseIndex * 0.1); // Linear growth simulation
+      let val = currentValue * trendFactor * (1 + volatility);
+      return { v: Math.max(0, val) };
+    });
+  };
+
+  const mrrData = generateChartData(mrr);
+  const usersData = generateChartData(activeUsers);
+
+  // Time formatter
+  const formatTime = (isoString: string) => {
+    const date = new Date(isoString);
+    const now = new Date();
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+    
+    if (diffInSeconds < 60) return 'Just now';
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+    return `${Math.floor(diffInSeconds / 86400)}d ago`;
+  };
+
+  // --- AI COACH LOGIC ---
+  const refreshInsights = async () => {
+    if (!profile || !process.env.API_KEY) {
+        if (!process.env.API_KEY) alert("API Key missing");
+        return;
+    }
+
+    setIsGeneratingInsights(true);
+
+    try {
+        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+        
+        const context = `
+            Startup: ${profile.name}
+            Stage: ${profile.stage}
+            Tagline: ${profile.tagline}
+            Problem: ${profile.problemStatement}
+            Solution: ${profile.solutionStatement}
+            Funding Goal: $${profile.fundingGoal}
+            MRR: $${mrr}
+            Active Users: ${activeUsers}
+        `;
+
+        const prompt = `
+            You are a Y Combinator-level startup coach. Analyze the following startup context and provide 3 high-impact strategic insights.
+            
+            Context:
+            ${context}
+
+            Requirements:
+            1. One 'Risk' (What could go wrong?)
+            2. One 'Opportunity' (What is a low-hanging fruit?)
+            3. One 'Action' (What should they do today?)
+            
+            Return ONLY a valid JSON array of objects with this schema:
+            [
+                {
+                    "category": "Growth" | "Fundraising" | "Product" | "Finance",
+                    "type": "Risk" | "Opportunity" | "Action",
+                    "title": "Short punchy title (max 5 words)",
+                    "description": "Clear explanation (max 15 words)",
+                    "priority": "High" | "Medium" | "Low"
+                }
+            ]
+        `;
+
+        const response = await ai.models.generateContent({
+            model: 'gemini-3-pro-preview',
+            contents: prompt,
+            config: { responseMimeType: 'application/json' }
+        });
+
+        const text = response.text;
+        if (text) {
+            const rawInsights = JSON.parse(text);
+            const newInsights: AICoachInsight[] = rawInsights.map((i: any) => ({
+                id: Math.random().toString(36).substr(2, 9),
+                startupId: profile.id,
+                category: i.category,
+                type: i.type,
+                title: i.title,
+                description: i.description,
+                priority: i.priority,
+                status: 'New',
+                generatedAt: new Date().toISOString()
+            }));
+
+            setInsights(newInsights);
+            addActivity({
+                type: 'system',
+                title: 'AI Coach Analysis',
+                description: 'Generated new strategic insights.'
+            });
+        }
+    } catch (error) {
+        console.error("AI Coach Error:", error);
+        alert("Failed to generate insights. Please try again.");
+    } finally {
+        setIsGeneratingInsights(false);
+    }
+  };
 
   return (
-    <div className="p-6 md:p-8 lg:p-12 max-w-7xl mx-auto space-y-12">
+    <div className="p-6 md:p-8 lg:p-12 max-w-7xl mx-auto space-y-12 animate-in fade-in duration-700">
       
       {/* 4️⃣ WELCOME SECTION */}
       <section className="flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -93,7 +242,7 @@ const Dashboard: React.FC = () => {
             </div>
             <div className="h-10 w-full opacity-50">
                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={sparklineData1}>
+                  <AreaChart data={mrrData}>
                      <Area type="monotone" dataKey="v" stroke="#4f46e5" fill="#e0e7ff" strokeWidth={2} />
                   </AreaChart>
                </ResponsiveContainer>
@@ -115,10 +264,9 @@ const Dashboard: React.FC = () => {
                <div className="text-3xl font-bold text-slate-900">${fundingGoal.toLocaleString()}</div>
             </div>
             <div className="w-full bg-slate-100 rounded-full h-1.5 mb-2 overflow-hidden">
-               {/* Mock progress towards funding */}
-               <div className="bg-purple-500 h-1.5 rounded-full" style={{ width: '15%' }}></div>
+               <div className="bg-purple-500 h-1.5 rounded-full" style={{ width: `${fundingProgress}%` }}></div>
             </div>
-            <div className="text-xs text-slate-400">Pre-Seed Round</div>
+            <div className="text-xs text-slate-400">Raised: ${raisedAmount.toLocaleString()}</div>
          </div>
 
          {/* Card 3 */}
@@ -135,10 +283,12 @@ const Dashboard: React.FC = () => {
                <div className="text-slate-500 text-sm font-medium mb-1">Active Users</div>
                <div className="text-3xl font-bold text-slate-900">{activeUsers.toLocaleString()}</div>
             </div>
-            <div className="flex gap-1 mt-auto">
-               {[1,2,3,4,5].map(i => (
-                  <div key={i} className={`h-8 flex-1 rounded-sm ${i < 4 ? 'bg-teal-400/80' : 'bg-slate-100'}`}></div>
-               ))}
+            <div className="h-10 w-full opacity-50">
+               <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={usersData}>
+                     <Bar dataKey="v" fill="#2dd4bf" radius={[2, 2, 0, 0]} />
+                  </BarChart>
+               </ResponsiveContainer>
             </div>
          </div>
 
@@ -158,7 +308,7 @@ const Dashboard: React.FC = () => {
             </div>
             <div className="h-10 w-full opacity-50">
                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={sparklineData1}>
+                  <BarChart data={mrrData}>
                      <Bar dataKey="v" fill="#fb7185" radius={[2, 2, 0, 0]} />
                   </BarChart>
                </ResponsiveContainer>
@@ -172,66 +322,166 @@ const Dashboard: React.FC = () => {
          <div className="lg:col-span-3 space-y-6">
             <div className="flex items-center justify-between">
                <h3 className="text-lg font-bold text-slate-900">Recent Activity</h3>
-               <a href="#" className="text-sm text-indigo-600 font-medium hover:underline">View All</a>
+               <button className="text-sm text-indigo-600 font-medium hover:underline">View All</button>
             </div>
             
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 divide-y divide-slate-100">
-               {[
-                  { icon: <FileText size={16} className="text-indigo-600"/>, text: "Updated Series A Deck", time: "2h ago", bg: "bg-indigo-50" },
-                  { icon: <UserPlus size={16} className="text-purple-600"/>, text: "Added 3 contacts from LinkedIn", time: "4h ago", bg: "bg-purple-50" },
-                  { icon: <CheckSquare size={16} className="text-teal-600"/>, text: "Completed 'Market Research' task", time: "5h ago", bg: "bg-teal-50" },
-                  { icon: <Briefcase size={16} className="text-rose-600"/>, text: "Moved 'Acme Corp' to Proposal", time: "1d ago", bg: "bg-rose-50" },
-                  { icon: <Sparkles size={16} className="text-amber-600"/>, text: "AI generated Financial Model v2", time: "1d ago", bg: "bg-amber-50" },
-                  { icon: <Clock size={16} className="text-slate-600"/>, text: "Meeting with Sequoia Capital", time: "2d ago", bg: "bg-slate-50" },
-               ].map((item, idx) => (
-                  <div key={idx} className="p-4 flex items-center gap-4 hover:bg-slate-50/80 transition-colors group cursor-pointer">
-                     <div className={`p-2 rounded-lg ${item.bg}`}>
-                        {item.icon}
-                     </div>
-                     <div className="flex-1">
-                        <div className="text-sm font-medium text-slate-900">{item.text}</div>
-                     </div>
-                     <div className="text-xs text-slate-400 whitespace-nowrap">{item.time}</div>
-                     <ChevronRight size={16} className="text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </div>
-               ))}
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 divide-y divide-slate-100 max-h-[400px] overflow-y-auto">
+               {activities.length > 0 ? (
+                 activities.map((item, idx) => {
+                    // Determine Icon and Color based on type
+                    let icon = <Activity size={16} />;
+                    let bg = "bg-slate-50";
+                    let text = "text-slate-600";
+
+                    if (item.type === 'milestone') { icon = <Sparkles size={16} />; bg = "bg-amber-50"; text="text-amber-600"; }
+                    else if (item.type === 'update') { icon = <FileText size={16} />; bg = "bg-indigo-50"; text="text-indigo-600"; }
+                    else if (item.type === 'alert') { icon = <Clock size={16} />; bg = "bg-rose-50"; text="text-rose-600"; }
+                    else if (item.type === 'system') { icon = <CheckSquare size={16} />; bg = "bg-green-50"; text="text-green-600"; }
+
+                    return (
+                        <div key={item.id} className="p-4 flex items-center gap-4 hover:bg-slate-50/80 transition-colors group cursor-pointer">
+                           <div className={`p-2 rounded-lg ${bg} ${text}`}>
+                              {icon}
+                           </div>
+                           <div className="flex-1">
+                              <div className="text-sm font-bold text-slate-900">{item.title}</div>
+                              <div className="text-xs text-slate-500">{item.description}</div>
+                           </div>
+                           <div className="text-xs text-slate-400 whitespace-nowrap">{formatTime(item.timestamp)}</div>
+                           <ChevronRight size={16} className="text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
+                    );
+                 })
+               ) : (
+                 <div className="p-8 text-center text-slate-400 text-sm">No recent activity</div>
+               )}
             </div>
          </div>
 
-         {/* AI Insights (40% -> 2 cols) */}
+         {/* Right Column: Profile Score & AI Coach (40% -> 2 cols) */}
          <div className="lg:col-span-2 space-y-6">
-            <div className="flex items-center gap-2">
-               <Sparkles size={18} className="text-purple-600" />
-               <h3 className="text-lg font-bold text-slate-900">AI Recommendations</h3>
+            
+            {/* NEW: Profile Strength Widget */}
+            <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm relative overflow-hidden">
+                <div className="flex justify-between items-start mb-4">
+                    <div>
+                        <div className="flex items-center gap-2 mb-1">
+                            <Trophy size={18} className="text-amber-500" />
+                            <h3 className="font-bold text-slate-900">Profile Health</h3>
+                        </div>
+                        <p className="text-xs text-slate-500">Completeness Score</p>
+                    </div>
+                    <div className="text-2xl font-bold text-slate-900">{profileStrength}%</div>
+                </div>
+
+                {/* Progress Bar */}
+                <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden mb-4">
+                    <motion.div 
+                        initial={{ width: 0 }}
+                        animate={{ width: `${profileStrength}%` }}
+                        transition={{ duration: 1, ease: "easeOut" }}
+                        className={`h-full rounded-full ${
+                            profileStrength < 50 ? 'bg-red-500' : 
+                            profileStrength < 80 ? 'bg-amber-500' : 'bg-green-500'
+                        }`}
+                    />
+                </div>
+
+                {/* Missing Items */}
+                <div className="space-y-2">
+                    {missingFields.length > 0 ? (
+                        missingFields.slice(0, 2).map((field, idx) => (
+                            <div key={idx} className="flex items-center gap-2 text-xs text-slate-600 bg-slate-50 p-2 rounded-lg border border-slate-100">
+                                <AlertTriangle size={12} className="text-amber-500" />
+                                <span>Add <strong>{field}</strong> to improve score</span>
+                                <ArrowRight size={12} className="ml-auto text-slate-400" />
+                            </div>
+                        ))
+                    ) : (
+                        <div className="flex items-center gap-2 text-xs text-green-700 bg-green-50 p-2 rounded-lg border border-green-100">
+                            <Sparkles size={12} />
+                            <span>All Star Profile! You are ready to raise.</span>
+                        </div>
+                    )}
+                </div>
             </div>
 
-            <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl border border-indigo-100 p-1">
-               <div className="bg-white/60 backdrop-blur-sm rounded-xl p-6 space-y-6">
-                  {/* Dynamic Insights Map */}
-                  {insights.length > 0 ? (
-                    insights.map((insight) => (
-                      <div key={insight.id} className="flex gap-4">
-                          <div className="mt-1">
-                              <span className={`flex h-2 w-2 rounded-full ${insight.priority === 'High' ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)] animate-pulse' : 'bg-amber-500'}`}></span>
-                          </div>
-                          <div className="space-y-2">
-                              <span className={`text-xs font-bold uppercase tracking-wide ${insight.priority === 'High' ? 'text-red-500' : 'text-amber-500'}`}>{insight.title}</span>
-                              <p className="text-sm text-slate-700 leading-relaxed font-medium">
-                                {insight.description}
-                              </p>
-                              <button className="text-xs bg-white border border-slate-200 shadow-sm px-3 py-1.5 rounded-md font-medium text-slate-700 hover:text-indigo-600 hover:border-indigo-200 transition-colors">
-                                Act Now
-                              </button>
-                          </div>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-slate-500 text-sm">No new insights. Great job!</p>
-                  )}
-               </div>
-               <button className="w-full py-3 text-center text-xs font-bold text-indigo-600 uppercase tracking-wide hover:bg-white/50 rounded-b-xl transition-colors">
-                  Get More Insights →
-               </button>
+            {/* AI Coach */}
+            <div>
+                <div className="flex items-center justify-between mb-3">
+                   <div className="flex items-center gap-2">
+                      <Sparkles size={18} className="text-purple-600" />
+                      <h3 className="text-lg font-bold text-slate-900">AI Coach</h3>
+                   </div>
+                   <button 
+                      onClick={refreshInsights}
+                      disabled={isGeneratingInsights}
+                      className="p-2 text-slate-400 hover:text-purple-600 hover:bg-purple-50 rounded-full transition-colors disabled:opacity-50"
+                      title="Refresh Insights"
+                   >
+                      <RefreshCw size={16} className={isGeneratingInsights ? "animate-spin" : ""} />
+                   </button>
+                </div>
+
+                <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl border border-indigo-100 p-1">
+                   <div className="bg-white/60 backdrop-blur-sm rounded-xl p-6 space-y-6 min-h-[300px]">
+                      {/* Dynamic Insights Map */}
+                      {isGeneratingInsights ? (
+                         <div className="flex flex-col items-center justify-center h-64 text-slate-400 gap-3">
+                            <Loader2 size={24} className="animate-spin text-purple-600" />
+                            <span className="text-sm">Analyzing startup metrics...</span>
+                         </div>
+                      ) : insights.length > 0 ? (
+                        insights.map((insight) => (
+                          <motion.div 
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            key={insight.id} 
+                            className="flex gap-4 p-3 hover:bg-white rounded-lg transition-colors border border-transparent hover:border-purple-100 hover:shadow-sm"
+                          >
+                              <div className="mt-1 shrink-0">
+                                  <span className={`flex h-2.5 w-2.5 rounded-full ${
+                                     insight.type === 'Risk' ? 'bg-rose-500 shadow-rose-500/50' :
+                                     insight.type === 'Opportunity' ? 'bg-emerald-500 shadow-emerald-500/50' : 
+                                     'bg-indigo-500 shadow-indigo-500/50'
+                                  } shadow-[0_0_8px_rgba(0,0,0,0.3)]`}></span>
+                              </div>
+                              <div className="space-y-1">
+                                  <div className="flex items-center gap-2">
+                                     <span className={`text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded ${
+                                        insight.type === 'Risk' ? 'bg-rose-100 text-rose-700' :
+                                        insight.type === 'Opportunity' ? 'bg-emerald-100 text-emerald-700' : 
+                                        'bg-indigo-100 text-indigo-700'
+                                     }`}>
+                                        {insight.type}
+                                     </span>
+                                     <span className="text-sm font-bold text-slate-900">{insight.title}</span>
+                                  </div>
+                                  <p className="text-sm text-slate-600 leading-relaxed font-medium">
+                                    {insight.description}
+                                  </p>
+                                  <button className="text-xs mt-2 bg-white border border-slate-200 shadow-sm px-3 py-1.5 rounded-md font-medium text-slate-700 hover:text-indigo-600 hover:border-indigo-200 transition-colors">
+                                    View Action Plan
+                                  </button>
+                              </div>
+                          </motion.div>
+                        ))
+                      ) : (
+                        <div className="flex flex-col items-center justify-center h-64 text-slate-400 gap-3">
+                           <Sparkles size={32} className="text-slate-300" />
+                           <p className="text-sm text-center">No insights yet.<br/>Click refresh to analyze your data.</p>
+                           <button onClick={refreshInsights} className="text-xs text-indigo-600 font-bold hover:underline">Generate Now</button>
+                        </div>
+                      )}
+                   </div>
+                   <button 
+                      onClick={refreshInsights}
+                      disabled={isGeneratingInsights}
+                      className="w-full py-3 text-center text-xs font-bold text-indigo-600 uppercase tracking-wide hover:bg-white/50 rounded-b-xl transition-colors"
+                   >
+                      {isGeneratingInsights ? 'Analyzing...' : 'Refresh AI Analysis'}
+                   </button>
+                </div>
             </div>
          </div>
       </section>
@@ -294,31 +544,6 @@ const Dashboard: React.FC = () => {
                    <div>
                       <div className={`text-sm font-bold ${card.active ? 'text-indigo-900' : 'text-slate-700'}`}>{card.title}</div>
                       <div className={`text-xs mt-1 ${card.active ? 'text-indigo-600 font-medium' : 'text-slate-400'}`}>{card.status}</div>
-                   </div>
-                   {idx < 3 && <div className="hidden md:block absolute top-1/2 -right-3 w-6 h-px bg-slate-300 z-10"></div>}
-                </div>
-             ))}
-         </div>
-         
-         <div className="flex justify-center my-2 text-slate-300">
-            <ArrowDownRight size={24} />
-         </div>
-
-         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-             {/* Row 2 */}
-             {[
-                { title: "AI Draft Generation", icon: <Sparkles size={18}/>, status: "Waiting" },
-                { title: "User Refinement", icon: <PenTool size={18}/>, status: "Waiting" },
-                { title: "AI Polish", icon: <CheckSquare size={18}/>, status: "Waiting" },
-                { title: "Final Export", icon: <Download size={18}/>, status: "Waiting" },
-             ].map((card, idx) => (
-                <div key={idx} className="p-4 rounded-xl border bg-slate-50 border-slate-200 flex flex-col gap-3 opacity-70">
-                   <div className="p-2 rounded-lg w-fit bg-slate-200 text-slate-500">
-                      {card.icon}
-                   </div>
-                   <div>
-                      <div className="text-sm font-bold text-slate-700">{card.title}</div>
-                      <div className="text-xs mt-1 text-slate-400">{card.status}</div>
                    </div>
                    {idx < 3 && <div className="hidden md:block absolute top-1/2 -right-3 w-6 h-px bg-slate-300 z-10"></div>}
                 </div>

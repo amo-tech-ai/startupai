@@ -79,6 +79,52 @@ export interface AICoachInsight {
   generatedAt: string;
 }
 
+// Table: tasks (New)
+export type TaskStatus = 'Backlog' | 'In Progress' | 'Review' | 'Done';
+export type TaskPriority = 'Low' | 'Medium' | 'High';
+
+export interface Task {
+  id: string;
+  startupId: string;
+  title: string;
+  description?: string;
+  status: TaskStatus;
+  priority: TaskPriority;
+  dueDate?: string;
+  assignee?: string;
+  aiGenerated: boolean;
+}
+
+// Table: activity_log (New for Dashboard Feed)
+export interface Activity {
+  id: string;
+  startupId: string;
+  type: 'milestone' | 'update' | 'alert' | 'system';
+  title: string;
+  description: string;
+  timestamp: string;
+  actionUrl?: string;
+}
+
+// Table: decks (New for Pitch Deck Module)
+export interface Slide {
+    id: string;
+    title: string;
+    bullets: string[];
+    visualDescription?: string; // AI suggestion for image/chart
+    imageUrl?: string; // Base64 or URL of generated image
+}
+
+export interface Deck {
+    id: string;
+    startupId: string;
+    title: string;
+    template: 'Y Combinator' | 'Sequoia' | 'Guy Kawasaki' | 'Custom';
+    slides: Slide[];
+    updatedAt: string;
+    thumbnailUrl?: string;
+}
+
 // Complete Schema Context for Application State
 export interface StartupDatabaseSchema {
   profile: StartupProfile | null;
@@ -86,4 +132,7 @@ export interface StartupDatabaseSchema {
   competitors: Competitor[];
   metrics: MetricsSnapshot[];
   insights: AICoachInsight[];
+  tasks: Task[];
+  activities: Activity[];
+  decks: Deck[];
 }

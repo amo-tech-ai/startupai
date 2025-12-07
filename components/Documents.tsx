@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   ArrowLeft, 
   MoreHorizontal, 
@@ -19,11 +19,23 @@ import {
   Bot,
   Wand2,
   ScanEye,
-  ArrowRight
+  ArrowRight,
+  Loader2,
+  Save
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useData } from '../context/DataContext';
+import { GoogleGenAI } from "@google/genai";
+import { StartupProfile } from '../types';
 
 type ViewState = 'dashboard' | 'editor';
+
+// Types for Document Structure
+interface DocSection {
+  id: string;
+  title: string;
+  content: string; // HTML string
+}
 
 const Documents: React.FC = () => {
   const [view, setView] = useState<ViewState>('dashboard');
@@ -140,36 +152,6 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onStartDoc }) => {
         </div>
       </section>
 
-      {/* SECTION: USER JOURNEY FLOW */}
-      <section className="bg-slate-900 rounded-3xl p-8 md:p-12 text-white relative overflow-hidden">
-         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-indigo-600/20 rounded-full blur-3xl translate-x-1/3 -translate-y-1/3"></div>
-         
-         <div className="relative z-10 mb-10 text-center">
-            <h2 className="text-2xl font-bold mb-2">How It Works</h2>
-            <p className="text-slate-400">From idea to export in minutes</p>
-         </div>
-
-         <div className="relative z-10 grid grid-cols-1 md:grid-cols-5 gap-6 items-center">
-            {[
-               { step: "1", label: "Select Type" },
-               { step: "2", label: "AI Draft" },
-               { step: "3", label: "Edit & Refine" },
-               { step: "4", label: "AI Polish" },
-               { step: "5", label: "Export" }
-            ].map((s, i) => (
-               <div key={i} className="flex flex-col items-center gap-3 relative group">
-                  <div className="w-12 h-12 rounded-full border-2 border-slate-700 bg-slate-800 flex items-center justify-center font-bold text-indigo-400 group-hover:border-indigo-500 group-hover:bg-indigo-500/10 transition-colors">
-                     {s.step}
-                  </div>
-                  <span className="text-sm font-medium text-slate-300">{s.label}</span>
-                  {i < 4 && (
-                     <div className="hidden md:block absolute top-6 left-1/2 w-full h-0.5 bg-slate-700 -z-10"></div>
-                  )}
-               </div>
-            ))}
-         </div>
-      </section>
-
       {/* SECTION: RECENT DOCUMENTS */}
       <section>
          <h2 className="text-xl font-bold text-slate-900 mb-6">Recent Documents</h2>
@@ -219,6 +201,89 @@ interface EditorViewProps {
 }
 
 const EditorView: React.FC<EditorViewProps> = ({ docType, onBack }) => {
+  const { profile } = useData();
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [sections, setSections] = useState<DocSection[]>([
+    { id: '1', title: 'Problem', content: '<p>Describe the primary pain point your customer faces.</p>' },
+    { id: '2', title: 'Solution', content: '<p>How does your product solve this problem?</p>' },
+  ]);
+  const [activeSectionId, setActiveSectionId] = useState<string>('1');
+
+  // --- AI GENERATION LOGIC ---
+  const generateDocument = async () => {
+    if (!profile) {
+        alert("No startup profile found. Please complete onboarding.");
+        return;
+    }
+    if (!process.env.API_KEY) {
+        alert("API Key missing");
+        return;
+    }
+
+    setIsGenerating(true);
+
+    try {
+        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+        
+        const context = `
+            Startup Name: ${profile.name}
+            Tagline: ${profile.tagline}
+            Mission: ${profile.mission}
+            Problem: ${profile.problemStatement}
+            Solution: ${profile.solutionStatement}
+            Target Market: ${profile.targetMarket}
+            Business Model: ${profile.businessModel}
+        `;
+
+        const prompt = `
+            You are a professional venture capital analyst and startup writer.
+            Task: Write a full ${docType} for the startup described below.
+            
+            Context:
+            ${context}
+
+            Requirements:
+            1. Create 4-6 distinct sections appropriate for a ${docType}.
+            2. For "Pitch Deck", use sections like: Problem, Solution, Market, Business Model, Team.
+            3. For "One-Pager", use sections like: Executive Summary, Market Opportunity, Traction, Ask.
+            4. Return the content as a valid JSON object containing an array of sections.
+            5. Each section object must have: "title" (string) and "content" (string, HTML formatted paragraphs/lists).
+
+            Output format:
+            {
+                "sections": [
+                    { "title": "Section Name", "content": "<p>Content...</p>" }
+                ]
+            }
+        `;
+
+        const response = await ai.models.generateContent({
+            model: 'gemini-3-pro-preview',
+            contents: prompt,
+            config: { responseMimeType: 'application/json' }
+        });
+
+        const text = response.text;
+        if (text) {
+            const data = JSON.parse(text);
+            if (data.sections && Array.isArray(data.sections)) {
+                const newSections = data.sections.map((s: any, idx: number) => ({
+                    id: String(idx + 1),
+                    title: s.title,
+                    content: s.content
+                }));
+                setSections(newSections);
+                setActiveSectionId('1');
+            }
+        }
+    } catch (error) {
+        console.error("Doc Generation Error:", error);
+        alert("Failed to generate document. Please try again.");
+    } finally {
+        setIsGenerating(false);
+    }
+  };
+
   return (
     <motion.div 
       initial={{ opacity: 0, x: 20 }}
@@ -235,10 +300,10 @@ const EditorView: React.FC<EditorViewProps> = ({ docType, onBack }) => {
             </button>
             <div>
                <div className="flex items-center gap-2">
-                  <h2 className="text-sm font-bold text-slate-900">Untitled {docType}</h2>
+                  <h2 className="text-sm font-bold text-slate-900">{profile?.name || 'Untitled'} - {docType}</h2>
                   <span className="px-2 py-0.5 bg-slate-100 text-slate-500 text-[10px] uppercase font-bold rounded">Draft</span>
                </div>
-               <p className="text-xs text-slate-500">Last edited just now</p>
+               <p className="text-xs text-slate-500">Auto-saved</p>
             </div>
          </div>
          <div className="flex items-center gap-3">
@@ -251,37 +316,34 @@ const EditorView: React.FC<EditorViewProps> = ({ docType, onBack }) => {
              <button className="flex items-center gap-2 px-3 py-1.5 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700 shadow-sm">
                 <Download size={16} /> Export
              </button>
-             <button className="text-slate-400 hover:text-slate-700">
-                <MoreHorizontal size={20} />
-             </button>
          </div>
       </div>
 
       <div className="flex-1 flex overflow-hidden">
          {/* LEFT SIDEBAR: SECTIONS */}
-         <div className="w-64 bg-white border-r border-slate-200 flex flex-col hidden lg:flex">
+         <div className="w-64 bg-white border-r border-slate-200 flex flex-col hidden lg:flex shrink-0">
              <div className="p-4 border-b border-slate-100">
                 <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Sections</h3>
-                <button className="w-full py-2 border border-dashed border-slate-300 rounded-lg text-sm text-slate-500 hover:border-indigo-400 hover:text-indigo-600 transition-colors flex items-center justify-center gap-2">
+                <button 
+                    onClick={() => setSections([...sections, { id: Date.now().toString(), title: 'New Section', content: '' }])}
+                    className="w-full py-2 border border-dashed border-slate-300 rounded-lg text-sm text-slate-500 hover:border-indigo-400 hover:text-indigo-600 transition-colors flex items-center justify-center gap-2"
+                >
                    <Plus size={14} /> Add Section
                 </button>
              </div>
              <div className="flex-1 overflow-y-auto p-2 space-y-1">
-                 {[
-                    { title: "Introduction", active: false },
-                    { title: "Problem", active: true },
-                    { title: "Solution", active: false },
-                    { title: "Market Size", active: false },
-                    { title: "Business Model", active: false },
-                    { title: "Go-to-Market", active: false },
-                    { title: "Team", active: false },
-                 ].map((section, idx) => (
+                 {sections.map((section, idx) => (
                     <div 
-                        key={idx} 
-                        className={`px-3 py-2.5 rounded-lg text-sm font-medium cursor-pointer flex items-center justify-between group ${section.active ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-50'}`}
+                        key={section.id} 
+                        onClick={() => setActiveSectionId(section.id)}
+                        className={`px-3 py-2.5 rounded-lg text-sm font-medium cursor-pointer flex items-center justify-between group transition-colors ${
+                            activeSectionId === section.id 
+                            ? 'bg-indigo-50 text-indigo-700' 
+                            : 'text-slate-600 hover:bg-slate-50'
+                        }`}
                     >
                        <span className="truncate">{idx + 1}. {section.title}</span>
-                       {section.active && <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full"></div>}
+                       {activeSectionId === section.id && <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full"></div>}
                     </div>
                  ))}
              </div>
@@ -291,61 +353,83 @@ const EditorView: React.FC<EditorViewProps> = ({ docType, onBack }) => {
          <div className="flex-1 bg-slate-100 overflow-y-auto p-4 md:p-8 flex justify-center">
              <div className="w-full max-w-3xl bg-white rounded-xl shadow-sm min-h-[800px] p-8 md:p-12 relative group animate-in fade-in slide-in-from-bottom-4 duration-500">
                 
-                {/* AI Overlay Button */}
-                <div className="absolute top-12 right-12 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button className="flex items-center gap-2 px-3 py-1.5 bg-white border border-indigo-200 text-indigo-600 rounded-full shadow-lg text-sm font-medium hover:scale-105 transition-transform">
-                       <Sparkles size={14} /> AI Assist
-                    </button>
-                </div>
+                {isGenerating && (
+                    <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-20 flex flex-col items-center justify-center">
+                        <Loader2 size={48} className="text-indigo-600 animate-spin mb-4" />
+                        <h3 className="text-xl font-bold text-slate-900">Generating {docType}...</h3>
+                        <p className="text-slate-500">Consulting Gemini 3...</p>
+                    </div>
+                )}
 
-                <h1 className="text-4xl font-bold text-slate-900 mb-6 outline-none hover:bg-slate-50 focus:bg-transparent rounded px-2 -ml-2" contentEditable suppressContentEditableWarning>The Problem</h1>
+                {/* Render Sections */}
+                {sections.map((section) => (
+                    <div key={section.id} className="mb-12 group/section">
+                        <h2 
+                            className="text-2xl font-bold text-slate-900 mb-4 outline-none border-b border-transparent hover:border-slate-200 pb-1" 
+                            contentEditable 
+                            suppressContentEditableWarning
+                        >
+                            {section.title}
+                        </h2>
+                        
+                        <div 
+                            className="prose prose-slate max-w-none text-lg text-slate-600 outline-none"
+                            contentEditable
+                            suppressContentEditableWarning
+                            dangerouslySetInnerHTML={{ __html: section.content }}
+                        />
+                    </div>
+                ))}
                 
-                <div className="prose prose-slate max-w-none text-lg text-slate-600">
-                   <p className="mb-6 outline-none hover:bg-slate-50 focus:bg-transparent rounded px-2 -ml-2 p-1" contentEditable suppressContentEditableWarning>
-                      Startups struggle to create high-quality documents efficiently. The process is fragmented across multiple tools (Word, Excel, PowerPoint), leading to version control issues and wasted time.
-                   </p>
-                   
-                   <p className="mb-6 outline-none hover:bg-slate-50 focus:bg-transparent rounded px-2 -ml-2 p-1" contentEditable suppressContentEditableWarning>
-                      Founders spend an average of <span className="text-indigo-600 font-semibold bg-indigo-50 px-1 rounded">60+ hours</span> on fundraising prep instead of building their product.
-                   </p>
+                {sections.length === 0 && (
+                    <div className="text-center py-20 text-slate-400">
+                        <Sparkles size={48} className="mx-auto mb-4 opacity-50" />
+                        <p>No content yet. Use the AI Companion to generate a draft.</p>
+                    </div>
+                )}
 
-                   <div className="bg-slate-50 rounded-xl border border-slate-200 p-8 mb-8 flex flex-col items-center justify-center text-slate-400 gap-3 hover:bg-slate-100 transition-colors cursor-pointer border-dashed">
-                      <div className="p-3 bg-white rounded-full shadow-sm">
-                         <ImageIcon size={24} className="text-slate-400" />
-                      </div>
-                      <span className="text-sm font-medium">Add Chart or Image</span>
-                   </div>
-
-                   <h3 className="text-xl font-bold text-slate-800 mb-4" contentEditable suppressContentEditableWarning>Key Pain Points</h3>
-                   <ul className="list-disc pl-5 space-y-2">
-                      <li contentEditable suppressContentEditableWarning>Lack of professional formatting</li>
-                      <li contentEditable suppressContentEditableWarning>Difficulty finding reliable market data</li>
-                      <li contentEditable suppressContentEditableWarning>Inconsistent narrative across documents</li>
-                   </ul>
-                </div>
              </div>
          </div>
 
          {/* RIGHT: AI PANEL */}
-         <div className="w-80 bg-white border-l border-slate-200 hidden xl:flex flex-col">
+         <div className="w-80 bg-white border-l border-slate-200 hidden xl:flex flex-col shrink-0">
              <div className="p-4 border-b border-slate-100 bg-gradient-to-r from-indigo-50/50 to-white">
                 <div className="flex items-center gap-2 text-indigo-700 font-bold">
                    <Bot size={18} />
                    <span>AI Companion</span>
                 </div>
-                <p className="text-xs text-slate-500 mt-1">Powered by Gemini 2.5 Flash</p>
+                <p className="text-xs text-slate-500 mt-1">Powered by Gemini 3 Pro</p>
              </div>
              
              <div className="p-4 space-y-6 flex-1 overflow-y-auto">
                 {/* Block 1: Draft */}
                 <div>
-                   <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-3">Rewrite & Draft</h4>
-                   <button className="w-full flex items-center justify-center gap-2 py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold hover:bg-indigo-700 shadow-md shadow-indigo-600/20 mb-3 transition-colors">
-                      <Sparkles size={14} /> Auto-Generate Draft
+                   <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-3">Drafting</h4>
+                   <button 
+                      onClick={generateDocument}
+                      disabled={isGenerating}
+                      className="w-full flex items-center justify-center gap-2 py-3 bg-indigo-600 text-white rounded-lg text-xs font-bold hover:bg-indigo-700 shadow-md shadow-indigo-600/20 mb-3 transition-colors disabled:opacity-50"
+                   >
+                      {isGenerating ? <Loader2 size={14} className="animate-spin"/> : <Sparkles size={14} />}
+                      {isGenerating ? 'Drafting...' : `Auto-Generate ${docType}`}
                    </button>
+                   <p className="text-xs text-slate-400 leading-relaxed text-center">
+                       Uses your profile data ({profile?.name}) to create a structured draft instantly.
+                   </p>
+                </div>
+
+                {/* Block 2: Refine */}
+                <div>
+                   <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-3">Refinement Tools</h4>
                    <div className="grid grid-cols-2 gap-2">
                       <button className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-200 transition-colors">
                          Make Clearer
+                      </button>
+                      <button className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-200 transition-colors">
+                         Expand
+                      </button>
+                      <button className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-200 transition-colors">
+                         Shorten
                       </button>
                       <button className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-200 transition-colors">
                          Fix Grammar
@@ -353,32 +437,16 @@ const EditorView: React.FC<EditorViewProps> = ({ docType, onBack }) => {
                    </div>
                 </div>
 
-                {/* Block 2: Context */}
+                {/* Block 3: Context */}
                 <div>
-                   <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-3">Research & Context</h4>
+                   <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-3">Context Aware</h4>
                    <div className="p-3 rounded-lg border border-slate-200 bg-white shadow-sm space-y-3">
                       <div className="flex items-start gap-3">
-                         <Search size={16} className="text-slate-400 mt-1"/>
-                         <p className="text-xs text-slate-600">Validate "60+ hours" claim against industry reports.</p>
+                         <ScanEye size={16} className="text-slate-400 mt-1"/>
+                         <p className="text-xs text-slate-600">
+                             Based on your metrics, you should emphasize your <strong>${profile?.fundingGoal?.toLocaleString()}</strong> funding goal in the "Ask" section.
+                         </p>
                       </div>
-                      <button className="w-full py-1.5 text-xs text-indigo-600 font-medium bg-indigo-50 rounded hover:bg-indigo-100 transition-colors">
-                         Check Market Risks
-                      </button>
-                   </div>
-                </div>
-
-                {/* Block 3: Polish */}
-                <div>
-                   <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-3">Polish</h4>
-                   <div className="p-3 rounded-lg border border-indigo-100 bg-indigo-50/50">
-                      <div className="flex gap-2 items-start mb-2">
-                         <Sparkles size={14} className="text-indigo-600 mt-0.5" />
-                         <span className="text-xs font-bold text-indigo-900">Investor-Ready Score: 78/100</span>
-                      </div>
-                      <p className="text-xs text-slate-600 mb-2">Narrative is strong but lacks quantitative backing in the "Solution" section.</p>
-                      <button className="w-full py-1.5 text-xs bg-white border border-indigo-200 text-indigo-700 font-medium rounded hover:bg-indigo-50 transition-colors">
-                         Apply Polish
-                      </button>
                    </div>
                 </div>
              </div>

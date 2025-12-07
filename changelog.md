@@ -1,6 +1,36 @@
 
 # Changelog
 
+## [v1.8.0] - Pitch Deck Module
+### Added
+- **AI Pitch Deck Generator**: New module (`PitchDecks.tsx`) allowing users to generate full slide decks from their profile data.
+- **Template System**: Support for Y Combinator, Sequoia, and Custom templates.
+- **Slide Viewer**: Dedicated interface for presenting and exporting generated slides.
+- **Data Integration**: Decks are now stored in global `DataContext`.
+
+## [v1.7.0] - Task Intelligence
+### Added
+- **Intelligent Task Manager**: Full Kanban board with AI-powered roadmap generation.
+- **AI Auto-Plan**: Uses Gemini 3 Pro to generate strategic tasks based on the startup's stage and funding goals.
+- **Settings Module**: Connected profile settings to global state for full data lifecycle management (Read/Update).
+
+## [v1.6.0] - AI Document Generator
+### Added
+- **AI Document Engine**: Enabled real-time generation of Pitch Decks, One-Pagers, and Strategy Docs in `Documents.tsx`.
+- **Gemini 3 Integration**: Integrated `gemini-3-pro-preview` with JSON output mode to create structured, HTML-formatted document sections based on the user's startup profile.
+- **Stateful Editor**: Upgraded the Document Editor to support dynamic section rendering and live AI updates.
+
+## [v1.5.4] - Profile Gamification
+### Added
+- **Profile Strength Meter**: Dashboard widget calculating a 0-100% completion score.
+- **Actionable Feedback**: Dynamic list of missing fields (e.g., "Add Problem Statement") to guide users to 100%.
+
+## [v1.5.3] - AI Coach
+### Added
+- **AI Coach Integration**: Live Gemini 3 Pro integration in the Dashboard.
+- **Dynamic Insights**: "Refresh Analysis" button now triggers a full strategic review of the startup's metrics and profile.
+- **Visuals**: Updated Insights panel with loading states and category-specific styling (Risk/Opportunity/Action).
+
 ## [v1.5.1] - AI Enrichment
 ### Added
 - **AI Auto-Fill**: Implemented "Magic Wand" feature in Startup Wizard to auto-generate profile data from a website URL or company name using Gemini 3 Search Grounding.

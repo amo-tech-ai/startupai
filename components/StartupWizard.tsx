@@ -38,7 +38,7 @@ const STEPS = [
 ];
 
 const StartupWizard: React.FC<StartupWizardProps> = ({ setPage }) => {
-  const { updateProfile, updateMetrics } = useData();
+  const { updateProfile, updateMetrics, addActivity } = useData();
   const [currentStep, setCurrentStep] = useState(1);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -88,6 +88,13 @@ const StartupWizard: React.FC<StartupWizardProps> = ({ setPage }) => {
         mrr: Number(formData.mrr) || 0,
         activeUsers: Number(formData.users) || 0,
         period: new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+      });
+
+      // 3. Log Activity
+      addActivity({
+        type: 'milestone',
+        title: 'Profile Setup Complete',
+        description: `${formData.name} is now ready to build.`,
       });
       
       // Simulate API delay & Redirect

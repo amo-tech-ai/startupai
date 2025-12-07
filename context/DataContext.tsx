@@ -3,6 +3,7 @@ import { StartupProfile, MetricsSnapshot, AICoachInsight, Founder, StartupStage,
 import { initialDatabaseState } from '../data/mockDatabase';
 import { supabase } from '../lib/supabaseClient';
 import { useToast } from './ToastContext';
+import { generateShortId, generateUUID } from '../lib/utils';
 
 interface DataContextType {
   profile: StartupProfile | null;
@@ -41,7 +42,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [activities, setActivities] = useState<Activity[]>(initialDatabaseState.activities);
   const [tasks, setTasks] = useState<Task[]>(initialDatabaseState.tasks);
   const [decks, setDecks] = useState<Deck[]>(initialDatabaseState.decks);
-  const [deals, setDeals] = useState<Deal[]>(initialDatabaseState.deals); // Fixed initial state usage
+  const [deals, setDeals] = useState<Deal[]>(initialDatabaseState.deals); 
   const [docs, setDocs] = useState<InvestorDoc[]>(initialDatabaseState.docs);
   const [isLoading, setIsLoading] = useState(false);
   const { toast, error: toastError } = useToast();
@@ -156,7 +157,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const addActivity = (data: Omit<Activity, 'id' | 'startupId' | 'timestamp'>) => {
     const newActivity: Activity = {
       ...data,
-      id: Math.random().toString(36).substr(2, 9),
+      id: generateShortId(),
       startupId: profile?.id || 'unknown',
       timestamp: new Date().toISOString()
     };
@@ -166,7 +167,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const addTask = (data: Omit<Task, 'id' | 'startupId'>) => {
     const newTask: Task = {
         ...data,
-        id: Math.random().toString(36).substr(2, 9),
+        id: generateShortId(),
         startupId: profile?.id || 'unknown'
     };
     setTasks(prev => [newTask, ...prev]);
@@ -193,7 +194,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const addDeck = async (data: Omit<Deck, 'id' | 'startupId'>) => {
-      const tempId = Math.random().toString(36).substr(2, 9);
+      const tempId = generateShortId();
       const newDeck: Deck = {
           ...data,
           id: tempId,
@@ -287,7 +288,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }
 
   const addDeal = async (data: Omit<Deal, 'id' | 'startupId'>) => {
-      const tempId = Math.random().toString(36).substr(2, 9);
+      const tempId = generateShortId();
       const newDeal: Deal = {
           ...data,
           id: tempId,
@@ -334,7 +335,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }
 
   const addDoc = async (data: Omit<InvestorDoc, 'id' | 'startupId' | 'updatedAt'>) => {
-      const tempId = Math.random().toString(36).substr(2, 9);
+      const tempId = generateShortId();
       const newDoc: InvestorDoc = {
           ...data,
           id: tempId,

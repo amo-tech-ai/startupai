@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, Loader2, Play, Download } from 'lucide-react';
 import { useData } from '../../context/DataContext';
@@ -8,6 +7,7 @@ import { SlideCanvas } from './editor/SlideCanvas';
 import { PresentationMode } from './editor/PresentationMode';
 import { AICopilotSidebar } from './editor/AICopilotSidebar';
 import { useToast } from '../../context/ToastContext';
+import { generateUUID } from '../../lib/utils';
 
 interface DeckEditorProps {
   deck: Deck;
@@ -50,8 +50,7 @@ export const DeckEditor: React.FC<DeckEditorProps> = ({ deck, onBack }) => {
   };
 
   const handleAddSlide = () => {
-    // Generate valid UUID for Supabase compatibility
-    const newId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `slide_${Date.now()}`;
+    const newId = generateUUID();
     const newSlide: Slide = {
       id: newId,
       title: "New Slide",

@@ -1,28 +1,13 @@
-
 import { GoogleGenAI } from "@google/genai";
 import { Deck, Slide, StartupProfile } from '../types';
 import { supabase } from '../lib/supabaseClient';
+import { generateUUID } from "../lib/utils";
 
 /**
  * EDGE FUNCTION SERVICE
  * ---------------------
  * Handles AI operations for the Pitch Deck engine.
- * 
- * Strategy:
- * 1. Try to call real Supabase Edge Function (Production)
- * 2. Fallback to client-side GoogleGenAI call (Prototype/Dev)
  */
-
-// Helper to generate UUIDs locally for mock fallback
-const generateUUID = () => {
-  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-    return crypto.randomUUID();
-  }
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-    var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
-    return v.toString(16);
-  });
-};
 
 // 1. Generate Deck
 export async function generateDeckEdge(
@@ -106,7 +91,7 @@ export async function generateDeckEdge(
     const text = response.text;
     if (!text) return null;
 
-    const slides: Slide[] = JSON.parse(text).map((s: any, idx: number) => ({
+    const slides: Slide[] = JSON.parse(text).map((s: any) => ({
         id: generateUUID(),
         title: s.title,
         bullets: s.bullets,

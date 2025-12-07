@@ -1,17 +1,21 @@
+
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import { Loader2, AlertCircle } from 'lucide-react';
+import { Loader2, AlertCircle, ShieldOff } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 const Login: React.FC<{ setPage: (page: any) => void }> = ({ setPage }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { debugLogin } = useAuth();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!supabase) {
         // Fallback for demo/mock mode
+        debugLogin();
         setPage('dashboard');
         return;
     }
@@ -32,6 +36,11 @@ const Login: React.FC<{ setPage: (page: any) => void }> = ({ setPage }) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleDevBypass = () => {
+      debugLogin();
+      setPage('dashboard');
   };
 
   return (
@@ -82,11 +91,15 @@ const Login: React.FC<{ setPage: (page: any) => void }> = ({ setPage }) => {
             </div>
         </form>
         
-        {!supabase && (
-            <div className="text-center text-xs text-slate-400 mt-4">
-                Mock Mode Active: Clicking Sign In will bypass auth.
-            </div>
-        )}
+        <div className="pt-6 border-t border-slate-100 flex flex-col items-center gap-2">
+            <span className="text-xs text-slate-400 uppercase tracking-wide font-bold">Development Mode</span>
+            <button 
+                onClick={handleDevBypass}
+                className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-sm font-medium transition-colors"
+            >
+                <ShieldOff size={16} /> Bypass Login
+            </button>
+        </div>
       </div>
     </div>
   );

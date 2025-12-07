@@ -2,7 +2,8 @@
 import React, { useState } from 'react';
 import { 
   Trash2, Loader2, Wand2, RefreshCw, Sparkles, Image as ImageIcon,
-  LineChart as LineChartIcon, BarChart as BarChartIcon, PieChart as PieChartIcon, Grid
+  LineChart as LineChartIcon, BarChart as BarChartIcon, PieChart as PieChartIcon, Grid,
+  Plus, XCircle
 } from 'lucide-react';
 import { 
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, 
@@ -95,6 +96,16 @@ export const SlideCanvas: React.FC<SlideCanvasProps> = ({
     onUpdate({ ...slide, bullets: newBullets });
   };
 
+  const addBullet = () => {
+    onUpdate({ ...slide, bullets: [...slide.bullets, "New bullet point"] });
+  };
+
+  const deleteBullet = (index: number) => {
+    if (slide.bullets.length <= 1) return;
+    const newBullets = slide.bullets.filter((_, i) => i !== index);
+    onUpdate({ ...slide, bullets: newBullets });
+  };
+
   return (
     <div className="flex-1 bg-slate-950 flex items-center justify-center p-8 overflow-hidden relative">
       <div className="aspect-video w-full max-w-5xl bg-white rounded-xl shadow-2xl flex flex-col p-12 md:p-16 relative text-slate-900 transition-all group/canvas">
@@ -123,29 +134,44 @@ export const SlideCanvas: React.FC<SlideCanvasProps> = ({
 
         <div className="grid grid-cols-2 gap-12 h-full">
           {/* Left Col: Content (Editable) */}
-          <div className="space-y-4 relative group/text">
-            {slide.bullets.map((bullet, i) => (
-              <div key={i} className="flex items-start gap-3">
-                <div className="w-2 h-2 rounded-full bg-indigo-500 mt-2.5 shrink-0"></div>
-                <textarea
-                  value={bullet}
-                  onChange={(e) => updateBullet(i, e.target.value)}
-                  rows={2}
-                  className="text-xl text-slate-700 leading-relaxed w-full bg-transparent border border-transparent hover:border-slate-200 focus:border-indigo-500 rounded p-1 -ml-1 outline-none resize-none transition-colors"
-                />
-              </div>
-            ))}
+          <div className="relative group/text flex flex-col">
+            <div className="space-y-4 flex-1">
+                {slide.bullets.map((bullet, i) => (
+                <div key={i} className="flex items-start gap-3 group/bullet">
+                    <div className="w-2 h-2 rounded-full bg-indigo-500 mt-2.5 shrink-0"></div>
+                    <textarea
+                        value={bullet}
+                        onChange={(e) => updateBullet(i, e.target.value)}
+                        rows={2}
+                        className="text-xl text-slate-700 leading-relaxed w-full bg-transparent border border-transparent hover:border-slate-200 focus:border-indigo-500 rounded p-1 -ml-1 outline-none resize-none transition-colors"
+                    />
+                    <button 
+                        onClick={() => deleteBullet(i)}
+                        className="mt-2 text-slate-300 hover:text-red-400 opacity-0 group-hover/bullet:opacity-100 transition-opacity"
+                        title="Remove Bullet"
+                    >
+                        <XCircle size={16} />
+                    </button>
+                </div>
+                ))}
+            </div>
             
-            {/* Refine Text Overlay */}
-            <div className="absolute -top-4 -right-4 opacity-0 group-hover/text:opacity-100 transition-opacity">
-              <button 
-                onClick={handleRefineText}
-                disabled={isRefiningText}
-                className="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 p-2 rounded-full shadow-sm border border-indigo-200 transition-colors"
-                title="Magic Rewrite"
-              >
-                {isRefiningText ? <Loader2 size={16} className="animate-spin"/> : <Wand2 size={16} />}
-              </button>
+            {/* Action Buttons */}
+            <div className="mt-4 flex gap-2 opacity-0 group-hover/text:opacity-100 transition-opacity">
+                <button 
+                    onClick={addBullet}
+                    className="flex items-center gap-1 text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-full transition-colors"
+                >
+                    <Plus size={14} /> Add Point
+                </button>
+                <button 
+                    onClick={handleRefineText}
+                    disabled={isRefiningText}
+                    className="flex items-center gap-1 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-full transition-colors disabled:opacity-50"
+                >
+                    {isRefiningText ? <Loader2 size={14} className="animate-spin"/> : <Wand2 size={14} />}
+                    AI Rewrite
+                </button>
             </div>
           </div>
           

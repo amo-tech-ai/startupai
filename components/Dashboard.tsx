@@ -1,8 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import { useData } from '../context/DataContext';
 import { API_KEY } from '../lib/env';
 import { CoachAI } from '../services/coachAI';
 import { useToast } from '../context/ToastContext';
+import { PageType } from '../types';
 
 // Components
 import { WelcomeHeader } from './dashboard/WelcomeHeader';
@@ -12,7 +14,11 @@ import { ProfileStrength } from './dashboard/ProfileStrength';
 import { AICoach } from './dashboard/AICoach';
 import { AIJourney } from './dashboard/AIJourney';
 
-const Dashboard: React.FC = () => {
+interface DashboardProps {
+  setPage: (page: PageType) => void;
+}
+
+const Dashboard: React.FC<DashboardProps> = ({ setPage }) => {
   const { profile, metrics, insights, activities, setInsights, addActivity } = useData();
   const { toast, error, success } = useToast();
   const [isGeneratingInsights, setIsGeneratingInsights] = useState(false);
@@ -75,7 +81,12 @@ const Dashboard: React.FC = () => {
     <div className="p-6 md:p-8 lg:p-12 max-w-7xl mx-auto space-y-12 animate-in fade-in duration-700">
       
       {/* 4️⃣ WELCOME SECTION */}
-      <WelcomeHeader profile={profile} />
+      <WelcomeHeader 
+        profile={profile} 
+        onNewDeck={() => setPage('pitch-decks')}
+        onAddContact={() => setPage('crm')}
+        onCreateDoc={() => setPage('documents')}
+      />
 
       {/* 5️⃣ KPI CARDS ROW */}
       <KPIGrid metrics={metrics} profile={profile} />

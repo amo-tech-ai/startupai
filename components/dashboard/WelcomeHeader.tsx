@@ -5,9 +5,17 @@ import { StartupProfile } from '../../types';
 
 interface WelcomeHeaderProps {
   profile: StartupProfile | null;
+  onNewDeck?: () => void;
+  onAddContact?: () => void;
+  onCreateDoc?: () => void;
 }
 
-export const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({ profile }) => {
+export const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({ 
+  profile,
+  onNewDeck,
+  onAddContact,
+  onCreateDoc 
+}) => {
   const startupName = profile?.name || "My Startup";
 
   return (
@@ -23,13 +31,22 @@ export const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({ profile }) => {
       </div>
       
       <div className="flex flex-wrap items-center gap-3">
-         <button className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-lg font-medium shadow-lg shadow-indigo-600/20 hover:bg-indigo-700 hover:-translate-y-0.5 transition-all">
+         <button 
+            onClick={onNewDeck}
+            className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-lg font-medium shadow-lg shadow-indigo-600/20 hover:bg-indigo-700 hover:-translate-y-0.5 transition-all"
+         >
             <Plus size={18} /> New Deck
          </button>
-         <button className="flex items-center gap-2 px-5 py-2.5 bg-white text-slate-700 border border-slate-200 rounded-lg font-medium hover:bg-slate-50 transition-colors">
+         <button 
+            onClick={onAddContact}
+            className="flex items-center gap-2 px-5 py-2.5 bg-white text-slate-700 border border-slate-200 rounded-lg font-medium hover:bg-slate-50 transition-colors"
+         >
             <UserPlus size={18} /> Add Contact
          </button>
-         <button className="flex items-center gap-2 px-5 py-2.5 bg-white text-slate-700 border border-slate-200 rounded-lg font-medium hover:bg-slate-50 transition-colors">
+         <button 
+            onClick={onCreateDoc}
+            className="flex items-center gap-2 px-5 py-2.5 bg-white text-slate-700 border border-slate-200 rounded-lg font-medium hover:bg-slate-50 transition-colors"
+         >
             <FileText size={18} /> Create Doc
          </button>
       </div>

@@ -11,6 +11,9 @@ const Login: React.FC<{ setPage: (page: any) => void }> = ({ setPage }) => {
   const [error, setError] = useState<string | null>(null);
   const { debugLogin } = useAuth();
 
+  // Check if we are in development mode
+  const isDev = import.meta.env.DEV;
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!supabase) {
@@ -91,16 +94,18 @@ const Login: React.FC<{ setPage: (page: any) => void }> = ({ setPage }) => {
             </div>
         </form>
         
-        <div className="pt-6 border-t border-slate-100 flex flex-col items-center gap-3">
-            <span className="text-[10px] text-slate-400 uppercase tracking-wide font-bold">Development Mode</span>
-            <button 
-                onClick={handleDevBypass}
-                className="flex items-center gap-2 px-6 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-full text-sm font-medium transition-all shadow-sm border border-slate-200 hover:border-slate-300"
-            >
-                <ShieldOff size={16} className="text-slate-500" /> 
-                Bypass Authentication
-            </button>
-        </div>
+        {isDev && (
+            <div className="pt-6 border-t border-slate-100 flex flex-col items-center gap-3">
+                <span className="text-[10px] text-slate-400 uppercase tracking-wide font-bold">Development Mode</span>
+                <button 
+                    onClick={handleDevBypass}
+                    className="flex items-center gap-2 px-6 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-full text-sm font-medium transition-all shadow-sm border border-slate-200 hover:border-slate-300"
+                >
+                    <ShieldOff size={16} className="text-slate-500" /> 
+                    Bypass Authentication
+                </button>
+            </div>
+        )}
       </div>
     </div>
   );

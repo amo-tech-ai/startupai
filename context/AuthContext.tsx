@@ -28,9 +28,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check if Supabase is configured
+    // Check if Supabase is configured or if we have a mock session
     if (!supabase) {
-        // If not configured, we stop loading but don't set a user (unless debugLogin is called)
+        // Try to restore mock session from local storage for dev persistence
+        const mockSession = localStorage.getItem('mock_session');
+        if (mockSession) {
+            try {
+                const parsedSession = JSON.parse(mockSession);
+                setSession(parsedSession);
+                setUser(parsedSession.user);
+            } catch (e) {
+                console.error("Failed to parse mock session", e);
+                localStorage.removeItem('mock_session');
+            }
+        }
         setLoading(false);
         return;
     }
@@ -60,13 +71,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (supabase) {
       await supabase.auth.signOut();
     }
+    // Clear mock session
+    localStorage.removeItem('mock_session');
     setSession(null);
     setUser(null);
   };
 
   // Dev bypass function
   const debugLogin = () => {
-    setUser({ id: 'debug-user', email: 'demo@startupai.com', user_metadata: { full_name: 'Demo Founder' } });
+    // Mock a user object that satisfies the basic requirements of the app
+    const mockUser = { 
+        id: 'debug-user', 
+        email: 'demo@startupai.com', 
+        user_metadata: { full_name: 'Demo Founder', avatar_url: 'https://picsum.photos/200' },
+        aud: 'authenticated',
+        role: 'authenticated'
+    };
+    const mockSession = { user: mockUser, access_token: 'mock-token' };
+    
+    setUser(mockUser);
+    setSession(mockSession);
+    
+    // Persist to local storage so refresh works in dev
+    localStorage.setItem('mock_session', JSON.stringify(mockSession));
+    
     setLoading(false);
   };
 

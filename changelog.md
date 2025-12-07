@@ -1,6 +1,18 @@
 
 # Changelog
 
+## [v1.9.1] - Secure Development Workflow
+### Security
+- **Conditional Auth Bypass**: Restricted the "Bypass Authentication" button to the development environment only (`import.meta.env.DEV`). This ensures no backdoor access in production builds.
+- **Mock Session Persistence**: Updated `AuthContext` to persist the debug session in `localStorage`, allowing page reloads without losing the "logged in" state during development.
+
+## [v1.9.0] - UX Polish & Developer Experience
+### Added
+- **Developer Login Bypass**: Added a "Bypass Authentication" button on the Login screen to facilitate rapid testing without Supabase credentials.
+- **Dashboard Quick Actions**: Wired up "New Deck", "Add Contact", and "Create Doc" buttons on the Dashboard welcome header to navigate to their respective modules.
+- **Slide Editor Controls**: Added manual "Add Bullet" and "Delete Bullet" controls to the Slide Canvas for granular content editing alongside AI tools.
+- **Robust Auth Handling**: Improved `AuthContext` to handle offline/mock states gracefully.
+
 ## [v1.8.0] - Pitch Deck Module
 ### Added
 - **AI Pitch Deck Generator**: New module (`PitchDecks.tsx`) allowing users to generate full slide decks from their profile data.

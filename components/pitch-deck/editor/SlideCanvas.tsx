@@ -145,13 +145,15 @@ export const SlideCanvas: React.FC<SlideCanvasProps> = ({
                         rows={2}
                         className="text-xl text-slate-700 leading-relaxed w-full bg-transparent border border-transparent hover:border-slate-200 focus:border-indigo-500 rounded p-1 -ml-1 outline-none resize-none transition-colors"
                     />
-                    <button 
-                        onClick={() => deleteBullet(i)}
-                        className="mt-2 text-slate-300 hover:text-red-400 opacity-0 group-hover/bullet:opacity-100 transition-opacity"
-                        title="Remove Bullet"
-                    >
-                        <XCircle size={16} />
-                    </button>
+                    {slide.bullets.length > 1 && (
+                      <button 
+                          onClick={() => deleteBullet(i)}
+                          className="mt-2 text-slate-300 hover:text-red-400 opacity-0 group-hover/bullet:opacity-100 transition-opacity"
+                          title="Remove Bullet"
+                      >
+                          <XCircle size={16} />
+                      </button>
+                    )}
                 </div>
                 ))}
             </div>

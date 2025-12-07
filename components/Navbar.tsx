@@ -4,6 +4,7 @@ import { Menu, X, Zap, Bell, Search, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PageType } from '../types';
 import { useToast } from '../context/ToastContext';
+import { useAuth } from '../context/AuthContext';
 
 interface NavbarProps {
   currentPage?: PageType;
@@ -19,6 +20,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage = 'home', setPage, type = '
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const { toast } = useToast();
+  const { user } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -43,6 +45,8 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage = 'home', setPage, type = '
         }
     }
   };
+
+  const userAvatar = user?.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.user_metadata?.full_name || 'User')}&background=random`;
 
   // APP MODE: Render as a sticky top bar with utilities
   if (type === 'app') {
@@ -86,11 +90,14 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage = 'home', setPage, type = '
                 <span className="absolute top-2 right-2.5 w-2 h-2 bg-rose-500 rounded-full border border-white"></span>
             </button>
             
-            <button className="flex items-center gap-2 pl-2 border-l border-slate-100 sm:border-none">
+            <button 
+              onClick={() => handleNav('settings')}
+              className="flex items-center gap-2 pl-2 border-l border-slate-100 sm:border-none"
+            >
                 <img 
-                    src="https://picsum.photos/32/32" 
+                    src={userAvatar} 
                     alt="User" 
-                    className="w-8 h-8 rounded-full border border-slate-200 ring-2 ring-transparent hover:ring-primary-100 transition-all"
+                    className="w-8 h-8 rounded-full border border-slate-200 ring-2 ring-transparent hover:ring-primary-100 transition-all object-cover"
                 />
             </button>
 

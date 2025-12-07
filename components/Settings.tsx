@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { GeneralSettings } from './settings/GeneralSettings';
 import { TeamSettings } from './settings/TeamSettings';
 import { BillingSettings } from './settings/BillingSettings';
@@ -8,6 +9,16 @@ type Tab = 'account' | 'general' | 'team' | 'billing';
 
 const Settings: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>('account');
+
+  useEffect(() => {
+    const savedTab = localStorage.getItem('settings_tab');
+    if (savedTab) {
+      if (['account', 'general', 'team', 'billing'].includes(savedTab)) {
+        setActiveTab(savedTab as Tab);
+      }
+      localStorage.removeItem('settings_tab'); // Clear it so it doesn't persist forever
+    }
+  }, []);
 
   return (
     <div className="min-h-screen bg-slate-50 pt-10 px-6 pb-12">

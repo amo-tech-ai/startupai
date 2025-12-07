@@ -29,9 +29,11 @@ export const DashboardService = {
     
     const payload = mapMetricsToDB(metrics, startupId);
     
-    // Insert new snapshot for history tracking
-    // In a real prod app, you might want to upsert based on (startup_id, snapshot_date) unique key
-    const { error } = await supabase.from('startup_metrics_snapshots').insert(payload);
+    // Upsert to handle same-day updates (assumes unique constraint on startup_id + snapshot_date)
+    const { error } = await supabase
+        .from('startup_metrics_snapshots')
+        .upsert(payload, { onConflict: 'startup_id, snapshot_date' });
+        
     if (error) console.error("Error saving metrics", error);
   },
 

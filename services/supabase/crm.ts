@@ -1,7 +1,7 @@
 
 import { supabase } from '../../lib/supabaseClient';
 import { Deal, Task } from '../../types';
-import { mapDealFromDB, mapDealToDB } from '../../lib/mappers';
+import { mapDealFromDB, mapDealToDB, mapTaskFromDB, mapTaskToDB } from '../../lib/mappers';
 
 export const CrmService = {
   /**
@@ -45,36 +45,18 @@ export const CrmService = {
   async getTasks(startupId: string): Promise<Task[]> {
       if (!supabase) return [];
       const { data } = await supabase.from('tasks').select('*').eq('startup_id', startupId);
-      // Basic mapping - simplified as schema matches mostly 1:1 for tasks in this iteration
-      return data ? data.map((t: any) => ({
-          id: t.id,
-          title: t.title,
-          status: t.status,
-          priority: t.priority,
-          description: t.description,
-          dueDate: t.due_date,
-          startupId: t.startup_id,
-          aiGenerated: false 
-      })) : [];
+      return data ? data.map(mapTaskFromDB) : [];
   },
 
   async createTask(task: Omit<Task, 'id' | 'startupId'>, startupId: string): Promise<void> {
       if (!supabase) return;
-      await supabase.from('tasks').insert({
-          startup_id: startupId,
-          title: task.title,
-          status: task.status,
-          priority: task.priority,
-          description: task.description,
-          // due_date: task.dueDate 
-      });
+      const payload = mapTaskToDB(task, startupId);
+      await supabase.from('tasks').insert(payload);
   },
 
   async updateTask(id: string, updates: Partial<Task>): Promise<void> {
       if (!supabase) return;
-      const payload: any = {};
-      if (updates.status) payload.status = updates.status;
-      // ... map other fields
+      const payload = mapTaskToDB(updates);
       await supabase.from('tasks').update(payload).eq('id', id);
   },
 

@@ -1,11 +1,11 @@
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { StartupProfile, MetricsSnapshot, AICoachInsight, Founder, Activity, Task, Deck, Deal, InvestorDoc } from '../types';
 import { initialDatabaseState } from '../data/mockDatabase';
 import { supabase } from '../lib/supabaseClient';
 import { useToast } from './ToastContext';
 import { generateShortId } from '../lib/utils';
-import { mapDealFromDB, mapActivityFromDB } from '../lib/mappers';
+import { mapDealFromDB, mapActivityFromDB, mapTaskFromDB } from '../lib/mappers';
 
 // Import Modular Services
 import { ProfileService } from '../services/supabase/profile';
@@ -63,22 +63,37 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [docs, setDocs] = useState<InvestorDoc[]>(initialDatabaseState.docs);
   const [isLoading, setIsLoading] = useState(false);
   const { toast, error: toastError } = useToast();
+  
+  // Realtime Channel Ref for safe cleanup
+  const realtimeChannelRef = useRef<any>(null);
 
   // --- INITIAL DATA FETCH & REALTIME ---
   useEffect(() => {
-    if (!supabase) return; // Skip if offline/mock mode
-
-    let realtimeChannel: any;
+    // If Supabase is not configured, we stick with the initialDatabaseState (Mocks)
+    if (!supabase) return; 
 
     const loadData = async () => {
         setIsLoading(true);
         try {
             const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return;
+            
+            // If no user is logged in, we might be on a public page. 
+            // We can leave the mocks for demo purposes or clear them. 
+            // For now, let's leave mocks if not logged in so the landing page works visually? 
+            // Actually, landing page doesn't use DataContext heavily. 
+            // Let's rely on App.tsx to handle redirects.
+            if (!user) {
+               // Optional: Clear sensitive mocks if user is not logged in? 
+               // For this demo app, keeping mocks on public view is fine for "Preview".
+               setIsLoading(false);
+               return; 
+            }
 
             // 1. Profile & Founders
             const { profile: p, founders: f } = await ProfileService.getByUserId(user.id);
+            
             if (p) {
+                // USER HAS A PROFILE -> Load everything
                 setProfile(p);
                 setFoundersState(f);
                 
@@ -102,7 +117,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 setActivities(activityData);
 
                 // 3. Setup Realtime Subscriptions
-                realtimeChannel = supabase.channel('public-db-changes')
+                const channel = supabase.channel('public-db-changes')
                   .on('postgres_changes', { event: '*', schema: 'public', table: 'crm_deals', filter: `startup_id=eq.${p.id}` }, (payload: any) => {
                       if (payload.eventType === 'INSERT') {
                           setDeals(prev => [...prev, mapDealFromDB(payload.new)]);
@@ -113,22 +128,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                       }
                   })
                   .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks', filter: `startup_id=eq.${p.id}` }, (payload: any) => {
-                      // Simple mapping for realtime task updates
-                      const mapTask = (t: any) => ({
-                          id: t.id,
-                          title: t.title,
-                          status: t.status,
-                          priority: t.priority,
-                          description: t.description,
-                          dueDate: t.due_date,
-                          startupId: t.startup_id,
-                          aiGenerated: false
-                      });
-
                       if (payload.eventType === 'INSERT') {
-                          setTasks(prev => [mapTask(payload.new), ...prev]);
+                          setTasks(prev => [mapTaskFromDB(payload.new), ...prev]);
                       } else if (payload.eventType === 'UPDATE') {
-                          setTasks(prev => prev.map(t => t.id === payload.new.id ? mapTask(payload.new) : t));
+                          setTasks(prev => prev.map(t => t.id === payload.new.id ? mapTaskFromDB(payload.new) : t));
                       } else if (payload.eventType === 'DELETE') {
                           setTasks(prev => prev.filter(t => t.id !== payload.old.id));
                       }
@@ -137,6 +140,19 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                       setActivities(prev => [mapActivityFromDB(payload.new), ...prev]);
                   })
                   .subscribe();
+                
+                realtimeChannelRef.current = channel;
+            } else {
+                // AUTHENTICATED BUT NO PROFILE -> Clear Mocks to trigger Onboarding Wizard
+                setProfile(null);
+                setFoundersState([]);
+                setMetrics([]);
+                setInsights([]);
+                setActivities([]);
+                setTasks([]);
+                setDecks([]);
+                setDeals([]);
+                setDocs([]);
             }
         } catch (e) {
             console.error("Data Fetch Error:", e);
@@ -148,7 +164,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     loadData();
 
     return () => {
-        if (realtimeChannel) supabase.removeChannel(realtimeChannel);
+        if (realtimeChannelRef.current) {
+            supabase.removeChannel(realtimeChannelRef.current);
+        }
     };
   }, []);
 
@@ -209,19 +227,34 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // --- DASHBOARD DATA ---
   
   const updateMetrics = (data: Partial<MetricsSnapshot>) => {
-    // Optimistic Update: Append new snapshot locally
-    const newSnapshot = { 
-        id: generateShortId(),
-        startupId: profile?.id || 'temp',
-        period: new Date().toISOString(),
-        mrr: data.mrr || 0,
-        activeUsers: data.activeUsers || 0,
-        cac: 0, ltv: 0, burnRate: 0, runwayMonths: 0,
-        recordedAt: new Date().toISOString(),
-        ...data 
-    };
+    const today = new Date().toISOString().split('T')[0];
     
-    setMetrics(prev => [...prev, newSnapshot]);
+    setMetrics(prev => {
+        const last = prev[prev.length - 1];
+        // Check if last snapshot is from today (YYYY-MM-DD)
+        const lastDate = last?.period?.split('T')[0];
+        
+        if (lastDate === today) {
+            // Update existing today snapshot
+            const updated = { ...last, ...data, recordedAt: new Date().toISOString() };
+            return [...prev.slice(0, -1), updated];
+        } else {
+            // Append new snapshot
+            const newSnapshot = { 
+                id: generateShortId(),
+                startupId: profile?.id || 'temp',
+                period: new Date().toISOString(),
+                mrr: data.mrr || (last?.mrr || 0),
+                activeUsers: data.activeUsers || (last?.activeUsers || 0),
+                cac: data.cac || (last?.cac || 0), 
+                ltv: data.ltv || (last?.ltv || 0), 
+                burnRate: data.burnRate || (last?.burnRate || 0), 
+                runwayMonths: data.runwayMonths || (last?.runwayMonths || 0),
+                recordedAt: new Date().toISOString()
+            };
+            return [...prev, newSnapshot];
+        }
+    });
     
     if (profile?.id) {
         DashboardService.updateMetrics(data, profile.id);

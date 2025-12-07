@@ -1,5 +1,5 @@
 
-import { StartupProfile, Founder, Deck, Slide, Deal, InvestorDoc, MetricsSnapshot, AICoachInsight, Activity } from '../types';
+import { StartupProfile, Founder, Deck, Slide, Deal, InvestorDoc, MetricsSnapshot, AICoachInsight, Activity, Task } from '../types';
 
 /**
  * STARTUP PROFILE MAPPERS
@@ -151,6 +151,31 @@ export const mapDealToDB = (d: Partial<Deal>, startupId?: string) => {
         }
     }
     
+    if (startupId) payload.startup_id = startupId;
+    return payload;
+};
+
+/**
+ * TASK MAPPERS
+ */
+export const mapTaskFromDB = (t: any): Task => ({
+    id: t.id,
+    title: t.title,
+    status: t.status,
+    priority: t.priority,
+    description: t.description,
+    dueDate: t.due_date,
+    startupId: t.startup_id,
+    aiGenerated: false
+});
+
+export const mapTaskToDB = (t: Partial<Task>, startupId?: string) => {
+    const payload: any = {};
+    if (t.title) payload.title = t.title;
+    if (t.status) payload.status = t.status;
+    if (t.priority) payload.priority = t.priority;
+    if (t.description) payload.description = t.description;
+    if (t.dueDate) payload.due_date = t.dueDate;
     if (startupId) payload.startup_id = startupId;
     return payload;
 };

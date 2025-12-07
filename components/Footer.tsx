@@ -35,6 +35,9 @@ const Footer: React.FC<FooterProps> = ({ setPage }) => {
             <h4 className="font-bold text-slate-900 mb-4">Platform</h4>
             <ul className="space-y-2 text-sm text-slate-600">
               <li>
+                <button onClick={() => handleNav('onboarding')} className="hover:text-primary-600 transition-colors">Startup Wizard</button>
+              </li>
+              <li>
                 <button onClick={() => handleNav('features')} className="hover:text-primary-600 transition-colors">Features</button>
               </li>
               <li>

@@ -45,6 +45,29 @@ export const WizardService = {
   },
 
   /**
+   * Generic Text Refinement
+   */
+  async refineText(text: string, context: string, apiKey: string) {
+    const ai = new GoogleGenAI({ apiKey });
+    const prompt = `
+      Refine the following ${context} for a startup to be more investor-ready, concise, and professional.
+      Original: "${text}"
+      
+      Return JSON: { "refined": "..." }
+    `;
+    try {
+      const response = await ai.models.generateContent({
+        model: 'gemini-3-pro-preview',
+        contents: prompt,
+        config: { responseMimeType: 'application/json' }
+      });
+      return response.text ? JSON.parse(response.text).refined : text;
+    } catch (error) {
+      return text;
+    }
+  },
+
+  /**
    * STEP 2: Team Bio Rewrite
    */
   async rewriteBio(name: string, rawBio: string, role: string, apiKey: string) {

@@ -97,7 +97,7 @@ const AppContent = () => {
 
   const renderContent = () => {
     switch (page) {
-      case 'home': return <Home />;
+      case 'home': return <Home setPage={setPage} />;
       case 'how-it-works': return <HowItWorks setPage={setPage} />;
       case 'features': return <FeaturesPage />;
       case 'pricing': return <Pricing />;
@@ -110,7 +110,7 @@ const AppContent = () => {
       case 'documents': return <Documents />;
       case 'tasks': return <Tasks />;
       case 'settings': return <Settings />;
-      default: return <Home />;
+      default: return <Home setPage={setPage} />;
     }
   };
 

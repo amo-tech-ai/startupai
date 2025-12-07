@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Globe, Wand2, Loader2, Calendar, Target, Tag, AlertCircle, Image as ImageIcon, Upload } from 'lucide-react';
+import { Globe, Wand2, Loader2, Calendar, Target, Tag, AlertCircle, Image as ImageIcon, Upload, Sparkles } from 'lucide-react';
 import { WizardService } from '../../../services/wizardAI';
 import { API_KEY } from '../../../lib/env';
 
@@ -11,6 +11,7 @@ interface StepContextProps {
 
 export const StepContext: React.FC<StepContextProps> = ({ formData, setFormData }) => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isRefiningTagline, setIsRefiningTagline] = useState(false);
   const [detectedSignals, setDetectedSignals] = useState<{ audience?: string; problem?: string; pricing?: string }>({});
 
   const handleAutofill = async () => {
@@ -36,6 +37,19 @@ export const StepContext: React.FC<StepContextProps> = ({ formData, setFormData 
       }
     } finally {
       setIsAnalyzing(false);
+    }
+  };
+
+  const handleRefineTagline = async () => {
+    if (!formData.tagline) return;
+    if (!API_KEY) return;
+    
+    setIsRefiningTagline(true);
+    try {
+      const refined = await WizardService.refineText(formData.tagline, 'one-liner / tagline', API_KEY);
+      if (refined) update('tagline', refined);
+    } finally {
+      setIsRefiningTagline(false);
     }
   };
 
@@ -99,7 +113,19 @@ export const StepContext: React.FC<StepContextProps> = ({ formData, setFormData 
             </div>
 
             <div>
-               <label className="block text-sm font-bold text-slate-700 mb-2">One-Liner Description</label>
+               <div className="flex justify-between items-center mb-2">
+                  <label className="block text-sm font-bold text-slate-700">One-Liner Description</label>
+                  {formData.tagline && (
+                    <button 
+                      onClick={handleRefineTagline}
+                      disabled={isRefiningTagline}
+                      className="text-xs flex items-center gap-1 text-purple-600 font-bold hover:bg-purple-50 px-2 py-1 rounded transition-colors disabled:opacity-50"
+                    >
+                        {isRefiningTagline ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+                        AI Refine
+                    </button>
+                  )}
+               </div>
                <textarea 
                   value={formData.tagline}
                   onChange={(e) => update('tagline', e.target.value)}

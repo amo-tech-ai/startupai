@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { TrendingUp, Users, DollarSign, Plus, Sparkles, Loader2 } from 'lucide-react';
+import { AreaChart, Area, ResponsiveContainer, YAxis } from 'recharts';
 import { WizardService } from '../../../services/wizardAI';
 import { API_KEY } from '../../../lib/env';
 
@@ -18,7 +19,7 @@ export const StepTraction: React.FC<StepTractionProps> = ({ formData, setFormDat
   };
 
   const addFundingRound = () => {
-    const newRound = { id: Date.now(), round: 'Seed', date: '', amount: 0, investors: '' };
+    const newRound = { id: Date.now().toString(), round: 'Seed', date: '', amount: 0, investors: '' };
     update('fundingHistory', [...formData.fundingHistory, newRound]);
   };
 
@@ -42,6 +43,15 @@ export const StepTraction: React.FC<StepTractionProps> = ({ formData, setFormDat
         setIsSuggestingFunds(false);
     }
   };
+
+  // Fake chart data based on MRR
+  const chartData = React.useMemo(() => {
+    const baseMrr = formData.mrr || 0;
+    return Array.from({ length: 12 }, (_, i) => ({
+        month: i,
+        value: baseMrr * (0.1 + (i / 12) * 0.9 + Math.random() * 0.1) // Simulate growth curve ending at current MRR
+    }));
+  }, [formData.mrr]);
 
   // Helper for tag inputs
   const TagInput = ({ label, values, onChange, onSuggest, loading }: any) => (
@@ -93,7 +103,7 @@ export const StepTraction: React.FC<StepTractionProps> = ({ formData, setFormDat
              <div className="space-y-4">
                 <div>
                    <label className="block text-sm font-bold text-slate-700 mb-2">Monthly Revenue (MRR)</label>
-                   <div className="relative">
+                   <div className="relative mb-2">
                       <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                       <input 
                          type="number" 
@@ -103,6 +113,23 @@ export const StepTraction: React.FC<StepTractionProps> = ({ formData, setFormDat
                          placeholder="0"
                       />
                    </div>
+                   {/* Mini Auto-Updating Chart */}
+                   {formData.mrr > 0 && (
+                       <div className="h-24 w-full bg-slate-50 rounded-lg overflow-hidden relative">
+                           <ResponsiveContainer width="100%" height="100%">
+                               <AreaChart data={chartData}>
+                                   <defs>
+                                       <linearGradient id="colorMrr" x1="0" y1="0" x2="0" y2="1">
+                                           <stop offset="5%" stopColor="#9333ea" stopOpacity={0.2}/>
+                                           <stop offset="95%" stopColor="#9333ea" stopOpacity={0}/>
+                                       </linearGradient>
+                                   </defs>
+                                   <Area type="monotone" dataKey="value" stroke="#9333ea" strokeWidth={2} fillOpacity={1} fill="url(#colorMrr)" />
+                               </AreaChart>
+                           </ResponsiveContainer>
+                           <div className="absolute top-2 right-2 text-xs font-bold text-purple-600 bg-purple-100 px-2 py-0.5 rounded">Growth Trend</div>
+                       </div>
+                   )}
                 </div>
                 <div>
                    <label className="block text-sm font-bold text-slate-700 mb-2">Total Users / Waitlist</label>

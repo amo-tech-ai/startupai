@@ -33,14 +33,35 @@ export interface StartupProfile {
   description: string;
   mission: string;
   stage: StartupStage;
+  yearFounded?: number; // New
   problemStatement: string;
   solutionStatement: string;
   businessModel: string; // e.g., "B2B SaaS", "Marketplace"
+  pricingModel?: string; // New
   targetMarket: string;
+  customerSegments?: string[]; // New
+  keyFeatures?: string[]; // New
+  coreDifferentiator?: string; // New
   fundingGoal: number;
   currency: string;
   websiteUrl?: string;
   logoUrl?: string;
+  coverImageUrl?: string; // New
+  socialLinks?: { // New
+    linkedin?: string;
+    twitter?: string;
+    github?: string;
+    pitchDeck?: string;
+  };
+  fundingHistory?: { // New
+    id: string;
+    round: string;
+    date: string;
+    amount: number;
+    investors: string;
+  }[];
+  isRaising?: boolean; // New
+  useOfFunds?: string[]; // New
   createdAt: string;
   updatedAt: string;
 }
@@ -50,9 +71,11 @@ export interface Founder {
   id: string;
   startupId: string;
   name: string;
-  role: string; // e.g., "CEO", "CTO"
+  title: string; // Changed from role for consistency
   bio: string;
   linkedinProfile?: string;
+  email?: string; // New
+  personalWebsite?: string; // New
   avatarUrl?: string;
   isPrimaryContact: boolean;
 }
@@ -62,9 +85,9 @@ export interface Competitor {
   id: string;
   startupId: string;
   name: string;
-  strength: string;
-  weakness: string;
-  differentiation: string; // How we win
+  strength?: string;
+  weakness?: string;
+  differentiation?: string; // How we win
   websiteUrl?: string;
 }
 

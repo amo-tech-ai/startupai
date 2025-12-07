@@ -1,107 +1,76 @@
+
 import React, { useState } from 'react';
-import { ArrowRight, Zap } from 'lucide-react';
+import { ArrowRight, Zap, CheckCircle } from 'lucide-react';
 import { StartupStage } from '../types';
 import { useData } from '../context/DataContext';
-import { WizardService } from '../services/wizardAI';
-import { API_KEY } from '../lib/env';
-
-// Step Components
 import { WizardProgress } from './wizard/WizardProgress';
-import { StepBasics } from './wizard/steps/StepBasics';
-import { StepIdentity } from './wizard/steps/StepIdentity';
-import { StepStage } from './wizard/steps/StepStage';
-import { StepProblem } from './wizard/steps/StepProblem';
-import { StepSolution } from './wizard/steps/StepSolution';
+
+// Updated Steps
+import { StepContext } from './wizard/steps/StepContext';
+import { StepTeam } from './wizard/steps/StepTeam';
 import { StepBusiness } from './wizard/steps/StepBusiness';
 import { StepTraction } from './wizard/steps/StepTraction';
-import { StepTeam } from './wizard/steps/StepTeam';
-import { StepReview } from './wizard/steps/StepReview';
+import { StepSummary } from './wizard/steps/StepSummary';
 
 interface StartupWizardProps {
   setPage: (page: any) => void;
 }
 
-// Wizard Steps Configuration
 const STEPS = [
-  { id: 1, title: 'Basics', description: 'Company Name & Website' },
-  { id: 2, title: 'Identity', description: 'Tagline & Mission' },
-  { id: 3, title: 'Stage', description: 'Development Phase' },
-  { id: 4, title: 'Problem', description: 'What are you solving?' },
-  { id: 5, title: 'Solution', description: 'How do you solve it?' },
-  { id: 6, title: 'Business', description: 'Model & Pricing' },
-  { id: 7, title: 'Traction', description: 'Key Metrics' },
-  { id: 8, title: 'Team', description: 'Founding Members' },
-  { id: 9, title: 'Review', description: 'Finalize & Launch' },
+  { id: 1, title: 'Context', description: 'Company Basics' },
+  { id: 2, title: 'Team', description: 'Founders' },
+  { id: 3, title: 'Business', description: 'Model & Market' },
+  { id: 4, title: 'Traction', description: 'Metrics & Funding' },
+  { id: 5, title: 'Summary', description: 'Review & Launch' },
 ];
 
 const StartupWizard: React.FC<StartupWizardProps> = ({ setPage }) => {
   const { updateProfile, updateMetrics, addActivity } = useData();
   const [currentStep, setCurrentStep] = useState(1);
-  const [isAiLoading, setIsAiLoading] = useState(false);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
   
+  // Consolidated Form Data
   const [formData, setFormData] = useState({
+    // Context
     name: '',
     website: '',
+    industry: '',
+    yearFounded: new Date().getFullYear(),
     tagline: '',
-    mission: '',
-    stage: 'Idea' as StartupStage,
-    targetMarket: '',
-    problem: '',
-    solution: '',
+    coverImage: '',
+    
+    // Team
+    founders: [{ id: '1', name: '', title: '', bio: '', linkedin: '', email: '', website: '' }],
+    
+    // Business
     businessModel: '',
     pricingModel: '',
-    mrr: '',
-    users: '',
-    fundingGoal: '',
-    founders: [{ name: '', role: '' }]
+    customerSegments: [] as string[],
+    keyFeatures: [] as string[],
+    competitors: [] as string[],
+    coreDifferentiator: '',
+    socialLinks: { linkedin: '', twitter: '', github: '', pitchDeck: '' },
+    
+    // Traction
+    mrr: 0,
+    totalUsers: 0,
+    fundingHistory: [] as any[],
+    isRaising: false,
+    targetRaise: 0,
+    useOfFunds: [] as string[],
+    
+    // Summary
+    aiSummary: ''
   });
 
   // --- Actions ---
 
   const handleNext = () => {
-    if (currentStep < 9) {
+    if (currentStep < 5) {
       setCurrentStep(prev => prev + 1);
       window.scrollTo(0,0);
     } else {
       submitWizard();
     }
-  };
-
-  const submitWizard = () => {
-    // 1. Map to Profile Structure
-    updateProfile({
-      name: formData.name,
-      websiteUrl: formData.website,
-      tagline: formData.tagline,
-      mission: formData.mission,
-      stage: formData.stage,
-      targetMarket: formData.targetMarket,
-      problemStatement: formData.problem,
-      solutionStatement: formData.solution,
-      businessModel: formData.businessModel,
-      fundingGoal: Number(formData.fundingGoal) || 0,
-      createdAt: new Date().toISOString(),
-    });
-
-    // 2. Map to Metrics Structure
-    updateMetrics({
-      mrr: Number(formData.mrr) || 0,
-      activeUsers: Number(formData.users) || 0,
-      period: new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
-    });
-
-    // 3. Log Activity
-    addActivity({
-      type: 'milestone',
-      title: 'Profile Setup Complete',
-      description: `${formData.name} is now ready to build.`,
-    });
-    
-    // Simulate API delay & Redirect
-    setTimeout(() => {
-      setPage('dashboard');
-    }, 800);
   };
 
   const handleBack = () => {
@@ -116,131 +85,106 @@ const StartupWizard: React.FC<StartupWizardProps> = ({ setPage }) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  // --- AI Integration ---
+  const submitWizard = () => {
+    // 1. Map to Profile Structure
+    updateProfile({
+      name: formData.name,
+      websiteUrl: formData.website,
+      tagline: formData.tagline,
+      yearFounded: formData.yearFounded,
+      businessModel: formData.businessModel,
+      pricingModel: formData.pricingModel,
+      customerSegments: formData.customerSegments,
+      keyFeatures: formData.keyFeatures,
+      coreDifferentiator: formData.coreDifferentiator,
+      socialLinks: formData.socialLinks,
+      fundingHistory: formData.fundingHistory,
+      isRaising: formData.isRaising,
+      fundingGoal: formData.targetRaise,
+      useOfFunds: formData.useOfFunds,
+      // Default others
+      stage: 'Seed', 
+      createdAt: new Date().toISOString(),
+    });
 
-  const analyzeWebsite = async () => {
-    if (!formData.name && !formData.website) {
-      alert("Please enter a Company Name or Website URL first.");
-      return;
-    }
+    // 2. Map to Metrics Structure
+    updateMetrics({
+      mrr: formData.mrr,
+      activeUsers: formData.totalUsers,
+      period: new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+    });
+
+    // 3. Log Activity
+    addActivity({
+      type: 'milestone',
+      title: 'Profile Setup Complete',
+      description: `${formData.name} profile is ready.`,
+    });
     
-    if (!API_KEY) {
-      alert("API Key not found.");
-      return;
-    }
-
-    setIsAnalyzing(true);
-
-    try {
-      const data = await WizardService.analyzeStartupProfile(formData.name, formData.website, API_KEY);
-      if (data) {
-        setFormData(prev => ({
-          ...prev,
-          tagline: data.tagline || prev.tagline,
-          mission: data.mission || prev.mission,
-          targetMarket: data.targetMarket || prev.targetMarket,
-          problem: data.problem || prev.problem,
-          solution: data.solution || prev.solution,
-          businessModel: data.businessModel || prev.businessModel,
-        }));
-        // Move to next step automatically if successful
-        if (currentStep === 1) {
-            setTimeout(() => setCurrentStep(2), 500);
-        }
-      }
-    } catch (error) {
-      alert("Could not auto-generate profile. Please fill manually.");
-    } finally {
-      setIsAnalyzing(false);
-    }
-  };
-
-  const refineWithAI = async (field: 'problem' | 'solution' | 'tagline' | 'mission') => {
-    if (!API_KEY) {
-      alert("API Key not found.");
-      return;
-    }
-
-    setIsAiLoading(true);
-    try {
-      const contextData = {
-        name: formData.name,
-        industry: formData.targetMarket,
-        relatedContext: field === 'solution' ? formData.problem : (field === 'mission' ? formData.tagline : undefined)
-      };
-
-      const refinedText = await WizardService.refineText(field, formData[field as keyof typeof formData] as string, contextData, API_KEY);
-      
-      if (refinedText) {
-        updateField(field, refinedText);
-      }
-    } catch (error) {
-      // Error handling logged in service
-    } finally {
-      setIsAiLoading(false);
-    }
+    setTimeout(() => {
+      setPage('dashboard');
+    }, 800);
   };
 
   const renderStepContent = () => {
     switch (currentStep) {
-      case 1: return <StepBasics formData={formData} updateField={updateField} onAnalyze={analyzeWebsite} isAnalyzing={isAnalyzing} />;
-      case 2: return <StepIdentity formData={formData} updateField={updateField} onRefine={refineWithAI} isAiLoading={isAiLoading} />;
-      case 3: return <StepStage formData={formData} updateField={updateField} />;
-      case 4: return <StepProblem formData={formData} updateField={updateField} onRefine={refineWithAI} isAiLoading={isAiLoading} />;
-      case 5: return <StepSolution formData={formData} updateField={updateField} onRefine={refineWithAI} isAiLoading={isAiLoading} />;
-      case 6: return <StepBusiness formData={formData} updateField={updateField} />;
-      case 7: return <StepTraction formData={formData} updateField={updateField} />;
-      case 8: return <StepTeam formData={formData} setFormData={setFormData} />;
-      case 9: return <StepReview formData={formData} />;
+      case 1: return <StepContext formData={formData} setFormData={setFormData} />;
+      case 2: return <StepTeam formData={formData} setFormData={setFormData} />;
+      case 3: return <StepBusiness formData={formData} setFormData={setFormData} />;
+      case 4: return <StepTraction formData={formData} setFormData={setFormData} />;
+      case 5: return <StepSummary formData={formData} setFormData={setFormData} />;
       default: return null;
     }
   };
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
+    <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900">
       {/* 1. Header */}
-      <header className="px-6 py-4 flex items-center justify-between border-b border-slate-100">
+      <header className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between sticky top-0 z-30">
           <div className="flex items-center gap-2">
-             <div className="bg-slate-900 text-white p-1.5 rounded-lg">
-                <Zap size={20} fill="currentColor" />
+             <div className="bg-purple-600 text-white p-1.5 rounded-lg shadow-sm">
+                <Zap size={18} fill="currentColor" />
              </div>
-             <span className="font-bold text-xl tracking-tight">startupAI</span>
+             <span className="font-bold text-lg tracking-tight">startupAI</span>
           </div>
-          <button onClick={() => setPage('home')} className="text-slate-400 hover:text-slate-900 font-medium">
-             Save & Exit
-          </button>
+          <div className="flex items-center gap-4">
+             <div className="hidden md:flex text-sm text-slate-500 font-medium">
+                {Math.round((currentStep / 5) * 100)}% Complete
+             </div>
+             <button onClick={() => setPage('home')} className="text-sm font-bold text-slate-400 hover:text-slate-600">
+                Exit
+             </button>
+          </div>
       </header>
 
       {/* 2. Wizard Progress */}
       <WizardProgress 
         currentStep={currentStep} 
-        totalSteps={STEPS.length} 
+        totalSteps={5} 
         stepTitle={STEPS[currentStep-1].title} 
       />
 
       {/* 3. Main Content Form */}
-      <main className="flex-1 flex flex-col items-center justify-start pt-8 pb-32 px-6">
-        <div className="w-full max-w-2xl">
-          {renderStepContent()}
-        </div>
+      <main className="flex-1 w-full max-w-5xl mx-auto px-4 py-8 md:py-12">
+        {renderStepContent()}
       </main>
 
       {/* 4. Footer Controls */}
-      <footer className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-6 z-20">
-         <div className="max-w-4xl mx-auto flex items-center justify-between">
+      <footer className="sticky bottom-0 bg-white border-t border-slate-200 p-4 md:px-8 z-20 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+         <div className="max-w-5xl mx-auto flex items-center justify-between">
             <button 
                 onClick={handleBack}
-                className="px-6 py-3 rounded-xl border border-slate-200 text-slate-700 font-bold hover:bg-slate-50 transition-colors"
+                className="px-6 py-3 rounded-xl border border-slate-200 text-slate-600 font-bold hover:bg-slate-50 transition-colors"
             >
                 {currentStep === 1 ? 'Cancel' : 'Back'}
             </button>
 
             <button 
                 onClick={handleNext}
-                className="group flex items-center gap-2 px-8 py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 shadow-xl shadow-slate-900/20 transition-all hover:-translate-y-1"
+                className="group flex items-center gap-2 px-8 py-3 bg-purple-600 text-white rounded-xl font-bold hover:bg-purple-700 shadow-lg shadow-purple-600/20 transition-all hover:-translate-y-0.5 active:scale-95"
             >
-                {currentStep === 9 ? 'Complete Setup' : 'Continue'}
-                <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+                {currentStep === 5 ? 'Finish & Save' : 'Next Step'}
+                {currentStep === 5 ? <CheckCircle size={20} /> : <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />}
             </button>
          </div>
       </footer>

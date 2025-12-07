@@ -32,7 +32,7 @@ const mockFounders: Founder[] = [
     id: "fnd_1",
     startupId: "st_123456",
     name: "Alex Rivera",
-    role: "CEO",
+    title: "CEO",
     bio: "Ex-Google PM with 10 years of product experience.",
     isPrimaryContact: true
   },
@@ -40,7 +40,7 @@ const mockFounders: Founder[] = [
     id: "fnd_2",
     startupId: "st_123456",
     name: "Sarah Chen",
-    role: "CTO",
+    title: "CTO",
     bio: "AI Researcher and Full-stack engineer.",
     isPrimaryContact: false
   }

@@ -3,27 +3,28 @@ import { GoogleGenAI } from "@google/genai";
 
 export const WizardService = {
   /**
-   * Analyzes a company name and website URL to generate a full startup profile.
-   * Uses Google Search Grounding to find real data if available.
+   * STEP 1: Context Analysis
+   * Uses URL Context Tool (simulated via prompt/search) + Search Grounding
    */
-  async analyzeStartupProfile(name: string, website: string, apiKey: string) {
+  async analyzeContext(name: string, website: string, apiKey: string) {
     const ai = new GoogleGenAI({ apiKey });
     
     const prompt = `
       You are an expert startup analyst. Analyze the startup named "${name}" ${website ? `with website ${website}` : ''}.
       
-      If the website/company is real and found via Google Search, use real data.
-      If it seems hypothetical or new, generate a plausible, high-quality startup profile based on the name and typical industry patterns.
-
-      Return a JSON object with the following fields:
-      - tagline (concise, punchy, under 10 words)
-      - mission (inspiring, under 20 words)
-      - targetMarket (specific industry/niche)
-      - problem (2-3 sentences describing the pain point)
-      - solution (2-3 sentences describing the product value)
-      - businessModel (choose one: SaaS, Marketplace, Ecommerce, Usage, Service)
+      User Goal: Tell us the basic information about the company.
       
-      Ensure the tone is professional, investor-ready, and persuasive.
+      Task:
+      1. If the website is real, extract details.
+      2. If not found, infer from the name and industry patterns.
+      3. Clean the one-liner to be investor-ready (concise, active voice).
+      
+      Return a JSON object with:
+      - tagline (max 10 words)
+      - industry (e.g. Fintech, Edtech)
+      - target_audience (e.g. SMBs, Enterprise)
+      - core_problem (short description)
+      - pricing_model_hint (e.g. SaaS, Freemium)
     `;
 
     try {
@@ -36,51 +37,153 @@ export const WizardService = {
         }
       });
 
-      const text = response.text;
-      return text ? JSON.parse(text) : null;
+      return response.text ? JSON.parse(response.text) : null;
     } catch (error) {
-      console.error("Wizard AI Analysis Error:", error);
-      throw error;
+      console.error("Wizard AI Context Error:", error);
+      return null;
     }
   },
 
   /**
-   * Refines a specific text field (Problem, Solution, Mission, etc.) using AI.
+   * STEP 2: Team Bio Rewrite
    */
-  async refineText(
-    field: string, 
-    currentValue: string, 
-    contextData: { name: string; industry: string; relatedContext?: string }, 
-    apiKey: string
-  ) {
-    const context = `
-      Startup Name: ${contextData.name}
-      Industry: ${contextData.industry}
-      ${contextData.relatedContext ? `Additional Context: ${contextData.relatedContext}` : ''}
-    `;
-
+  async rewriteBio(name: string, rawBio: string, role: string, apiKey: string) {
+    const ai = new GoogleGenAI({ apiKey });
+    
     const prompt = `
-      Context: ${context}
-      User Input (${field}): "${currentValue}"
+      Rewrite this founder bio to be investor-ready. Highlight credibility, relevant experience, and founder-market fit.
+      Founder: ${name}, Role: ${role}
+      Raw Bio: "${rawBio}"
       
-      Task: Rewrite the above ${field} to be more professional, concise, and investor-ready. 
-      - If it's a tagline, make it punchy (max 10 words).
-      - If it's a problem/solution, use active voice and quantify if possible (max 3 sentences).
-      
-      Return ONLY the rewritten text. No explanations.
+      Output JSON: { "bio": "..." }
     `;
 
     try {
-      const ai = new GoogleGenAI({ apiKey });
       const response = await ai.models.generateContent({
         model: 'gemini-3-pro-preview',
         contents: prompt,
+        config: { responseMimeType: 'application/json' }
       });
-      
-      return response.text?.trim() || null;
+      return response.text ? JSON.parse(response.text).bio : rawBio;
     } catch (error) {
-      console.error(`Wizard AI Refine Error (${field}):`, error);
-      throw error;
+      return rawBio;
+    }
+  },
+
+  /**
+   * STEP 3: Business & Competitors
+   */
+  async analyzeBusiness(context: any, apiKey: string) {
+    const ai = new GoogleGenAI({ apiKey });
+    
+    const prompt = `
+      Context: ${context.name} (${context.industry}) - ${context.tagline}
+      
+      Task:
+      1. Suggest 3-5 real competitors using Google Search.
+      2. Suggest a strong "Core Differentiator".
+      3. Suggest 3 key features.
+      
+      Return JSON:
+      {
+        "competitors": ["Name 1", "Name 2"],
+        "coreDifferentiator": "...",
+        "keyFeatures": ["...", "...", "..."]
+      }
+    `;
+
+    try {
+      const response = await ai.models.generateContent({
+        model: 'gemini-3-pro-preview',
+        contents: prompt,
+        config: {
+          tools: [{ googleSearch: {} }],
+          responseMimeType: 'application/json',
+        }
+      });
+      return response.text ? JSON.parse(response.text) : null;
+    } catch (error) {
+      console.error("Wizard AI Business Error:", error);
+      return null;
+    }
+  },
+
+  /**
+   * STEP 4: Traction & Valuation
+   */
+  async estimateValuation(industry: string, stage: string, mrr: number, apiKey: string) {
+    const ai = new GoogleGenAI({ apiKey });
+    
+    const prompt = `
+      Estimate a valuation range for a ${stage} stage ${industry} startup with $${mrr} MRR.
+      Use current market benchmarks.
+      
+      Return JSON: { "min": number, "max": number, "reasoning": "string" }
+    `;
+
+    try {
+      const response = await ai.models.generateContent({
+        model: 'gemini-3-pro-preview',
+        contents: prompt,
+        config: { responseMimeType: 'application/json' }
+      });
+      return response.text ? JSON.parse(response.text) : null;
+    } catch (error) {
+      return null;
+    }
+  },
+
+  /**
+   * STEP 4: Use of Funds Suggestion
+   */
+  async suggestUseOfFunds(amount: number, stage: string, industry: string, apiKey: string) {
+    const ai = new GoogleGenAI({ apiKey });
+    const prompt = `
+      Suggest 4-5 standard "Use of Funds" categories for a ${stage} ${industry} startup raising $${amount}.
+      Focus on growth, product, and team.
+      
+      Return JSON: { "useOfFunds": ["Category 1", "Category 2", ...] }
+    `;
+    try {
+      const response = await ai.models.generateContent({
+        model: 'gemini-3-pro-preview',
+        contents: prompt,
+        config: { responseMimeType: 'application/json' }
+      });
+      return response.text ? JSON.parse(response.text).useOfFunds : [];
+    } catch (error) {
+        return [];
+    }
+  },
+
+  /**
+   * STEP 5: Executive Summary Generation
+   */
+  async generateSummary(profileData: any, apiKey: string) {
+    const ai = new GoogleGenAI({ apiKey });
+    
+    const prompt = `
+      Generate an investor executive summary (200 words max) based on:
+      ${JSON.stringify(profileData)}
+      
+      Structure:
+      - Problem & Solution
+      - Market & Business Model
+      - Traction
+      - Team
+      
+      Return JSON: { "summary": "..." }
+    `;
+
+    try {
+      const response = await ai.models.generateContent({
+        model: 'gemini-3-pro-preview',
+        contents: prompt,
+        config: { responseMimeType: 'application/json' }
+      });
+      return response.text ? JSON.parse(response.text).summary : null;
+    } catch (error) {
+      return null;
     }
   }
 };

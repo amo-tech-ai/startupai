@@ -27,7 +27,14 @@ export const StepContext: React.FC<StepContextProps> = ({ formData, setFormData 
           tagline: result.tagline || prev.tagline,
           industry: result.industry || prev.industry,
           pricingModel: result.pricing_model_hint || prev.pricingModel,
-          problem: result.core_problem || prev.problem // Capture inferred problem
+          problem: result.core_problem || prev.problem,
+          solution: result.solution_statement || prev.solution, // Added solution mapping
+          socialLinks: { // Added social links mapping
+             ...prev.socialLinks,
+             linkedin: result.social_links?.linkedin || prev.socialLinks.linkedin,
+             twitter: result.social_links?.twitter || prev.socialLinks.twitter,
+             github: result.social_links?.github || prev.socialLinks.github,
+          }
         }));
         setDetectedSignals({
           audience: result.target_audience,
@@ -205,7 +212,7 @@ export const StepContext: React.FC<StepContextProps> = ({ formData, setFormData 
                <h3 className="font-bold text-lg">Detected Signals</h3>
             </div>
             <p className="text-purple-100 text-sm mb-6">
-               AI analysis of your URL and inputs.
+               AI analysis of your URL and inputs via Gemini 3 Pro.
             </p>
 
             <div className="space-y-4">

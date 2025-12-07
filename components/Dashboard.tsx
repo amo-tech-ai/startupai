@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useData } from '../context/DataContext';
 import { API_KEY } from '../lib/env';
 import { CoachAI } from '../services/coachAI';
@@ -59,6 +59,17 @@ const Dashboard: React.FC = () => {
         setIsGeneratingInsights(false);
     }
   };
+
+  // Auto-trigger on mount if no insights
+  useEffect(() => {
+      if (profile && insights.length === 0 && API_KEY && !isGeneratingInsights) {
+          // Small delay to allow UI to render first
+          const timer = setTimeout(() => {
+              refreshInsights();
+          }, 1500);
+          return () => clearTimeout(timer);
+      }
+  }, [profile, insights.length]);
 
   return (
     <div className="p-6 md:p-8 lg:p-12 max-w-7xl mx-auto space-y-12 animate-in fade-in duration-700">

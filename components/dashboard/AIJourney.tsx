@@ -1,8 +1,43 @@
-
 import React from 'react';
 import { UserPlus, Search, Database, FileText } from 'lucide-react';
+import { useData } from '../../context/DataContext';
 
 export const AIJourney: React.FC = () => {
+  const { profile } = useData();
+
+  // Calculate dynamic status
+  const hasProfile = !!profile?.name;
+  const hasAutoFill = hasProfile && !!profile?.websiteUrl;
+  const hasBusinessData = hasProfile && !!profile?.competitors && profile.competitors.length > 0;
+  const hasDocs = hasProfile && (profile?.fundingGoal || 0) > 0; // Simple proxy for "Ready for docs"
+
+  const steps = [
+    { 
+        title: "User Inputs Info", 
+        icon: <UserPlus size={18}/>, 
+        status: hasProfile ? "Completed" : "Pending",
+        active: hasProfile
+    },
+    { 
+        title: "URL Context Analysis", 
+        icon: <Search size={18}/>, 
+        status: hasAutoFill ? "Completed" : "Pending",
+        active: hasAutoFill
+    },
+    { 
+        title: "Search Grounding", 
+        icon: <Database size={18}/>, 
+        status: hasBusinessData ? "Active" : "Waiting",
+        active: hasBusinessData
+    },
+    { 
+        title: "RAG / Context Engine", 
+        icon: <FileText size={18}/>, 
+        status: hasDocs ? "Ready" : "Locked",
+        active: hasDocs
+    },
+  ];
+
   return (
     <section className="space-y-6">
          <div className="flex items-center justify-between">
@@ -11,13 +46,8 @@ export const AIJourney: React.FC = () => {
          </div>
 
          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-             {[
-                { title: "User Inputs Info", icon: <UserPlus size={18}/>, status: "Completed" },
-                { title: "URL Context Analysis", icon: <Search size={18}/>, status: "Completed" },
-                { title: "Search Grounding", icon: <Database size={18}/>, status: "Active", active: true },
-                { title: "RAG / File Context", icon: <FileText size={18}/>, status: "Pending" },
-             ].map((card, idx) => (
-                <div key={idx} className={`p-4 rounded-xl border ${card.active ? 'bg-indigo-50 border-indigo-200 shadow-sm' : 'bg-white border-slate-200'} flex flex-col gap-3 relative overflow-hidden`}>
+             {steps.map((card, idx) => (
+                <div key={idx} className={`p-4 rounded-xl border ${card.active ? 'bg-indigo-50 border-indigo-200 shadow-sm' : 'bg-white border-slate-200'} flex flex-col gap-3 relative overflow-hidden transition-all`}>
                    {card.active && <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-indigo-200/50 to-transparent rounded-bl-full -mr-8 -mt-8"></div>}
                    <div className={`p-2 rounded-lg w-fit ${card.active ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-500'}`}>
                       {card.icon}

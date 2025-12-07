@@ -4,7 +4,7 @@ import { GoogleGenAI } from "@google/genai";
 export const WizardService = {
   /**
    * STEP 1: Context Analysis
-   * Uses URL Context Tool (simulated via prompt/search) + Search Grounding
+   * Uses Search Grounding + Thinking to extract deep context.
    */
   async analyzeContext(name: string, website: string, apiKey: string) {
     const ai = new GoogleGenAI({ apiKey });
@@ -12,19 +12,22 @@ export const WizardService = {
     const prompt = `
       You are an expert startup analyst. Analyze the startup named "${name}" ${website ? `with website ${website}` : ''}.
       
-      User Goal: Tell us the basic information about the company.
+      User Goal: specific details to auto-fill a profile.
       
       Task:
-      1. If the website is real, extract details.
-      2. If not found, infer from the name and industry patterns.
-      3. Clean the one-liner to be investor-ready (concise, active voice).
+      1. Research the company using Google Search.
+      2. If website is provided, prioritize extraction from there.
+      3. If not found, infer from name and industry patterns.
+      4. Think deeply about the target audience and core value proposition.
       
       Return a JSON object with:
-      - tagline (max 10 words)
-      - industry (e.g. Fintech, Edtech)
+      - tagline (max 10 words, catchy)
+      - industry (e.g. Fintech, Edtech, SaaS)
       - target_audience (e.g. SMBs, Enterprise)
-      - core_problem (short description)
-      - pricing_model_hint (e.g. SaaS, Freemium)
+      - core_problem (short description of the pain point)
+      - solution_statement (how they solve it)
+      - pricing_model_hint (e.g. SaaS, Freemium, Marketplace)
+      - social_links: { linkedin: string, twitter: string, github: string } (Find these if possible, otherwise empty strings)
     `;
 
     try {
@@ -34,6 +37,7 @@ export const WizardService = {
         config: {
           tools: [{ googleSearch: {} }],
           responseMimeType: 'application/json',
+          thinkingConfig: { thinkingBudget: 2048 } // Enable thinking for deeper research synthesis
         }
       });
 
@@ -95,6 +99,7 @@ export const WizardService = {
 
   /**
    * STEP 3: Business & Competitors
+   * Uses Thinking + Search
    */
   async analyzeBusiness(context: any, apiKey: string) {
     const ai = new GoogleGenAI({ apiKey });
@@ -103,9 +108,10 @@ export const WizardService = {
       Context: ${context.name} (${context.industry}) - ${context.tagline}
       
       Task:
-      1. Suggest 3-5 real competitors using Google Search.
-      2. Suggest a strong "Core Differentiator".
-      3. Suggest 3 key features.
+      1. Think about the market landscape.
+      2. Suggest 3-5 real competitors using Google Search.
+      3. Suggest a strong "Core Differentiator".
+      4. Suggest 3 key features.
       
       Return JSON:
       {
@@ -122,6 +128,7 @@ export const WizardService = {
         config: {
           tools: [{ googleSearch: {} }],
           responseMimeType: 'application/json',
+          thinkingConfig: { thinkingBudget: 1024 }
         }
       });
       return response.text ? JSON.parse(response.text) : null;
@@ -133,25 +140,35 @@ export const WizardService = {
 
   /**
    * STEP 4: Traction & Valuation
+   * Uses Search + Code Execution for precise calculation.
    */
   async estimateValuation(industry: string, stage: string, mrr: number, apiKey: string) {
     const ai = new GoogleGenAI({ apiKey });
     
     const prompt = `
-      Estimate a valuation range for a ${stage} stage ${industry} startup with $${mrr} MRR.
-      Use current market benchmarks.
+      Task: Estimate valuation for a ${stage} ${industry} startup with $${mrr} Monthly Recurring Revenue (MRR).
       
-      Return JSON: { "min": number, "max": number, "reasoning": "string" }
+      Steps:
+      1. Search for current revenue valuation multiples for ${industry} startups at ${stage} stage (e.g., "SaaS seed valuation multiples 2024").
+      2. Use Code Execution to calculate the valuation range (Low/High) based on MRR * 12 (Annualized) * Multiple.
+      3. Return reasoning and numbers in millions.
+      
+      Output JSON: { "min": number, "max": number, "reasoning": "string" }
     `;
 
     try {
       const response = await ai.models.generateContent({
         model: 'gemini-3-pro-preview',
         contents: prompt,
-        config: { responseMimeType: 'application/json' }
+        config: {
+          // Combining Search for data and Code for math
+          tools: [{ googleSearch: {} }, { codeExecution: {} }],
+          responseMimeType: 'application/json',
+        }
       });
       return response.text ? JSON.parse(response.text) : null;
     } catch (error) {
+      console.error("Valuation Error", error);
       return null;
     }
   },

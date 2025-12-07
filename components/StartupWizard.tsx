@@ -17,31 +17,60 @@ import { StepSummary } from './wizard/steps/StepSummary';
 
 // Types & Data
 import { INITIAL_WIZARD_STATE, WIZARD_STEPS, WizardFormData } from './wizard/types';
+import { Founder } from '../types';
 
 interface StartupWizardProps {
   setPage: (page: any) => void;
 }
 
 const StartupWizard: React.FC<StartupWizardProps> = ({ setPage }) => {
-  const { updateProfile, updateMetrics, addActivity } = useData();
+  const { updateProfile, updateMetrics, addActivity, setFounders } = useData();
   const { success, error } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<WizardFormData>(INITIAL_WIZARD_STATE);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // --- Actions ---
+  // --- Validation ---
 
-  const validateStep = (step: number) => {
+  const validateStep = (step: number): boolean => {
     switch (step) {
-      case 1:
+      case 1: // Context
         if (!formData.name.trim()) {
           error("Startup Name is required.");
           return false;
         }
         return true;
+      
+      case 2: // Team
+        const hasValidFounder = formData.founders.some(f => f.name.trim().length > 0);
+        if (!hasValidFounder) {
+          error("Please add at least one founder with a name.");
+          return false;
+        }
+        return true;
+
+      case 3: // Business
+        if (!formData.problem.trim() && !formData.solution.trim()) {
+          error("Please provide either a Problem or Solution statement.");
+          return false;
+        }
+        return true;
+
+      case 4: // Traction
+        if (formData.isRaising) {
+           if (!formData.targetRaise || formData.targetRaise <= 0) {
+             error("Please specify a valid Target Raise amount.");
+             return false;
+           }
+        }
+        return true;
+
       default:
         return true;
     }
   };
+
+  // --- Actions ---
 
   const handleNext = () => {
     if (!validateStep(currentStep)) return;
@@ -57,59 +86,91 @@ const StartupWizard: React.FC<StartupWizardProps> = ({ setPage }) => {
   const handleBack = () => {
     if (currentStep > 1) {
       setCurrentStep(prev => prev - 1);
+      window.scrollTo(0,0);
     } else {
-      setPage('home'); 
+      if (confirm("Exit wizard? Your progress will be lost.")) {
+        setPage('home'); 
+      }
     }
   };
 
-  const submitWizard = () => {
-    // 1. Map to Profile Structure
-    updateProfile({
-      name: formData.name,
-      websiteUrl: formData.website,
-      tagline: formData.tagline,
-      industry: formData.industry,
-      coverImageUrl: formData.coverImage,
-      yearFounded: formData.yearFounded,
-      
-      problemStatement: formData.problem,
-      solutionStatement: formData.solution,
-      businessModel: formData.businessModel,
-      pricingModel: formData.pricingModel,
-      customerSegments: formData.customerSegments,
-      keyFeatures: formData.keyFeatures,
-      coreDifferentiator: formData.coreDifferentiator,
-      socialLinks: formData.socialLinks,
-      
-      fundingHistory: formData.fundingHistory,
-      isRaising: formData.isRaising,
-      fundingGoal: formData.targetRaise,
-      useOfFunds: formData.useOfFunds,
-      
-      // Default others
-      stage: 'Seed', 
-      createdAt: new Date().toISOString(),
-    });
+  const submitWizard = async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
 
-    // 2. Map to Metrics Structure
-    updateMetrics({
-      mrr: formData.mrr,
-      activeUsers: formData.totalUsers,
-      period: new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
-    });
+    try {
+      // 1. Map to Profile Structure
+      updateProfile({
+        name: formData.name,
+        websiteUrl: formData.website,
+        tagline: formData.tagline,
+        industry: formData.industry,
+        coverImageUrl: formData.coverImage,
+        yearFounded: formData.yearFounded,
+        
+        description: formData.aiSummary || formData.tagline, // Prefer AI summary
+        problemStatement: formData.problem,
+        solutionStatement: formData.solution,
+        
+        businessModel: formData.businessModel,
+        pricingModel: formData.pricingModel,
+        customerSegments: formData.customerSegments,
+        keyFeatures: formData.keyFeatures,
+        competitors: formData.competitors,
+        coreDifferentiator: formData.coreDifferentiator,
+        socialLinks: formData.socialLinks,
+        
+        fundingHistory: formData.fundingHistory,
+        isRaising: formData.isRaising,
+        fundingGoal: formData.targetRaise,
+        useOfFunds: formData.useOfFunds,
+        
+        // Default others
+        stage: formData.stage as any || 'Seed', 
+        createdAt: new Date().toISOString(),
+      });
 
-    // 3. Log Activity
-    addActivity({
-      type: 'milestone',
-      title: 'Profile Setup Complete',
-      description: `${formData.name} profile is ready.`,
-    });
-    
-    success("Profile setup complete! Welcome to your dashboard.");
+      // 2. Map Founders
+      const foundersPayload: Founder[] = formData.founders
+        .filter(f => f.name.trim().length > 0)
+        .map(f => ({
+          id: f.id,
+          startupId: 'temp_startup_id', // Would be replaced by actual ID in real DB logic
+          name: f.name,
+          title: f.title,
+          bio: f.bio,
+          linkedinProfile: f.linkedin,
+          email: f.email,
+          isPrimaryContact: true // First one usually
+        }));
+      setFounders(foundersPayload);
 
-    setTimeout(() => {
-      setPage('dashboard');
-    }, 1000);
+      // 3. Map to Metrics Structure
+      updateMetrics({
+        mrr: formData.mrr,
+        activeUsers: formData.totalUsers,
+        period: new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+      });
+
+      // 4. Log Activity
+      addActivity({
+        type: 'milestone',
+        title: 'Profile Setup Complete',
+        description: `${formData.name} profile is ready.`,
+      });
+      
+      success("Profile setup complete! Welcome to your dashboard.");
+
+      // Small delay for UX
+      setTimeout(() => {
+        setPage('dashboard');
+      }, 1000);
+
+    } catch (err) {
+      console.error(err);
+      error("Failed to save profile. Please try again.");
+      setIsSubmitting(false);
+    }
   };
 
   const renderStepContent = () => {

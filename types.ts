@@ -42,6 +42,7 @@ export interface StartupProfile {
   industry?: string; // Added to match Wizard
   customerSegments?: string[]; // New
   keyFeatures?: string[]; // New
+  competitors?: string[]; // New: added to match Wizard form data
   coreDifferentiator?: string; // New
   fundingGoal: number;
   currency: string;

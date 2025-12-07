@@ -7,6 +7,7 @@ import { generateShortId, generateUUID } from '../lib/utils';
 
 interface DataContextType {
   profile: StartupProfile | null;
+  founders: Founder[];
   metrics: MetricsSnapshot[];
   insights: AICoachInsight[];
   activities: Activity[];
@@ -15,6 +16,9 @@ interface DataContextType {
   deals: Deal[];
   docs: InvestorDoc[];
   updateProfile: (data: Partial<StartupProfile>) => void;
+  setFounders: (founders: Founder[]) => void; // New
+  addFounder: (founder: Founder) => void; // New
+  removeFounder: (id: string) => void; // New
   updateMetrics: (data: Partial<MetricsSnapshot>) => void;
   setInsights: (insights: AICoachInsight[]) => void;
   addInsight: (insight: AICoachInsight) => void;
@@ -37,6 +41,7 @@ const DataContext = createContext<DataContextType | undefined>(undefined);
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Initialize with the mock DB state
   const [profile, setProfile] = useState<StartupProfile | null>(initialDatabaseState.profile);
+  const [founders, setFoundersState] = useState<Founder[]>(initialDatabaseState.founders);
   const [metrics, setMetrics] = useState<MetricsSnapshot[]>(initialDatabaseState.metrics);
   const [insights, setInsights] = useState<AICoachInsight[]>(initialDatabaseState.insights);
   const [activities, setActivities] = useState<Activity[]>(initialDatabaseState.activities);
@@ -61,7 +66,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const { data: profileData } = await supabase.from('startups').select('*').single();
             if (profileData) setProfile(profileData);
 
-            // 2. Fetch Decks (and slides joined)
+            // 2. Fetch Founders
+            const { data: founderData } = await supabase.from('startup_founders').select('*');
+            if (founderData) setFoundersState(founderData);
+
+            // 3. Fetch Decks (and slides joined)
             const { data: deckData } = await supabase.from('decks').select('*, slides(*)');
             if (deckData) {
                 // Map DB structure to App structure if needed
@@ -72,18 +81,18 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 setDecks(formattedDecks);
             }
 
-            // 3. Fetch Tasks
+            // 4. Fetch Tasks
             const { data: taskData } = await supabase.from('tasks').select('*');
             if (taskData) setTasks(taskData);
 
-            // 4. Fetch Deals
+            // 5. Fetch Deals
             const { data: dealData } = await supabase.from('crm_deals').select('*');
             if (dealData) {
                 const formattedDeals = dealData.map((d: any) => ({
                     id: d.id,
                     startupId: d.startup_id,
                     company: d.name,
-                    value: d.amount,
+                    amount: d.amount,
                     stage: d.stage,
                     probability: d.probability,
                     sector: d.sector || '',
@@ -95,7 +104,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 setDeals(formattedDeals);
             }
 
-            // 5. Fetch Docs
+            // 6. Fetch Docs
             const { data: docData } = await supabase.from('investor_docs').select('*');
             if (docData) {
                 // Map snake_case DB columns to camelCase types
@@ -140,6 +149,25 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Simulate API delay if mock
     if (!supabase) setTimeout(() => setIsLoading(false), 500);
     else setIsLoading(false);
+  };
+
+  const setFounders = (foundersData: Founder[]) => {
+      setFoundersState(foundersData);
+      // In a real app, this would perform a bulk upsert/delete transaction
+  };
+
+  const addFounder = (founder: Founder) => {
+      setFoundersState(prev => [...prev, founder]);
+      if (supabase) {
+          supabase.from('startup_founders').insert(founder).then();
+      }
+  };
+
+  const removeFounder = (id: string) => {
+      setFoundersState(prev => prev.filter(f => f.id !== id));
+      if (supabase) {
+          supabase.from('startup_founders').delete().eq('id', id).then();
+      }
   };
 
   const updateMetrics = (data: Partial<MetricsSnapshot>) => {
@@ -401,6 +429,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   return (
     <DataContext.Provider value={{ 
       profile, 
+      founders,
       metrics, 
       insights, 
       activities, 
@@ -409,6 +438,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       deals,
       docs,
       updateProfile, 
+      setFounders,
+      addFounder,
+      removeFounder,
       updateMetrics, 
       setInsights,
       addInsight, 

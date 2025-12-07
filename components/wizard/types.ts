@@ -7,6 +7,7 @@ export interface WizardFormData {
   yearFounded: number;
   tagline: string;
   coverImage: string;
+  stage: string;
   
   // Team
   founders: Array<{
@@ -60,6 +61,7 @@ export const INITIAL_WIZARD_STATE: WizardFormData = {
   yearFounded: new Date().getFullYear(),
   tagline: '',
   coverImage: '',
+  stage: 'Idea',
   founders: [{ id: '1', name: '', title: '', bio: '', linkedin: '', email: '', website: '' }],
   problem: '',
   solution: '',

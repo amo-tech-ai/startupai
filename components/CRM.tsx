@@ -12,9 +12,13 @@ import {
   Calendar,
   ChevronDown,
   Building2,
-  Tag
+  Tag,
+  X,
+  User,
+  Check,
+  AlertCircle
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // --- Types ---
 type DealStage = 'Lead' | 'Qualified' | 'Meeting' | 'Proposal' | 'Closed';
@@ -33,7 +37,7 @@ interface Deal {
 }
 
 // --- Mock Data ---
-const MOCK_DEALS: Deal[] = [
+const INITIAL_DEALS: Deal[] = [
   { id: '1', company: 'TechNova', value: 150000, stage: 'Lead', probability: 20, sector: 'SaaS', nextAction: 'Research market fit', dueDate: 'Tomorrow', ownerInitial: 'JD', ownerColor: 'bg-indigo-500' },
   { id: '2', company: 'GreenLeaf', value: 75000, stage: 'Lead', probability: 15, sector: 'CleanTech', nextAction: 'Find intro path', dueDate: 'Oct 30', ownerInitial: 'AR', ownerColor: 'bg-emerald-500' },
   { id: '3', company: 'Quantum AI', value: 500000, stage: 'Qualified', probability: 40, sector: 'AI/ML', nextAction: 'Schedule intro call', dueDate: 'Today', ownerInitial: 'JD', ownerColor: 'bg-indigo-500' },
@@ -54,20 +58,38 @@ const COLUMNS: { id: DealStage; label: string; color: string }[] = [
 const CRM: React.FC = () => {
   const [viewMode, setViewMode] = useState<'board' | 'list'>('board');
   const [searchQuery, setSearchQuery] = useState('');
+  const [deals, setDeals] = useState<Deal[]>(INITIAL_DEALS);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [initialStage, setInitialStage] = useState<DealStage>('Lead');
 
   // Stats Calculation
-  const totalValue = MOCK_DEALS.reduce((acc, deal) => acc + deal.value, 0);
-  const activeDeals = MOCK_DEALS.filter(d => d.stage !== 'Closed').length;
-  const closedValue = MOCK_DEALS.filter(d => d.stage === 'Closed').reduce((acc, deal) => acc + deal.value, 0);
-  
+  const totalValue = deals.reduce((acc, deal) => acc + deal.value, 0);
+  const activeDeals = deals.filter(d => d.stage !== 'Closed').length;
+  const closedValue = deals.filter(d => d.stage === 'Closed').reduce((acc, deal) => acc + deal.value, 0);
+  const winRate = Math.round((deals.filter(d => d.stage === 'Closed').length / Math.max(1, deals.length)) * 100);
+
   // Filtering
-  const filteredDeals = MOCK_DEALS.filter(deal => 
+  const filteredDeals = deals.filter(deal => 
     deal.company.toLowerCase().includes(searchQuery.toLowerCase()) || 
     deal.sector.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const handleOpenModal = (stage: DealStage = 'Lead') => {
+    setInitialStage(stage);
+    setIsModalOpen(true);
+  };
+
+  const handleAddDeal = (newDealData: Omit<Deal, 'id'>) => {
+    const newDeal: Deal = {
+      ...newDealData,
+      id: Math.random().toString(36).substr(2, 9),
+    };
+    setDeals([...deals, newDeal]);
+    setIsModalOpen(false);
+  };
+
   return (
-    <div className="flex flex-col h-full bg-slate-50 overflow-hidden">
+    <div className="flex flex-col h-full bg-slate-50 overflow-hidden relative">
       
       {/* 1. Header & Controls */}
       <div className="px-6 py-6 md:px-8 border-b border-slate-200 bg-white z-10">
@@ -91,7 +113,10 @@ const CRM: React.FC = () => {
              <button className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-lg text-slate-700 text-sm font-medium hover:bg-slate-50">
                 <Filter size={16} /> Filter
              </button>
-             <button className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 shadow-lg shadow-indigo-600/20">
+             <button 
+                onClick={() => handleOpenModal('Lead')}
+                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 shadow-lg shadow-indigo-600/20 transition-all active:scale-95"
+             >
                 <Plus size={16} /> New Deal
              </button>
           </div>
@@ -117,7 +142,7 @@ const CRM: React.FC = () => {
               <div className="p-2 bg-green-100 text-green-600 rounded-lg"><TrendingUp size={18}/></div>
               <div>
                  <div className="text-xs text-slate-500 uppercase font-bold tracking-wide">Win Rate</div>
-                 <div className="text-lg font-bold text-slate-900">18%</div>
+                 <div className="text-lg font-bold text-slate-900">{winRate}%</div>
               </div>
            </div>
              <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 flex items-center justify-between">
@@ -181,8 +206,11 @@ const CRM: React.FC = () => {
                       ))
                    )}
                    
-                   {/* Ghost Card for "Add New" */}
-                   <button className="w-full py-3 border border-dashed border-slate-300 rounded-xl text-slate-500 text-sm font-medium hover:border-indigo-400 hover:text-indigo-600 hover:bg-white transition-all flex items-center justify-center gap-2">
+                   {/* Add Button per Column */}
+                   <button 
+                      onClick={() => handleOpenModal(col.id)}
+                      className="w-full py-3 border border-dashed border-slate-300 rounded-xl text-slate-500 text-sm font-medium hover:border-indigo-400 hover:text-indigo-600 hover:bg-white transition-all flex items-center justify-center gap-2"
+                   >
                       <Plus size={16} /> Add to {col.label}
                    </button>
                 </div>
@@ -191,6 +219,18 @@ const CRM: React.FC = () => {
           })}
         </div>
       </div>
+
+      {/* 3. New Deal Modal */}
+      <AnimatePresence>
+        {isModalOpen && (
+          <NewDealModal 
+            isOpen={isModalOpen} 
+            onClose={() => setIsModalOpen(false)} 
+            onSubmit={handleAddDeal}
+            defaultStage={initialStage}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };
@@ -263,6 +303,241 @@ const DealCard: React.FC<{ deal: Deal }> = ({ deal }) => {
          <Calendar size={12} /> Next: {deal.nextAction}
       </div>
     </motion.div>
+  );
+};
+
+// ----------------------------------------------------------------------
+// SUB-COMPONENT: New Deal Modal
+// ----------------------------------------------------------------------
+
+interface NewDealModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (data: Omit<Deal, 'id'>) => void;
+  defaultStage: DealStage;
+}
+
+const NewDealModal: React.FC<NewDealModalProps> = ({ isOpen, onClose, onSubmit, defaultStage }) => {
+  const [formData, setFormData] = useState({
+    company: '',
+    sector: '',
+    value: '',
+    stage: defaultStage,
+    probability: 20,
+    nextAction: '',
+    dueDate: 'Next Week',
+    ownerInitial: 'ME',
+    ownerColor: 'bg-indigo-500'
+  });
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const owners = [
+    { initial: 'ME', color: 'bg-indigo-500' },
+    { initial: 'JD', color: 'bg-emerald-500' },
+    { initial: 'AR', color: 'bg-rose-500' },
+    { initial: 'MS', color: 'bg-amber-500' },
+  ];
+
+  const validate = () => {
+    const newErrors: Record<string, string> = {};
+    if (!formData.company.trim()) newErrors.company = "Company name is required";
+    if (!formData.sector.trim()) newErrors.sector = "Sector is required";
+    if (!formData.value || Number(formData.value) <= 0) newErrors.value = "Valid deal value is required";
+    if (!formData.nextAction.trim()) newErrors.nextAction = "Next action is required";
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (validate()) {
+      onSubmit({
+        ...formData,
+        value: Number(formData.value)
+      });
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <motion.div 
+        initial={{ opacity: 0 }} 
+        animate={{ opacity: 1 }} 
+        exit={{ opacity: 0 }}
+        className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+        className="relative bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden z-50"
+      >
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+          <h2 className="text-lg font-bold text-slate-900">Add New Deal</h2>
+          <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors">
+            <X size={20} />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          <div className="grid grid-cols-2 gap-4">
+             <div className="col-span-2">
+                <label className="block text-sm font-medium text-slate-700 mb-1">Company Name</label>
+                <div className="relative">
+                   <Building2 className={`absolute left-3 top-1/2 -translate-y-1/2 ${errors.company ? 'text-red-400' : 'text-slate-400'}`} size={18} />
+                   <input 
+                      type="text" 
+                      autoFocus
+                      className={`w-full pl-10 pr-10 py-2.5 border rounded-lg focus:outline-none focus:ring-2 text-slate-900 transition-all ${errors.company ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20' : 'border-slate-200 focus:ring-indigo-500/20 focus:border-indigo-500'}`}
+                      placeholder="e.g. Acme Corp"
+                      value={formData.company}
+                      onChange={(e) => {
+                         setFormData({...formData, company: e.target.value});
+                         if (errors.company) setErrors({...errors, company: ''});
+                      }}
+                   />
+                   {errors.company && <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500" size={18} />}
+                </div>
+                {errors.company && <p className="text-xs text-red-500 mt-1 ml-1">{errors.company}</p>}
+             </div>
+
+             <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Sector</label>
+                <div className="relative">
+                   <Tag className={`absolute left-3 top-1/2 -translate-y-1/2 ${errors.sector ? 'text-red-400' : 'text-slate-400'}`} size={18} />
+                   <input 
+                      type="text" 
+                      className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 text-slate-900 transition-all ${errors.sector ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20' : 'border-slate-200 focus:ring-indigo-500/20 focus:border-indigo-500'}`}
+                      placeholder="e.g. SaaS"
+                      value={formData.sector}
+                      onChange={(e) => {
+                         setFormData({...formData, sector: e.target.value});
+                         if (errors.sector) setErrors({...errors, sector: ''});
+                      }}
+                   />
+                </div>
+                {errors.sector && <p className="text-xs text-red-500 mt-1 ml-1">{errors.sector}</p>}
+             </div>
+
+             <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Value ($)</label>
+                <div className="relative">
+                   <DollarSign className={`absolute left-3 top-1/2 -translate-y-1/2 ${errors.value ? 'text-red-400' : 'text-slate-400'}`} size={18} />
+                   <input 
+                      type="number" 
+                      min="0"
+                      className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 text-slate-900 transition-all ${errors.value ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20' : 'border-slate-200 focus:ring-indigo-500/20 focus:border-indigo-500'}`}
+                      placeholder="50000"
+                      value={formData.value}
+                      onChange={(e) => {
+                         setFormData({...formData, value: e.target.value});
+                         if (errors.value) setErrors({...errors, value: ''});
+                      }}
+                   />
+                </div>
+                {errors.value && <p className="text-xs text-red-500 mt-1 ml-1">{errors.value}</p>}
+             </div>
+
+             <div className="col-span-2 space-y-3">
+                 <div className="flex justify-between">
+                     <label className="block text-sm font-medium text-slate-700">Probability</label>
+                     <span className={`text-sm font-bold ${formData.probability > 75 ? 'text-green-600' : formData.probability > 40 ? 'text-indigo-600' : 'text-amber-500'}`}>{formData.probability}%</span>
+                 </div>
+                 <input 
+                    type="range" 
+                    min="0" 
+                    max="100" 
+                    step="5"
+                    value={formData.probability}
+                    onChange={(e) => setFormData({...formData, probability: Number(e.target.value)})}
+                    className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                 />
+                 <div className="flex justify-between text-xs text-slate-400 px-1">
+                    <span>Low</span>
+                    <span>High</span>
+                 </div>
+             </div>
+             
+             <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Stage</label>
+                <select 
+                   className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-slate-900 bg-white"
+                   value={formData.stage}
+                   onChange={(e) => setFormData({...formData, stage: e.target.value as DealStage})}
+                >
+                   {COLUMNS.map(col => <option key={col.id} value={col.id}>{col.label}</option>)}
+                </select>
+             </div>
+
+             <div>
+                 <label className="block text-sm font-medium text-slate-700 mb-1">Due Date</label>
+                 <input 
+                    type="text" 
+                    className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-slate-900" 
+                    placeholder="e.g. Next Week"
+                    value={formData.dueDate}
+                    onChange={(e) => setFormData({...formData, dueDate: e.target.value})}
+                 />
+             </div>
+
+             <div className="col-span-2">
+                 <label className="block text-sm font-medium text-slate-700 mb-1">Next Action</label>
+                 <input 
+                    type="text" 
+                    className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 text-slate-900 transition-all ${errors.nextAction ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20' : 'border-slate-200 focus:ring-indigo-500/20 focus:border-indigo-500'}`}
+                    placeholder="e.g. Schedule follow-up call"
+                    value={formData.nextAction}
+                    onChange={(e) => {
+                         setFormData({...formData, nextAction: e.target.value});
+                         if (errors.nextAction) setErrors({...errors, nextAction: ''});
+                    }}
+                 />
+                 {errors.nextAction && <p className="text-xs text-red-500 mt-1 ml-1">{errors.nextAction}</p>}
+             </div>
+
+             <div className="col-span-2">
+                <label className="block text-sm font-medium text-slate-700 mb-2">Owner</label>
+                <div className="flex gap-3">
+                   {owners.map((owner, idx) => (
+                      <div 
+                         key={idx}
+                         onClick={() => setFormData({...formData, ownerInitial: owner.initial, ownerColor: owner.color})}
+                         className={`relative w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold text-white cursor-pointer transition-transform hover:scale-110 ${owner.color} ${formData.ownerInitial === owner.initial ? 'ring-2 ring-offset-2 ring-slate-900' : ''}`}
+                      >
+                         {owner.initial}
+                         {formData.ownerInitial === owner.initial && (
+                            <div className="absolute -top-1 -right-1 w-4 h-4 bg-white rounded-full flex items-center justify-center border border-slate-200">
+                               <Check size={10} className="text-slate-900" />
+                            </div>
+                         )}
+                      </div>
+                   ))}
+                </div>
+             </div>
+          </div>
+
+          <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-100">
+             <button 
+                type="button" 
+                onClick={onClose}
+                className="px-5 py-2.5 border border-slate-200 rounded-lg text-slate-600 font-medium hover:bg-slate-50 transition-colors"
+             >
+                Cancel
+             </button>
+             <button 
+                type="submit" 
+                className="px-5 py-2.5 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 shadow-lg shadow-indigo-600/20 transition-all active:scale-95"
+             >
+                Create Deal
+             </button>
+          </div>
+        </form>
+      </motion.div>
+    </div>
   );
 };
 

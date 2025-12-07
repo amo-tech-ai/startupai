@@ -1,5 +1,9 @@
 # Changelog
 
+## [v1.4.1] - CRM Enhancements
+### Added
+- **New Deal Modal**: Added validation and refined UI for the deal creation form in CRM.
+
 ## [v1.4.0] - CRM & Deal Pipeline
 ### Added
 - **CRM Module**:

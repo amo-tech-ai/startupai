@@ -26,8 +26,8 @@ interface StartupWizardProps {
 const STORAGE_KEY = 'startup_wizard_progress';
 
 const StartupWizard: React.FC<StartupWizardProps> = ({ setPage }) => {
-  const { updateProfile, updateMetrics, addActivity, setFounders } = useData();
-  const { success, error } = useToast();
+  const { profile, createStartup, updateProfile, updateMetrics, addActivity, setFounders, uploadFile } = useData();
+  const { success, error, toast } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<WizardFormData>(INITIAL_WIZARD_STATE);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -41,8 +41,6 @@ const StartupWizard: React.FC<StartupWizardProps> = ({ setPage }) => {
       try {
         const parsed = JSON.parse(saved);
         setFormData(prev => ({ ...prev, ...parsed }));
-        // Optional: restore step if saved
-        // setCurrentStep(parsed._currentStep || 1); 
       } catch (e) {
         console.error("Failed to load wizard progress", e);
       }
@@ -121,13 +119,23 @@ const StartupWizard: React.FC<StartupWizardProps> = ({ setPage }) => {
     }
   };
 
+  // Image Upload Wrapper passed to StepContext
+  const handleCoverUpload = async (file: File) => {
+      toast("Uploading cover image...", "info");
+      const url = await uploadFile(file, 'startup-assets');
+      if (url) {
+          setFormData(prev => ({ ...prev, coverImage: url }));
+          success("Cover image uploaded!");
+      }
+  };
+
   const submitWizard = async () => {
     if (isSubmitting) return;
     setIsSubmitting(true);
 
     try {
       // 1. Map to Profile Structure
-      updateProfile({
+      const profileData = {
         name: formData.name,
         websiteUrl: formData.website,
         tagline: formData.tagline,
@@ -152,17 +160,22 @@ const StartupWizard: React.FC<StartupWizardProps> = ({ setPage }) => {
         fundingGoal: formData.targetRaise,
         useOfFunds: formData.useOfFunds,
         
-        // Default others
         stage: (formData.stage as any) || 'Seed', 
-        createdAt: new Date().toISOString(),
-      });
+      };
 
-      // 2. Map Founders (Fix: Only first is primary contact)
+      // 2. Create or Update Profile
+      if (profile?.id) {
+          await updateProfile(profileData);
+      } else {
+          await createStartup(profileData);
+      }
+
+      // 3. Map Founders (Fix: Only first is primary contact)
       const foundersPayload: Founder[] = formData.founders
         .filter(f => f.name.trim().length > 0)
         .map((f, idx) => ({
           id: f.id,
-          startupId: 'temp_startup_id',
+          startupId: profile?.id || 'temp', // This will be handled by backend or refreshed state
           name: f.name,
           title: f.title,
           bio: f.bio,
@@ -172,25 +185,25 @@ const StartupWizard: React.FC<StartupWizardProps> = ({ setPage }) => {
         }));
       setFounders(foundersPayload);
 
-      // 3. Map to Metrics Structure
+      // 4. Map to Metrics Structure
       updateMetrics({
         mrr: formData.mrr,
         activeUsers: formData.totalUsers,
         period: new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
       });
 
-      // 4. Log Activity
+      // 5. Log Activity
       addActivity({
         type: 'milestone',
         title: 'Profile Setup Complete',
         description: `${formData.name} profile is ready.`,
       });
       
-      // 5. Cleanup
+      // 6. Cleanup
       localStorage.removeItem(STORAGE_KEY);
       success("Profile setup complete! Welcome to your dashboard.");
 
-      // Small delay for UX
+      // Small delay for UX and state refresh
       setTimeout(() => {
         setPage('dashboard');
       }, 1000);
@@ -204,7 +217,7 @@ const StartupWizard: React.FC<StartupWizardProps> = ({ setPage }) => {
 
   const renderStepContent = () => {
     switch (currentStep) {
-      case 1: return <StepContext formData={formData} setFormData={setFormData} />;
+      case 1: return <StepContext formData={formData} setFormData={setFormData} onCoverUpload={handleCoverUpload} />;
       case 2: return <StepTeam formData={formData} setFormData={setFormData} />;
       case 3: return <StepBusiness formData={formData} setFormData={setFormData} />;
       case 4: return <StepTraction formData={formData} setFormData={setFormData} />;

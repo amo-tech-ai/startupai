@@ -23,29 +23,22 @@ interface KPIGridProps {
 }
 
 export const KPIGrid: React.FC<KPIGridProps> = ({ metrics, profile }) => {
-  const mrr = metrics[0]?.mrr || 0;
-  const activeUsers = metrics[0]?.activeUsers || 0;
+  // Use the last snapshot for current values
+  const latestMetric = metrics.length > 0 ? metrics[metrics.length - 1] : null;
+  
+  const mrr = latestMetric?.mrr || 0;
+  const activeUsers = latestMetric?.activeUsers || 0;
   const fundingGoal = profile?.fundingGoal || 1000000;
   
-  // Calculate Progress towards funding
+  // Calculate Progress towards funding (Mock data for now as raising is complex)
   const raisedAmount = 150000; 
   const fundingProgress = Math.min((raisedAmount / fundingGoal) * 100, 100);
 
-  // Dynamic Chart Data Generation Helper
-  const generateChartData = (currentValue: number, points: number = 7) => {
-    if (currentValue === 0) return Array(points).fill({ v: 0 });
-    
-    return Array.from({ length: points }, (_, i) => {
-      const reverseIndex = points - 1 - i;
-      const volatility = Math.random() * 0.1 - 0.05; 
-      const trendFactor = 1 - (reverseIndex * 0.1); 
-      let val = currentValue * trendFactor * (1 + volatility);
-      return { v: Math.max(0, val) };
-    });
-  };
-
-  const mrrData = generateChartData(mrr);
-  const usersData = generateChartData(activeUsers);
+  // Prepare Chart Data
+  // If we have history, use it. Otherwise, fallback to empty or single point.
+  const chartData = metrics.length > 1 
+    ? metrics.map(m => ({ v: m.mrr || 0, users: m.activeUsers || 0 }))
+    : Array(7).fill(0).map(() => ({ v: mrr, users: activeUsers })); // Fallback if no history
 
   return (
     <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -56,7 +49,7 @@ export const KPIGrid: React.FC<KPIGridProps> = ({ metrics, profile }) => {
                 <FileText size={20} />
              </div>
              <div className="flex items-center gap-1 text-green-600 text-xs font-bold bg-green-50 px-2 py-1 rounded-full">
-                <ArrowUpRight size={12} /> +3 this week
+                <ArrowUpRight size={12} /> Trend
              </div>
           </div>
           <div className="mb-4">
@@ -65,7 +58,7 @@ export const KPIGrid: React.FC<KPIGridProps> = ({ metrics, profile }) => {
           </div>
           <div className="h-10 w-full opacity-50">
              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={mrrData}>
+                <AreaChart data={chartData}>
                    <Area type="monotone" dataKey="v" stroke="#4f46e5" fill="#e0e7ff" strokeWidth={2} />
                 </AreaChart>
              </ResponsiveContainer>
@@ -99,7 +92,7 @@ export const KPIGrid: React.FC<KPIGridProps> = ({ metrics, profile }) => {
                 <CheckSquare size={20} />
              </div>
              <div className="flex items-center gap-1 text-slate-500 text-xs font-medium bg-slate-50 px-2 py-1 rounded-full">
-                4 Urgent
+                Live
              </div>
           </div>
            <div className="mb-4">
@@ -108,8 +101,8 @@ export const KPIGrid: React.FC<KPIGridProps> = ({ metrics, profile }) => {
           </div>
           <div className="h-10 w-full opacity-50">
              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={usersData}>
-                   <Bar dataKey="v" fill="#2dd4bf" radius={[2, 2, 0, 0]} />
+                <BarChart data={chartData}>
+                   <Bar dataKey="users" fill="#2dd4bf" radius={[2, 2, 0, 0]} />
                 </BarChart>
              </ResponsiveContainer>
           </div>
@@ -131,7 +124,7 @@ export const KPIGrid: React.FC<KPIGridProps> = ({ metrics, profile }) => {
           </div>
           <div className="h-10 w-full opacity-50">
              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={mrrData}>
+                <BarChart data={chartData}>
                    <Bar dataKey="v" fill="#fb7185" radius={[2, 2, 0, 0]} />
                 </BarChart>
              </ResponsiveContainer>

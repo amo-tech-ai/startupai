@@ -31,7 +31,7 @@ const features = [
     bg: "bg-teal-50",
     dot: "bg-teal-500",
     title: "AI Document Writer",
-    desc: "Draft Investment Memos, One-Pagers, and GTM Strategies instantly. Our \"AI Companion\" side-panel helps refine, expand, or simplify text on the fly.",
+    desc: "Draft Investment Memos, One-Pagers, and GTM Strategies instantly. Our AI Companion side-panel helps refine, expand, or simplify text on the fly.",
     list: ["Context-Aware Drafting", "One-Click Refinement"]
   },
   {
@@ -85,11 +85,12 @@ const FeaturesPage: React.FC = () => {
             {features.map((feature, idx) => (
                 <MotionDiv
                     key={idx}
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: idx * 0.1, duration: 0.5 }}
-                    className="group bg-white rounded-3xl p-8 shadow-sm border border-slate-200 hover:shadow-xl hover:border-indigo-100 transition-all duration-300 flex flex-col md:flex-row gap-6 items-start hover:-translate-y-1"
+                    initial={{ opacity: 0, y: 30, scale: 0.95 }}
+                    whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                    whileHover={{ y: -5, transition: { duration: 0.2 } }}
+                    viewport={{ once: true, margin: "-50px" }}
+                    transition={{ delay: idx * 0.1, duration: 0.5, type: "spring", stiffness: 50 }}
+                    className="group bg-white rounded-3xl p-8 shadow-sm border border-slate-200 hover:shadow-xl hover:border-indigo-100 transition-shadow duration-300 flex flex-col md:flex-row gap-6 items-start"
                 >
                     <div className={`w-16 h-16 ${feature.bg} rounded-2xl flex items-center justify-center shrink-0 ${feature.color} group-hover:scale-110 transition-transform duration-300 shadow-sm`}>
                         {feature.icon}

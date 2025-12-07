@@ -1,9 +1,19 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { StartupProfile, MetricsSnapshot, AICoachInsight, Founder, StartupStage, Activity, Task, Deck, Deal, InvestorDoc } from '../types';
+import { StartupProfile, MetricsSnapshot, AICoachInsight, Founder, Activity, Task, Deck, Deal, InvestorDoc } from '../types';
 import { initialDatabaseState } from '../data/mockDatabase';
 import { supabase } from '../lib/supabaseClient';
 import { useToast } from './ToastContext';
-import { generateShortId, generateUUID } from '../lib/utils';
+import { generateShortId } from '../lib/utils';
+import { mapDealFromDB, mapActivityFromDB } from '../lib/mappers';
+
+// Import Modular Services
+import { ProfileService } from '../services/supabase/profile';
+import { DeckService } from '../services/supabase/decks';
+import { CrmService } from '../services/supabase/crm';
+import { DocumentService } from '../services/supabase/documents';
+import { AssetService } from '../services/supabase/assets';
+import { DashboardService } from '../services/supabase/dashboard';
 
 interface DataContextType {
   profile: StartupProfile | null;
@@ -15,10 +25,11 @@ interface DataContextType {
   decks: Deck[];
   deals: Deal[];
   docs: InvestorDoc[];
-  updateProfile: (data: Partial<StartupProfile>) => void;
-  setFounders: (founders: Founder[]) => void; // New
-  addFounder: (founder: Founder) => void; // New
-  removeFounder: (id: string) => void; // New
+  createStartup: (data: Partial<StartupProfile>) => Promise<void>;
+  updateProfile: (data: Partial<StartupProfile>) => Promise<void>;
+  setFounders: (founders: Founder[]) => void;
+  addFounder: (founder: Founder) => void;
+  removeFounder: (id: string) => void;
   updateMetrics: (data: Partial<MetricsSnapshot>) => void;
   setInsights: (insights: AICoachInsight[]) => void;
   addInsight: (insight: AICoachInsight) => void;
@@ -33,13 +44,14 @@ interface DataContextType {
   addDoc: (doc: Omit<InvestorDoc, 'id' | 'startupId' | 'updatedAt'>) => Promise<string | null>;
   updateDoc: (id: string, updates: Partial<InvestorDoc>) => void;
   deleteDoc: (id: string) => void;
+  uploadFile: (file: File, bucket: string) => Promise<string | null>;
   isLoading: boolean;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Initialize with the mock DB state
+  // Local State (Optimistic UI)
   const [profile, setProfile] = useState<StartupProfile | null>(initialDatabaseState.profile);
   const [founders, setFoundersState] = useState<Founder[]>(initialDatabaseState.founders);
   const [metrics, setMetrics] = useState<MetricsSnapshot[]>(initialDatabaseState.metrics);
@@ -52,410 +64,295 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(false);
   const { toast, error: toastError } = useToast();
 
-  // --- SUPABASE SYNC ---
+  // --- INITIAL DATA FETCH & REALTIME ---
   useEffect(() => {
-    if (!supabase) return; // Skip if no backend
+    if (!supabase) return; // Skip if offline/mock mode
 
-    const fetchData = async () => {
+    let realtimeChannel: any;
+
+    const loadData = async () => {
         setIsLoading(true);
         try {
-            const user = await supabase.auth.getUser();
-            if (!user.data.user) return;
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
 
-            // 1. Fetch Profile
-            const { data: profileData } = await supabase.from('startups').select('*').single();
-            if (profileData) setProfile(profileData);
+            // 1. Profile & Founders
+            const { profile: p, founders: f } = await ProfileService.getByUserId(user.id);
+            if (p) {
+                setProfile(p);
+                setFoundersState(f);
+                
+                // 2. Fetch Dependent Data (Parallel)
+                const [decksData, dealsData, docsData, tasksData, metricsData, insightsData, activityData] = await Promise.all([
+                    DeckService.getAll(p.id),
+                    CrmService.getDeals(p.id),
+                    DocumentService.getAll(p.id),
+                    CrmService.getTasks(p.id),
+                    DashboardService.getMetricsHistory(p.id),
+                    DashboardService.getInsights(p.id),
+                    DashboardService.getActivities(p.id)
+                ]);
 
-            // 2. Fetch Founders
-            const { data: founderData } = await supabase.from('startup_founders').select('*');
-            if (founderData) setFoundersState(founderData);
+                setDecks(decksData);
+                setDeals(dealsData);
+                setDocs(docsData);
+                setTasks(tasksData);
+                setMetrics(metricsData);
+                setInsights(insightsData);
+                setActivities(activityData);
 
-            // 3. Fetch Decks (and slides joined)
-            const { data: deckData } = await supabase.from('decks').select('*, slides(*)');
-            if (deckData) {
-                // Map DB structure to App structure if needed
-                const formattedDecks = deckData.map((d: any) => ({
-                    ...d,
-                    slides: d.slides ? d.slides.sort((a: any, b: any) => a.position - b.position) : []
-                }));
-                setDecks(formattedDecks);
+                // 3. Setup Realtime Subscriptions
+                realtimeChannel = supabase.channel('public-db-changes')
+                  .on('postgres_changes', { event: '*', schema: 'public', table: 'crm_deals', filter: `startup_id=eq.${p.id}` }, (payload: any) => {
+                      if (payload.eventType === 'INSERT') {
+                          setDeals(prev => [...prev, mapDealFromDB(payload.new)]);
+                      } else if (payload.eventType === 'UPDATE') {
+                          setDeals(prev => prev.map(d => d.id === payload.new.id ? mapDealFromDB(payload.new) : d));
+                      } else if (payload.eventType === 'DELETE') {
+                          setDeals(prev => prev.filter(d => d.id !== payload.old.id));
+                      }
+                  })
+                  .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks', filter: `startup_id=eq.${p.id}` }, (payload: any) => {
+                      // Simple mapping for realtime task updates
+                      const mapTask = (t: any) => ({
+                          id: t.id,
+                          title: t.title,
+                          status: t.status,
+                          priority: t.priority,
+                          description: t.description,
+                          dueDate: t.due_date,
+                          startupId: t.startup_id,
+                          aiGenerated: false
+                      });
+
+                      if (payload.eventType === 'INSERT') {
+                          setTasks(prev => [mapTask(payload.new), ...prev]);
+                      } else if (payload.eventType === 'UPDATE') {
+                          setTasks(prev => prev.map(t => t.id === payload.new.id ? mapTask(payload.new) : t));
+                      } else if (payload.eventType === 'DELETE') {
+                          setTasks(prev => prev.filter(t => t.id !== payload.old.id));
+                      }
+                  })
+                  .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'crm_activities', filter: `startup_id=eq.${p.id}` }, (payload: any) => {
+                      setActivities(prev => [mapActivityFromDB(payload.new), ...prev]);
+                  })
+                  .subscribe();
             }
-
-            // 4. Fetch Tasks
-            const { data: taskData } = await supabase.from('tasks').select('*');
-            if (taskData) setTasks(taskData);
-
-            // 5. Fetch Deals
-            const { data: dealData } = await supabase.from('crm_deals').select('*');
-            if (dealData) {
-                const formattedDeals = dealData.map((d: any) => ({
-                    id: d.id,
-                    startupId: d.startup_id,
-                    company: d.name,
-                    amount: d.amount,
-                    stage: d.stage,
-                    probability: d.probability,
-                    sector: d.sector || '',
-                    nextAction: d.next_action || '',
-                    dueDate: d.expected_close || '',
-                    ownerInitial: 'ME', // Placeholder until joined
-                    ownerColor: 'bg-indigo-500' // Placeholder
-                }));
-                setDeals(formattedDeals);
-            }
-
-            // 6. Fetch Docs
-            const { data: docData } = await supabase.from('investor_docs').select('*');
-            if (docData) {
-                // Map snake_case DB columns to camelCase types
-                const formattedDocs = docData.map((d: any) => ({
-                    id: d.id,
-                    startupId: d.startup_id,
-                    title: d.title,
-                    type: d.type,
-                    content: d.content,
-                    status: d.status,
-                    updatedAt: d.updated_at
-                }));
-                setDocs(formattedDocs);
-            }
-
         } catch (e) {
-            console.error("Supabase Sync Error:", e);
-            toastError("Failed to sync data with server.");
+            console.error("Data Fetch Error:", e);
         } finally {
             setIsLoading(false);
         }
     };
 
-    fetchData();
+    loadData();
+
+    return () => {
+        if (realtimeChannel) supabase.removeChannel(realtimeChannel);
+    };
   }, []);
 
-  // --- ACTION HANDLERS ---
+  // --- ACTIONS ---
 
-  const updateProfile = (data: Partial<StartupProfile>) => {
-    setIsLoading(true);
-    
-    // Optimistic Update
-    setProfile((prev) => {
-      if (!prev) return data as StartupProfile;
-      return { ...prev, ...data, updatedAt: new Date().toISOString() };
-    });
-
-    if (supabase && profile?.id) {
-        supabase.from('startups').update(data).eq('id', profile.id).then();
-    }
-
-    // Simulate API delay if mock
-    if (!supabase) setTimeout(() => setIsLoading(false), 500);
-    else setIsLoading(false);
+  const uploadFile = async (file: File, bucket: string) => {
+      try {
+          const url = await AssetService.uploadFile(file, bucket);
+          return url;
+      } catch (e) {
+          toastError("Upload failed");
+          return null;
+      }
   };
 
-  const setFounders = (foundersData: Founder[]) => {
+  const createStartup = async (data: Partial<StartupProfile>) => {
+    if (!supabase) {
+        setProfile({ ...data, id: generateShortId(), userId: 'mock' } as StartupProfile);
+        return;
+    }
+    try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error("Not authenticated");
+        const newProfile = await ProfileService.create(data, user.id);
+        setProfile(newProfile);
+    } catch (e) {
+        console.error(e);
+        toastError("Failed to create profile");
+    }
+  };
+
+  const updateProfile = async (data: Partial<StartupProfile>) => {
+    setProfile(prev => prev ? { ...prev, ...data, updatedAt: new Date().toISOString() } : null);
+    if (profile?.id) {
+        await ProfileService.update(profile.id, data);
+    }
+  };
+
+  const setFounders = async (foundersData: Founder[]) => {
       setFoundersState(foundersData);
-      // In a real app, this would perform a bulk upsert/delete transaction
+      if (profile?.id) {
+          await ProfileService.syncFounders(profile.id, foundersData);
+      }
   };
 
   const addFounder = (founder: Founder) => {
       setFoundersState(prev => [...prev, founder]);
-      if (supabase) {
-          supabase.from('startup_founders').insert(founder).then();
+      if (profile?.id) {
+          ProfileService.syncFounders(profile.id, [...founders, founder]);
       }
   };
 
   const removeFounder = (id: string) => {
       setFoundersState(prev => prev.filter(f => f.id !== id));
-      if (supabase) {
-          supabase.from('startup_founders').delete().eq('id', id).then();
-      }
+      ProfileService.deleteFounder(id);
   };
 
+  // --- DASHBOARD DATA ---
+  
   const updateMetrics = (data: Partial<MetricsSnapshot>) => {
-    setMetrics((prev) => {
-      const current = prev[0] || {}; 
-      const updated = { ...current, ...data, recordedAt: new Date().toISOString() };
-      return [updated as MetricsSnapshot];
-    });
+    // Optimistic Update: Append new snapshot locally
+    const newSnapshot = { 
+        id: generateShortId(),
+        startupId: profile?.id || 'temp',
+        period: new Date().toISOString(),
+        mrr: data.mrr || 0,
+        activeUsers: data.activeUsers || 0,
+        cac: 0, ltv: 0, burnRate: 0, runwayMonths: 0,
+        recordedAt: new Date().toISOString(),
+        ...data 
+    };
+    
+    setMetrics(prev => [...prev, newSnapshot]);
+    
+    if (profile?.id) {
+        DashboardService.updateMetrics(data, profile.id);
+    }
   };
 
   const addInsight = (insight: AICoachInsight) => {
-    setInsights((prev) => [insight, ...prev]);
+      setInsights(prev => [insight, ...prev]);
+      if (profile?.id) {
+          DashboardService.saveInsights([insight], profile.id);
+      }
+  };
+  
+  const setInsightsHandler = (newInsights: AICoachInsight[]) => {
+      setInsights(newInsights);
+      if (profile?.id) {
+          DashboardService.saveInsights(newInsights, profile.id);
+      }
   };
 
   const addActivity = (data: Omit<Activity, 'id' | 'startupId' | 'timestamp'>) => {
-    const newActivity: Activity = {
-      ...data,
-      id: generateShortId(),
-      startupId: profile?.id || 'unknown',
-      timestamp: new Date().toISOString()
+    const newActivity = { 
+        ...data, 
+        id: generateShortId(), 
+        startupId: profile?.id || '', 
+        timestamp: new Date().toISOString() 
     };
-    setActivities((prev) => [newActivity, ...prev]);
-  };
-
-  const addTask = (data: Omit<Task, 'id' | 'startupId'>) => {
-    const newTask: Task = {
-        ...data,
-        id: generateShortId(),
-        startupId: profile?.id || 'unknown'
-    };
-    setTasks(prev => [newTask, ...prev]);
+    setActivities(prev => [newActivity, ...prev]);
     
-    if (supabase && profile?.id) {
-        supabase.from('tasks').insert({ ...data, startup_id: profile.id }).then();
+    if (profile?.id) {
+        DashboardService.logActivity(data, profile.id);
     }
   };
 
-  const updateTask = (id: string, updates: Partial<Task>) => {
-    setTasks(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
-    
-    if (supabase) {
-        supabase.from('tasks').update(updates).eq('id', id).then();
-    }
-  };
-
-  const deleteTask = (id: string) => {
-    setTasks(prev => prev.filter(t => t.id !== id));
-    
-    if (supabase) {
-        supabase.from('tasks').delete().eq('id', id).then();
-    }
-  };
-
+  // --- DECKS ---
   const addDeck = async (data: Omit<Deck, 'id' | 'startupId'>) => {
       const tempId = generateShortId();
-      const newDeck: Deck = {
-          ...data,
-          id: tempId,
-          startupId: profile?.id || 'unknown'
-      };
-      
-      // Optimistic
-      setDecks(prev => [newDeck, ...prev]);
+      const newDeck: Deck = { ...data, id: tempId, startupId: profile?.id || 'temp' };
+      setDecks(prev => [newDeck, ...prev]); // Optimistic
 
-      if (supabase && profile?.id) {
+      if (profile?.id) {
           try {
-              // 1. Insert Deck
-              const { data: deckRes, error: deckErr } = await supabase
-                  .from('decks')
-                  .insert({ 
-                      title: data.title, 
-                      template: data.template, 
-                      startup_id: profile.id,
-                      status: 'draft' 
-                  })
-                  .select()
-                  .single();
-              
-              if (deckErr) throw deckErr;
-
-              // 2. Insert Slides
-              const slidesPayload = data.slides.map((s, idx) => ({
-                  id: s.id, // Use generated UUIDs from Edge Function
-                  deck_id: deckRes.id,
-                  title: s.title,
-                  bullets: s.bullets, // Store as JSONB
-                  position: idx,
-                  type: 'generic',
-                  chart_type: s.chartType,
-                  chart_data: s.chartData
-              }));
-
-              const { data: slidesRes, error: slidesErr } = await supabase.from('slides').insert(slidesPayload).select();
-              
-              if (slidesErr) throw slidesErr;
-
-              // Update local IDs with real IDs (though should match if we provided UUIDs)
-              setDecks(prev => prev.map(d => d.id === tempId ? { ...d, id: deckRes.id, slides: slidesRes as any } : d));
-
+              const realDeck = await DeckService.create(data, profile.id);
+              // Replace optimistic deck with real one
+              setDecks(prev => prev.map(d => d.id === tempId ? realDeck : d));
           } catch (e) {
-              console.error("Failed to save deck to Supabase", e);
-              toastError("Failed to save deck to server.");
+              console.error(e);
+              toastError("Failed to save deck");
           }
       }
-  }
+  };
 
   const updateDeck = async (id: string, updates: Partial<Deck>) => {
-      // Optimistic
       setDecks(prev => prev.map(d => d.id === id ? { ...d, ...updates, updatedAt: new Date().toISOString() } : d));
+      await DeckService.update(id, updates);
+  };
 
-      if (supabase) {
-          try {
-              // Update Deck Metadata
-              const { slides, ...deckMeta } = updates;
-              if (Object.keys(deckMeta).length > 0) {
-                  const dbPayload: any = {};
-                  if (deckMeta.title) dbPayload.title = deckMeta.title;
-                  dbPayload.updated_at = new Date().toISOString();
-                  
-                  const { error } = await supabase.from('decks').update(dbPayload).eq('id', id);
-                  if (error) throw error;
-              }
-
-              // Update Slides (Upsert)
-              if (slides) {
-                  const slidesPayload = slides.map((s, idx) => ({
-                      id: s.id,
-                      deck_id: id,
-                      title: s.title,
-                      bullets: s.bullets,
-                      image_url: s.imageUrl,
-                      chart_type: s.chartType,
-                      chart_data: s.chartData,
-                      position: idx,
-                      type: 'generic'
-                  }));
-
-                  const { error } = await supabase.from('slides').upsert(slidesPayload);
-                  if (error) throw error;
-              }
-          } catch (e) {
-              console.error("Failed to update deck in Supabase", e);
-              toastError("Failed to sync changes.");
-          }
-      }
-  }
-
+  // --- CRM ---
   const addDeal = async (data: Omit<Deal, 'id' | 'startupId'>) => {
       const tempId = generateShortId();
-      const newDeal: Deal = {
-          ...data,
-          id: tempId,
-          startupId: profile?.id || 'unknown'
-      };
-
-      setDeals(prev => [...prev, newDeal]);
-
-      if (supabase && profile?.id) {
-          // Map to DB columns
-          const dbPayload = {
-              startup_id: profile.id,
-              name: data.company,
-              amount: data.value,
-              stage: data.stage,
-              probability: data.probability,
-              sector: data.sector,
-              next_action: data.nextAction,
-              expected_close: data.dueDate, // mapping dueDate to expected_close
-          };
-          const { data: res } = await supabase.from('crm_deals').insert(dbPayload).select().single();
-          if (res) {
-              setDeals(prev => prev.map(d => d.id === tempId ? { ...d, id: res.id } : d));
-          }
+      setDeals(prev => [...prev, { ...data, id: tempId, startupId: profile?.id || 'temp' }]);
+      
+      if (profile?.id) {
+          try {
+              const realId = await CrmService.createDeal(data, profile.id);
+              setDeals(prev => prev.map(d => d.id === tempId ? { ...d, id: realId } : d));
+          } catch(e) { console.error(e); }
       }
-  }
+  };
 
   const updateDeal = async (id: string, updates: Partial<Deal>) => {
       setDeals(prev => prev.map(d => d.id === id ? { ...d, ...updates } : d));
+      await CrmService.updateDeal(id, updates);
+  };
 
-      if (supabase) {
-          // Construct DB payload only with fields present in updates
-          const dbPayload: any = {};
-          if (updates.company) dbPayload.name = updates.company;
-          if (updates.value) dbPayload.amount = updates.value;
-          if (updates.stage) dbPayload.stage = updates.stage;
-          if (updates.probability) dbPayload.probability = updates.probability;
-          if (updates.sector) dbPayload.sector = updates.sector;
-          if (updates.nextAction) dbPayload.next_action = updates.nextAction;
-          if (updates.dueDate) dbPayload.expected_close = updates.dueDate;
+  // --- TASKS ---
+  const addTask = (data: Omit<Task, 'id' | 'startupId'>) => {
+      const tempId = generateShortId();
+      setTasks(prev => [{...data, id: tempId, startupId: profile?.id||'temp'}, ...prev]);
+      if(profile?.id) CrmService.createTask(data, profile.id);
+  };
 
-          await supabase.from('crm_deals').update(dbPayload).eq('id', id);
-      }
-  }
+  const updateTask = (id: string, updates: Partial<Task>) => {
+      setTasks(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
+      CrmService.updateTask(id, updates);
+  };
 
+  const deleteTask = (id: string) => {
+      setTasks(prev => prev.filter(t => t.id !== id));
+      CrmService.deleteTask(id);
+  };
+
+  // --- DOCS ---
   const addDoc = async (data: Omit<InvestorDoc, 'id' | 'startupId' | 'updatedAt'>) => {
       const tempId = generateShortId();
-      const newDoc: InvestorDoc = {
-          ...data,
-          id: tempId,
-          startupId: profile?.id || 'unknown',
-          updatedAt: new Date().toISOString()
-      };
-
+      const newDoc = { ...data, id: tempId, startupId: profile?.id || 'temp', updatedAt: new Date().toISOString() };
       setDocs(prev => [newDoc, ...prev]);
 
-      if (supabase && profile?.id) {
-          // Only sync if user context is available
+      if (profile?.id && supabase) {
           try {
-              const { data: res, error } = await supabase.from('investor_docs').insert({
-                  startup_id: profile.id,
-                  user_id: profile.userId, // We need to ensure we have this or rely on RLS default if auth is set
-                  title: data.title,
-                  type: data.type,
-                  content: data.content,
-                  status: data.status
-              }).select().single();
-
-              if (error) throw error;
-              
-              if (res) {
-                  setDocs(prev => prev.map(d => d.id === tempId ? { ...d, id: res.id } : d));
-                  return res.id;
+              const { data: { user } } = await supabase.auth.getUser();
+              if(user) {
+                  const realId = await DocumentService.create(data, profile.id, user.id);
+                  setDocs(prev => prev.map(d => d.id === tempId ? { ...d, id: realId } : d));
+                  return realId;
               }
-          } catch (e) {
-              console.error("Failed to create doc in Supabase", e);
-              toastError("Failed to save document to server.");
-          }
+          } catch (e) { console.error(e); }
       }
-      return tempId; // Return temp ID if offline/mock
-  }
+      return tempId;
+  };
 
   const updateDoc = async (id: string, updates: Partial<InvestorDoc>) => {
       setDocs(prev => prev.map(d => d.id === id ? { ...d, ...updates, updatedAt: new Date().toISOString() } : d));
-
-      if (supabase) {
-          try {
-              const dbPayload: any = {};
-              if (updates.title) dbPayload.title = updates.title;
-              if (updates.status) dbPayload.status = updates.status;
-              if (updates.content) dbPayload.content = updates.content;
-              dbPayload.updated_at = new Date().toISOString();
-
-              const { error } = await supabase.from('investor_docs').update(dbPayload).eq('id', id);
-              if (error) throw error;
-          } catch (e) {
-              console.error("Failed to update doc in Supabase", e);
-              toastError("Failed to sync document changes.");
-          }
-      }
-  }
+      await DocumentService.update(id, updates);
+  };
 
   const deleteDoc = async (id: string) => {
       setDocs(prev => prev.filter(d => d.id !== id));
-      if (supabase) {
-          await supabase.from('investor_docs').delete().eq('id', id);
-      }
-  }
+      await DocumentService.delete(id);
+  };
 
   return (
     <DataContext.Provider value={{ 
-      profile, 
-      founders,
-      metrics, 
-      insights, 
-      activities, 
-      tasks,
-      decks,
-      deals,
-      docs,
-      updateProfile, 
-      setFounders,
-      addFounder,
-      removeFounder,
-      updateMetrics, 
-      setInsights,
-      addInsight, 
-      addActivity, 
-      addTask,
-      updateTask,
-      deleteTask,
-      addDeck,
-      updateDeck,
-      addDeal,
-      updateDeal,
-      addDoc,
-      updateDoc,
-      deleteDoc,
-      isLoading 
+      profile, founders, metrics, insights, activities, tasks, decks, deals, docs,
+      createStartup, updateProfile, setFounders, addFounder, removeFounder,
+      updateMetrics, setInsights: setInsightsHandler, addInsight, addActivity, 
+      addTask, updateTask, deleteTask,
+      addDeck, updateDeck,
+      addDeal, updateDeal,
+      addDoc, updateDoc, deleteDoc,
+      uploadFile, isLoading 
     }}>
       {children}
     </DataContext.Provider>
@@ -464,8 +361,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 export const useData = () => {
   const context = useContext(DataContext);
-  if (context === undefined) {
-    throw new Error('useData must be used within a DataProvider');
-  }
+  if (context === undefined) throw new Error('useData must be used within a DataProvider');
   return context;
 };

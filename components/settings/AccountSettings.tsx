@@ -1,17 +1,20 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { User, Mail, Camera, Save, Loader2, Lock } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabaseClient';
 import { useToast } from '../../context/ToastContext';
+import { useData } from '../../context/DataContext';
 
 export const AccountSettings: React.FC = () => {
   const { user } = useAuth();
-  const { success, error } = useToast();
+  const { uploadFile } = useData();
+  const { success, error, toast } = useToast();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
   const [loading, setLoading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (user) {
@@ -41,11 +44,31 @@ export const AccountSettings: React.FC = () => {
     }
   };
 
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (e.target.files && e.target.files[0]) {
+          const file = e.target.files[0];
+          toast("Uploading avatar...", "info");
+          
+          try {
+              const url = await uploadFile(file, 'avatars');
+              if (url) {
+                  setAvatarUrl(url);
+                  success("Avatar uploaded successfully");
+              }
+          } catch (e) {
+              error("Failed to upload avatar");
+          }
+      }
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in duration-300 max-w-2xl">
         {/* Profile Header */}
         <div className="flex items-center gap-6">
-            <div className="relative group cursor-pointer">
+            <div 
+                className="relative group cursor-pointer"
+                onClick={() => fileInputRef.current?.click()}
+            >
                 <div className="w-24 h-24 rounded-full bg-slate-200 flex items-center justify-center overflow-hidden border-4 border-white shadow-sm">
                     {avatarUrl ? (
                         <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" />
@@ -56,6 +79,13 @@ export const AccountSettings: React.FC = () => {
                 <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                     <Camera size={20} className="text-white" />
                 </div>
+                <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    className="hidden" 
+                    accept="image/*"
+                    onChange={handleFileChange}
+                />
             </div>
             <div>
                 <h3 className="text-xl font-bold text-slate-900">{fullName || 'User'}</h3>
@@ -96,20 +126,6 @@ export const AccountSettings: React.FC = () => {
                         />
                     </div>
                     <p className="text-xs text-slate-400 mt-1 ml-1">Contact support to change your email.</p>
-                </div>
-                
-                <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Avatar URL</label>
-                    <div className="relative">
-                        <Camera className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                        <input 
-                            type="text" 
-                            value={avatarUrl}
-                            onChange={(e) => setAvatarUrl(e.target.value)}
-                            placeholder="https://..."
-                            className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-slate-900 transition-all" 
-                        />
-                    </div>
                 </div>
             </div>
 

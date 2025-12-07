@@ -7,9 +7,10 @@ import { API_KEY } from '../../../lib/env';
 interface StepContextProps {
   formData: any;
   setFormData: (data: any) => void;
+  onCoverUpload?: (file: File) => void;
 }
 
-export const StepContext: React.FC<StepContextProps> = ({ formData, setFormData }) => {
+export const StepContext: React.FC<StepContextProps> = ({ formData, setFormData, onCoverUpload }) => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isRefiningTagline, setIsRefiningTagline] = useState(false);
   const [detectedSignals, setDetectedSignals] = useState<{ audience?: string; problem?: string; pricing?: string }>({});
@@ -28,8 +29,8 @@ export const StepContext: React.FC<StepContextProps> = ({ formData, setFormData 
           industry: result.industry || prev.industry,
           pricingModel: result.pricing_model_hint || prev.pricingModel,
           problem: result.core_problem || prev.problem,
-          solution: result.solution_statement || prev.solution, // Added solution mapping
-          socialLinks: { // Added social links mapping
+          solution: result.solution_statement || prev.solution, 
+          socialLinks: { 
              ...prev.socialLinks,
              linkedin: result.social_links?.linkedin || prev.socialLinks.linkedin,
              twitter: result.social_links?.twitter || prev.socialLinks.twitter,
@@ -63,12 +64,16 @@ export const StepContext: React.FC<StepContextProps> = ({ formData, setFormData 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      // Convert to Base64 for persistence
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        update('coverImage', reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      if (onCoverUpload) {
+          onCoverUpload(file);
+      } else {
+          // Fallback if no uploader passed
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            update('coverImage', reader.result as string);
+          };
+          reader.readAsDataURL(file);
+      }
     }
   };
 

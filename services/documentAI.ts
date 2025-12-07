@@ -23,6 +23,11 @@ export const DocumentAI = {
       Business Model: ${profileContext.businessModel}
     `;
 
+    const isFinancial = docType.toLowerCase().includes('financial') || docType.toLowerCase().includes('model');
+    const tableInstruction = isFinancial 
+        ? "6. IMPORTANT: For financial projections, revenue models, or data tables, you MUST use HTML <table> structures with proper <thead> and <tbody> tags. Do not use bullet lists for numerical data." 
+        : "";
+
     const prompt = `
       You are a professional venture capital analyst and startup writer.
       Task: Write a full ${docType} for the startup described below.
@@ -37,6 +42,7 @@ export const DocumentAI = {
       4. Return the content as a valid JSON object containing an array of sections.
       5. Each section object must have: "title" (string) and "content" (string, HTML formatted paragraphs/lists).
       6. Use <h3> for subtitles, <p> for text, <ul>/<li> for lists.
+      ${tableInstruction}
 
       Output format:
       {

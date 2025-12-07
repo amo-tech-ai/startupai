@@ -5,6 +5,47 @@ import { AreaChart, Area, ResponsiveContainer, YAxis } from 'recharts';
 import { WizardService } from '../../../services/wizardAI';
 import { API_KEY } from '../../../lib/env';
 
+// Helper for tag inputs
+const TagInput = ({ label, values, onChange, onSuggest, loading }: any) => (
+  <div>
+    <div className="flex justify-between items-center mb-2">
+      <label className="block text-sm font-bold text-slate-700">{label}</label>
+      {onSuggest && (
+          <button 
+              onClick={onSuggest}
+              disabled={loading}
+              className="text-xs flex items-center gap-1 text-purple-600 font-bold hover:bg-purple-50 px-2 py-1 rounded transition-colors disabled:opacity-50"
+          >
+              {loading ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+              Suggest Allocation
+          </button>
+      )}
+    </div>
+    <div className="p-2 border border-slate-200 rounded-xl bg-white focus-within:ring-2 focus-within:ring-purple-500 flex flex-wrap gap-2 min-h-[50px]">
+      {values.map((v: string) => (
+        <span key={v} className="bg-slate-100 text-slate-700 px-2 py-1 rounded text-sm flex items-center gap-1">
+          {v} <button onClick={() => onChange(values.filter((item: string) => item !== v))} className="hover:text-red-500">×</button>
+        </span>
+      ))}
+      <input 
+        type="text" 
+        placeholder="Type & Enter..." 
+        className="flex-1 outline-none min-w-[100px] text-sm"
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            const val = e.currentTarget.value.trim();
+            if (val && !values.includes(val)) {
+              onChange([...values, val]);
+              e.currentTarget.value = '';
+            }
+          }
+        }}
+      />
+    </div>
+  </div>
+);
+
 interface StepTractionProps {
   formData: any;
   setFormData: (data: any) => void;
@@ -52,47 +93,6 @@ export const StepTraction: React.FC<StepTractionProps> = ({ formData, setFormDat
         value: baseMrr * (0.1 + (i / 12) * 0.9 + Math.random() * 0.1) // Simulate growth curve ending at current MRR
     }));
   }, [formData.mrr]);
-
-  // Helper for tag inputs
-  const TagInput = ({ label, values, onChange, onSuggest, loading }: any) => (
-    <div>
-      <div className="flex justify-between items-center mb-2">
-        <label className="block text-sm font-bold text-slate-700">{label}</label>
-        {onSuggest && (
-            <button 
-                onClick={onSuggest}
-                disabled={loading}
-                className="text-xs flex items-center gap-1 text-purple-600 font-bold hover:bg-purple-50 px-2 py-1 rounded transition-colors disabled:opacity-50"
-            >
-                {loading ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
-                Suggest Allocation
-            </button>
-        )}
-      </div>
-      <div className="p-2 border border-slate-200 rounded-xl bg-white focus-within:ring-2 focus-within:ring-purple-500 flex flex-wrap gap-2 min-h-[50px]">
-        {values.map((v: string, i: number) => (
-          <span key={i} className="bg-slate-100 text-slate-700 px-2 py-1 rounded text-sm flex items-center gap-1">
-            {v} <button onClick={() => onChange(values.filter((_:any, idx:number) => idx !== i))} className="hover:text-red-500">×</button>
-          </span>
-        ))}
-        <input 
-          type="text" 
-          placeholder="Type & Enter..." 
-          className="flex-1 outline-none min-w-[100px] text-sm"
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              const val = e.currentTarget.value.trim();
-              if (val) {
-                onChange([...values, val]);
-                e.currentTarget.value = '';
-              }
-            }
-          }}
-        />
-      </div>
-    </div>
-  );
 
   return (
     <div className="grid lg:grid-cols-2 gap-8 animate-in slide-in-from-right-4 duration-500">

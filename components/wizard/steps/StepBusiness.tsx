@@ -4,6 +4,35 @@ import { Tag, Globe, Linkedin, Twitter, Github, FileText, Sparkles, Loader2, Ale
 import { WizardService } from '../../../services/wizardAI';
 import { API_KEY } from '../../../lib/env';
 
+// Helper for tag inputs
+const TagInput = ({ label, values, onChange }: any) => (
+  <div>
+    <label className="block text-sm font-bold text-slate-700 mb-2">{label}</label>
+    <div className="p-2 border border-slate-200 rounded-xl bg-white focus-within:ring-2 focus-within:ring-purple-500 flex flex-wrap gap-2 min-h-[50px]">
+      {values.map((v: string) => (
+        <span key={v} className="bg-slate-100 text-slate-700 px-2 py-1 rounded text-sm flex items-center gap-1">
+          {v} <button onClick={() => onChange(values.filter((item: string) => item !== v))} className="hover:text-red-500">×</button>
+        </span>
+      ))}
+      <input 
+        type="text" 
+        placeholder="Type & Enter..." 
+        className="flex-1 outline-none min-w-[100px] text-sm"
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            const val = e.currentTarget.value.trim();
+            if (val && !values.includes(val)) {
+              onChange([...values, val]);
+              e.currentTarget.value = '';
+            }
+          }
+        }}
+      />
+    </div>
+  </div>
+);
+
 interface StepBusinessProps {
   formData: any;
   setFormData: (data: any) => void;
@@ -33,35 +62,6 @@ export const StepBusiness: React.FC<StepBusinessProps> = ({ formData, setFormDat
   const update = (field: string, val: any) => {
     setFormData((prev: any) => ({ ...prev, [field]: val }));
   };
-
-  // Helper for tag inputs (simplified)
-  const TagInput = ({ label, values, onChange }: any) => (
-    <div>
-      <label className="block text-sm font-bold text-slate-700 mb-2">{label}</label>
-      <div className="p-2 border border-slate-200 rounded-xl bg-white focus-within:ring-2 focus-within:ring-purple-500 flex flex-wrap gap-2 min-h-[50px]">
-        {values.map((v: string, i: number) => (
-          <span key={i} className="bg-slate-100 text-slate-700 px-2 py-1 rounded text-sm flex items-center gap-1">
-            {v} <button onClick={() => onChange(values.filter((_:any, idx:number) => idx !== i))} className="hover:text-red-500">×</button>
-          </span>
-        ))}
-        <input 
-          type="text" 
-          placeholder="Type & Enter..." 
-          className="flex-1 outline-none min-w-[100px] text-sm"
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              const val = e.currentTarget.value.trim();
-              if (val) {
-                onChange([...values, val]);
-                e.currentTarget.value = '';
-              }
-            }
-          }}
-        />
-      </div>
-    </div>
-  );
 
   return (
     <div className="grid lg:grid-cols-2 gap-8 animate-in slide-in-from-right-4 duration-500">

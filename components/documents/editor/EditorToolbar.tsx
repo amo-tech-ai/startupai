@@ -46,7 +46,7 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
            </div>
            <div className="h-6 w-px bg-slate-200"></div>
            <button onClick={onExport} className="flex items-center gap-2 px-3 py-1.5 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700 shadow-sm transition-colors">
-              <Download size={16} /> Export
+              <Download size={16} /> Export HTML
            </button>
        </div>
     </div>

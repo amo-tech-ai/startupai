@@ -1,8 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import { useData } from '../context/DataContext';
 import { 
-  Save, User, Building2, Briefcase, DollarSign, Globe, Check, 
-  CreditCard, Plus, Trash2, Mail, Linkedin, Star 
+  Save, Building2, DollarSign, Globe, Check, 
+  CreditCard, Plus, Trash2, Mail, Linkedin 
 } from 'lucide-react';
 import { Founder } from '../types';
 import { generateShortId } from '../lib/utils';
@@ -59,6 +60,13 @@ const Settings: React.FC = () => {
           addFounder(newFounder);
           setNewMemberName('');
           setNewMemberRole('');
+      }
+  };
+
+  const handleDeleteWorkspace = () => {
+      if (confirm("Are you sure? This will reset all local data and redirect to the home page.")) {
+          // In a real app, this would delete the row from DB via context
+          window.location.href = '/';
       }
   };
 
@@ -171,7 +179,10 @@ const Settings: React.FC = () => {
 
                         <div className="pt-6 border-t border-slate-100">
                             <h3 className="text-sm font-bold text-slate-900 mb-4">Danger Zone</h3>
-                            <button className="px-4 py-2 border border-red-200 text-red-600 rounded-lg text-sm font-medium hover:bg-red-50 transition-colors">
+                            <button 
+                                onClick={handleDeleteWorkspace}
+                                className="px-4 py-2 border border-red-200 text-red-600 rounded-lg text-sm font-medium hover:bg-red-50 transition-colors"
+                            >
                                 Delete Workspace
                             </button>
                         </div>

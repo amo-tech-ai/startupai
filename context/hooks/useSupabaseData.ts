@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 import { initialDatabaseState } from '../../data/mockDatabase';
@@ -20,6 +21,7 @@ import { CrmService } from '../../services/supabase/crm';
 import { DocumentService } from '../../services/supabase/documents';
 import { DashboardService } from '../../services/supabase/dashboard';
 import { mapDealFromDB } from '../../lib/mappers';
+import { useToast } from '../ToastContext';
 
 export const useSupabaseData = () => {
   // Local State (Optimistic UI) - Initialize with mocks for immediate feedback
@@ -37,6 +39,7 @@ export const useSupabaseData = () => {
   
   // Realtime Channel Ref for safe cleanup
   const realtimeChannelRef = useRef<any>(null);
+  const { toast, success, error } = useToast();
 
   // Helper to load guest data from LS
   const loadGuestData = useCallback(() => {
@@ -53,6 +56,7 @@ export const useSupabaseData = () => {
               const d = localStorage.getItem('guest_decks'); if(d) setDecks(JSON.parse(d));
               const dl = localStorage.getItem('guest_deals'); if(dl) setDeals(JSON.parse(dl));
               const do_ = localStorage.getItem('guest_docs'); if(do_) setDocs(JSON.parse(do_));
+              const up = localStorage.getItem('guest_user_profile'); if(up) setUserProfile(JSON.parse(up));
           } catch(e) {
               console.error("Failed to load guest data", e);
           }
@@ -64,6 +68,8 @@ export const useSupabaseData = () => {
 
   const migrateGuestData = async (userId: string, guestProfile: StartupProfile) => {
       console.log("Migrating guest data to user account...");
+      toast("Syncing your guest data to the cloud...", "info");
+
       try {
           // 1. Create Profile
           const newProfile = await ProfileService.create(guestProfile, userId);
@@ -106,6 +112,14 @@ export const useSupabaseData = () => {
               for (const doc of docs) await DocumentService.create(doc, startupId, userId);
           }
 
+          // Migrate User Profile (My Profile)
+          const guestUserStr = localStorage.getItem('guest_user_profile');
+          if (guestUserStr) {
+              const guestUser = JSON.parse(guestUserStr);
+              // Only migrate if there's data
+              await UserService.updateProfile(userId, guestUser);
+          }
+
           // Clear Guest Data
           localStorage.removeItem('guest_profile');
           localStorage.removeItem('guest_founders');
@@ -116,11 +130,14 @@ export const useSupabaseData = () => {
           localStorage.removeItem('guest_metrics');
           localStorage.removeItem('guest_insights');
           localStorage.removeItem('guest_activities');
+          localStorage.removeItem('guest_user_profile');
 
           console.log("Migration complete.");
+          success("Data migration complete!");
           return true;
       } catch (e) {
           console.error("Migration failed", e);
+          error("Failed to migrate some data. Please check your connection.");
           return false;
       }
   };
@@ -128,9 +145,18 @@ export const useSupabaseData = () => {
   const loadData = useCallback(async () => {
       setIsLoading(true);
       try {
-          // 1. Try Supabase if available
+          // 1. Offline Check
+          if (!navigator.onLine) throw new Error("Offline");
+
+          // 2. Try Supabase if available
           if (supabase) {
-              const { data: { user } } = await supabase.auth.getUser();
+              // Add race condition to prevent hanging on poor connections
+              const authPromise = supabase.auth.getUser();
+              const timeoutPromise = new Promise((_, reject) => 
+                  setTimeout(() => reject(new Error("Connection timeout")), 5000)
+              );
+
+              const { data: { user } } = await Promise.race([authPromise, timeoutPromise]) as any;
               
               if (user) {
                   // LOGGED IN USER
@@ -213,7 +239,9 @@ export const useSupabaseData = () => {
           loadGuestData();
 
       } catch (e) {
-          console.error("Data Fetch Error:", e);
+          console.warn("Data Load Error (Falling back to local):", e);
+          // Fallback to guest data on network error, timeout, or offline
+          loadGuestData();
       } finally {
           setIsLoading(false);
       }

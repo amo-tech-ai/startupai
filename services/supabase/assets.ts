@@ -3,7 +3,20 @@ import { supabase } from '../../lib/supabaseClient';
 
 export const AssetService = {
   async uploadFile(file: File, bucket: string): Promise<string | null> {
-    if (!supabase) return URL.createObjectURL(file);
+    // Helper: Convert File to Base64 string
+    const toBase64 = (file: File): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    };
+
+    // 1. Fallback immediately if no backend configured
+    if (!supabase) {
+        return toBase64(file);
+    }
     
     try {
         const fileExt = file.name.split('.').pop();
@@ -16,8 +29,10 @@ export const AssetService = {
         const { data } = supabase.storage.from(bucket).getPublicUrl(filePath);
         return data.publicUrl;
     } catch (e) {
-        console.error("Asset Upload failed", e);
-        return null;
+        console.warn("Asset Upload failed or offline, falling back to Base64 persistence.", e);
+        // 2. Fallback on error (Offline Resilience)
+        // This ensures the user can still see their image in the session even if upload fails
+        return toBase64(file);
     }
   }
 };

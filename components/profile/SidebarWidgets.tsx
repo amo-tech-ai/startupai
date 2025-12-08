@@ -1,8 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
-import { Trophy, Globe, Linkedin, Twitter, Mail, Phone, Settings, Shield, Edit2, Save, X, Github } from 'lucide-react';
+import { Globe, Linkedin, Twitter, Mail, Phone, Settings, Shield, Edit2, Save, X, Github } from 'lucide-react';
 import { UserProfile } from '../../types';
 import { useToast } from '../../context/ToastContext';
+import { UserProfileStrength } from './UserProfileStrength';
 
 interface SidebarWidgetsProps {
   user: UserProfile;
@@ -12,32 +13,16 @@ interface SidebarWidgetsProps {
 export const SidebarWidgets: React.FC<SidebarWidgetsProps> = ({ user, onUpdate }) => {
   const [isEditingSocials, setIsEditingSocials] = useState(false);
   const [isEditingContact, setIsEditingContact] = useState(false);
-  const [score, setScore] = useState(0);
   const { success } = useToast();
   
   const [socialsForm, setSocialsForm] = useState(user.socials);
   const [contactForm, setContactForm] = useState({ phone: user.phone || '', email: user.email });
 
-  // Sync local state when user prop updates (e.g. after LinkedIn Sync)
+  // Sync local state when user prop updates
   useEffect(() => {
     setSocialsForm(user.socials);
     setContactForm({ phone: user.phone || '', email: user.email });
   }, [user.socials, user.phone, user.email]);
-
-  // Calculate score dynamically
-  useEffect(() => {
-    let s = 0;
-    if (user.fullName) s += 10;
-    if (user.headline) s += 10;
-    if (user.location) s += 5;
-    if (user.avatarUrl) s += 10;
-    if (user.bio) s += 10;
-    if (user.experiences && user.experiences.length > 0) s += 20;
-    if (user.education && user.education.length > 0) s += 10;
-    if (user.skills && user.skills.length > 0) s += 10;
-    if (user.socials?.linkedin) s += 15;
-    setScore(Math.min(s, 100));
-  }, [user]);
 
   const handleSaveSocials = () => {
     onUpdate({ socials: socialsForm });
@@ -54,27 +39,8 @@ export const SidebarWidgets: React.FC<SidebarWidgetsProps> = ({ user, onUpdate }
   return (
     <div className="space-y-6">
       
-      {/* Profile Completion */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-        <div className="flex justify-between items-start mb-4">
-          <div className="flex items-center gap-2 text-indigo-700 font-bold">
-            <Trophy size={18} />
-            <h3>Profile Strength</h3>
-          </div>
-          <span className="text-lg font-bold text-slate-900">{score}%</span>
-        </div>
-        <div className="w-full bg-slate-100 rounded-full h-2 mb-4 overflow-hidden">
-          <div 
-            className={`h-full rounded-full transition-all duration-1000 ${
-              score < 50 ? 'bg-red-500' : score < 80 ? 'bg-amber-500' : 'bg-green-500'
-            }`} 
-            style={{ width: `${score}%` }}
-          ></div>
-        </div>
-        <p className="text-xs text-slate-500">
-          Complete your profile to unlock more AI features and investor matching.
-        </p>
-      </div>
+      {/* Profile Strength Component */}
+      <UserProfileStrength user={user} />
 
       {/* Social Links */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 relative group">

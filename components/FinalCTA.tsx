@@ -2,14 +2,13 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
-import { PageType } from '../types';
+import { useNavigate } from 'react-router-dom';
 
 interface FinalCTAProps {
   headline?: string;
   subheadline?: string;
   primaryCta?: string;
   secondaryCta?: string;
-  setPage?: (page: PageType) => void;
 }
 
 // Workaround for strict type checking issues with framer-motion in some environments
@@ -20,8 +19,9 @@ const FinalCTA: React.FC<FinalCTAProps> = ({
   subheadline = "Join 10,000+ founders using startupAI to launch, raise capital, and scale effectively.",
   primaryCta = "Create Your Profile",
   secondaryCta = "Build a Deck",
-  setPage
 }) => {
+  const navigate = useNavigate();
+
   return (
     <section className="py-24 bg-white relative overflow-hidden">
         {/* Decorative Background */}
@@ -43,7 +43,7 @@ const FinalCTA: React.FC<FinalCTAProps> = ({
 
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                     <button 
-                      onClick={() => setPage && setPage('onboarding')}
+                      onClick={() => navigate('/onboarding')}
                       className="w-full sm:w-auto px-8 py-4 bg-primary-600 text-white rounded-full font-bold text-lg hover:bg-primary-700 transition-all shadow-xl shadow-primary-600/30 flex items-center justify-center gap-2 hover:-translate-y-1"
                     >
                         {primaryCta} <ArrowRight size={20} />

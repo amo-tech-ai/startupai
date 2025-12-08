@@ -3,7 +3,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Play, ArrowRight, BarChart3, Users, Globe, Zap } from 'lucide-react';
 import { AreaChart, Area, ResponsiveContainer, Tooltip } from 'recharts';
-import { PageType } from '../types';
+import { useNavigate } from 'react-router-dom';
 
 // Workaround for strict type checking issues with framer-motion in some environments
 const MotionDiv = motion.div as any;
@@ -18,11 +18,9 @@ const data = [
   { name: 'Sun', value: 95 },
 ];
 
-interface HeroProps {
-  setPage?: (page: PageType) => void;
-}
+const Hero: React.FC = () => {
+  const navigate = useNavigate();
 
-const Hero: React.FC<HeroProps> = ({ setPage }) => {
   return (
     <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden bg-gradient-to-br from-indigo-50/50 via-white to-purple-50/30">
       {/* Background Decor */}
@@ -53,7 +51,7 @@ const Hero: React.FC<HeroProps> = ({ setPage }) => {
 
             <div className="flex flex-col sm:flex-row gap-4">
               <button 
-                onClick={() => setPage && setPage('onboarding')}
+                onClick={() => navigate('/onboarding')}
                 className="inline-flex items-center justify-center gap-2 bg-slate-900 text-white px-8 py-4 rounded-full text-base font-semibold hover:bg-slate-800 transition-all shadow-xl shadow-slate-900/20 hover:-translate-y-1"
               >
                 Start Free

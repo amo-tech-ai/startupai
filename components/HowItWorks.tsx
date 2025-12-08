@@ -11,11 +11,7 @@ import FinalCTA from './FinalCTA';
 // Workaround for strict type checking issues with framer-motion in some environments
 const MotionDiv = motion.div as any;
 
-interface HowItWorksProps {
-  setPage: (page: 'home' | 'how-it-works') => void;
-}
-
-const HowItWorks: React.FC<HowItWorksProps> = ({ setPage }) => {
+const HowItWorks: React.FC = () => {
   return (
     <div className="bg-white">
       {/* 1. HERO SECTION */}

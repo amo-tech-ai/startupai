@@ -1,19 +1,22 @@
+
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { Loader2, AlertCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
-const Signup: React.FC<{ setPage: (page: any) => void }> = ({ setPage }) => {
+const Signup: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!supabase) {
-        setPage('onboarding');
+        navigate('/onboarding');
         return;
     }
 
@@ -36,7 +39,7 @@ const Signup: React.FC<{ setPage: (page: any) => void }> = ({ setPage }) => {
       // If auto-confirm is off, we might need to tell user to check email.
       // For now, assume success redirects to onboarding.
       if (data.session) {
-          setPage('onboarding');
+          navigate('/onboarding');
       } else {
           alert("Please check your email to confirm your account!");
       }
@@ -54,7 +57,7 @@ const Signup: React.FC<{ setPage: (page: any) => void }> = ({ setPage }) => {
         <div className="text-center">
           <h2 className="mt-6 text-3xl font-extrabold text-slate-900">Create your account</h2>
            <p className="mt-2 text-sm text-slate-600">
-            Already have an account? <button onClick={() => setPage('login')} className="font-medium text-primary-600 hover:text-primary-500">Log in</button>
+            Already have an account? <button onClick={() => navigate('/login')} className="font-medium text-primary-600 hover:text-primary-500">Log in</button>
           </p>
         </div>
 

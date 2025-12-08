@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useData } from '../context/DataContext';
 import { useToast } from '../context/ToastContext';
+import { useNavigate } from 'react-router-dom';
 
 // Components
 import { WizardProgress } from './wizard/WizardProgress';
@@ -19,19 +20,16 @@ import { StepSummary } from './wizard/steps/StepSummary';
 import { INITIAL_WIZARD_STATE, WIZARD_STEPS, WizardFormData } from './wizard/types';
 import { Founder } from '../types';
 
-interface StartupWizardProps {
-  setPage: (page: any) => void;
-}
-
 const STORAGE_KEY = 'startup_wizard_progress';
 
-const StartupWizard: React.FC<StartupWizardProps> = ({ setPage }) => {
+const StartupWizard: React.FC = () => {
   const { profile, createStartup, updateProfile, updateMetrics, addActivity, setFounders, uploadFile } = useData();
   const { success, error, toast } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<WizardFormData>(INITIAL_WIZARD_STATE);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
+  const navigate = useNavigate();
 
   // --- Persistence ---
   useEffect(() => {
@@ -114,7 +112,7 @@ const StartupWizard: React.FC<StartupWizardProps> = ({ setPage }) => {
       window.scrollTo(0,0);
     } else {
       if (confirm("Exit wizard? Your progress will be lost if you clear your cache.")) {
-        setPage('home'); 
+        navigate('/'); 
       }
     }
   };
@@ -216,7 +214,7 @@ const StartupWizard: React.FC<StartupWizardProps> = ({ setPage }) => {
 
       // Small delay for UX and state refresh
       setTimeout(() => {
-        setPage('dashboard');
+        navigate('/dashboard');
       }, 1000);
 
     } catch (err) {
@@ -242,7 +240,7 @@ const StartupWizard: React.FC<StartupWizardProps> = ({ setPage }) => {
       <WizardHeader 
         currentStep={currentStep}
         totalSteps={WIZARD_STEPS.length}
-        onExit={() => setPage('home')}
+        onExit={() => navigate('/')}
       />
 
       <WizardProgress 

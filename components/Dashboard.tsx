@@ -4,8 +4,8 @@ import { useData } from '../context/DataContext';
 import { API_KEY } from '../lib/env';
 import { CoachAI } from '../services/coachAI';
 import { useToast } from '../context/ToastContext';
-import { PageType } from '../types';
 import { AlertCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 // Components
 import { WelcomeHeader } from './dashboard/WelcomeHeader';
@@ -15,14 +15,11 @@ import { ProfileStrength } from './dashboard/ProfileStrength';
 import { AICoach } from './dashboard/AICoach';
 import { AIJourney } from './dashboard/AIJourney';
 
-interface DashboardProps {
-  setPage: (page: PageType) => void;
-}
-
-const Dashboard: React.FC<DashboardProps> = ({ setPage }) => {
+const Dashboard: React.FC = () => {
   const { profile, metrics, insights, activities, setInsights, addActivity } = useData();
   const { toast, error, success } = useToast();
   const [isGeneratingInsights, setIsGeneratingInsights] = useState(false);
+  const navigate = useNavigate();
 
   const isGuest = profile?.userId === 'guest' || profile?.userId === 'mock';
 
@@ -94,7 +91,7 @@ const Dashboard: React.FC<DashboardProps> = ({ setPage }) => {
                 </div>
             </div>
             <button 
-                onClick={() => setPage('signup')}
+                onClick={() => navigate('/signup')}
                 className="whitespace-nowrap px-5 py-2 bg-white text-indigo-600 font-bold rounded-lg hover:bg-indigo-50 transition-colors"
             >
                 Create Account
@@ -105,9 +102,9 @@ const Dashboard: React.FC<DashboardProps> = ({ setPage }) => {
       {/* 4️⃣ WELCOME SECTION */}
       <WelcomeHeader 
         profile={profile} 
-        onNewDeck={() => setPage('pitch-decks')}
-        onAddContact={() => setPage('crm')}
-        onCreateDoc={() => setPage('documents')}
+        onNewDeck={() => navigate('/pitch-decks')}
+        onAddContact={() => navigate('/crm')}
+        onCreateDoc={() => navigate('/documents')}
       />
 
       {/* 5️⃣ KPI CARDS ROW */}

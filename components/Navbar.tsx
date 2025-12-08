@@ -2,25 +2,25 @@
 import React, { useState, useEffect } from 'react';
 import { Menu, X, Zap, Bell, Search, Sparkles, Settings as SettingsIcon, LogOut } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { PageType } from '../types';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 
 interface NavbarProps {
-  currentPage?: PageType;
-  setPage?: (page: PageType) => void;
   type?: 'public' | 'app';
 }
 
-// Workaround for strict type checking issues with framer-motion in some environments
+// Workaround for strict type checking issues with framer-motion
 const MotionDiv = motion.div as any;
 
-const Navbar: React.FC<NavbarProps> = ({ currentPage = 'home', setPage, type = 'public' }) => {
+const Navbar: React.FC<NavbarProps> = ({ type = 'public' }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const { toast } = useToast();
   const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -30,14 +30,14 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage = 'home', setPage, type = '
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const handleNav = (page: PageType) => {
-    if (setPage) setPage(page);
+  const handleNav = (path: string) => {
+    navigate(path);
     setIsMobileMenuOpen(false);
   };
 
   const handleLogout = async () => {
     await signOut();
-    handleNav('home');
+    navigate('/');
   };
 
   const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -50,6 +50,9 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage = 'home', setPage, type = '
   };
 
   const userAvatar = user?.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.user_metadata?.full_name || 'User')}&background=random`;
+  
+  // Helper to check active link
+  const isActive = (path: string) => location.pathname === path;
 
   // APP MODE: Render as a sticky top bar with utilities
   if (type === 'app') {
@@ -94,7 +97,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage = 'home', setPage, type = '
             </button>
             
             <button 
-              onClick={() => handleNav('settings')}
+              onClick={() => handleNav('/settings')}
               className="flex items-center gap-2 pl-2 border-l border-slate-100 sm:border-none"
             >
                 <img 
@@ -152,12 +155,12 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage = 'home', setPage, type = '
                 </div>
                 
                 <div className="space-y-2">
-                    <button onClick={() => handleNav('dashboard')} className="w-full text-left py-3 px-4 rounded-xl bg-slate-50 font-medium">Dashboard</button>
-                    <button onClick={() => handleNav('pitch-decks')} className="w-full text-left py-3 px-4 text-slate-600 font-medium hover:bg-slate-50 rounded-xl">Pitch Decks</button>
-                    <button onClick={() => handleNav('documents')} className="w-full text-left py-3 px-4 text-slate-600 font-medium hover:bg-slate-50 rounded-xl">Documents</button>
-                    <button onClick={() => handleNav('crm')} className="w-full text-left py-3 px-4 text-slate-600 font-medium hover:bg-slate-50 rounded-xl">CRM</button>
-                    <button onClick={() => handleNav('tasks')} className="w-full text-left py-3 px-4 text-slate-600 font-medium hover:bg-slate-50 rounded-xl">Tasks</button>
-                    <button onClick={() => handleNav('settings')} className="w-full text-left py-3 px-4 text-slate-600 font-medium hover:bg-slate-50 rounded-xl flex items-center gap-2">
+                    <button onClick={() => handleNav('/dashboard')} className="w-full text-left py-3 px-4 rounded-xl bg-slate-50 font-medium">Dashboard</button>
+                    <button onClick={() => handleNav('/pitch-decks')} className="w-full text-left py-3 px-4 text-slate-600 font-medium hover:bg-slate-50 rounded-xl">Pitch Decks</button>
+                    <button onClick={() => handleNav('/documents')} className="w-full text-left py-3 px-4 text-slate-600 font-medium hover:bg-slate-50 rounded-xl">Documents</button>
+                    <button onClick={() => handleNav('/crm')} className="w-full text-left py-3 px-4 text-slate-600 font-medium hover:bg-slate-50 rounded-xl">CRM</button>
+                    <button onClick={() => handleNav('/tasks')} className="w-full text-left py-3 px-4 text-slate-600 font-medium hover:bg-slate-50 rounded-xl">Tasks</button>
+                    <button onClick={() => handleNav('/settings')} className="w-full text-left py-3 px-4 text-slate-600 font-medium hover:bg-slate-50 rounded-xl flex items-center gap-2">
                         <SettingsIcon size={18} /> Settings
                     </button>
                 </div>
@@ -194,9 +197,9 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage = 'home', setPage, type = '
         }`}
       >
         <div className="container mx-auto px-6 flex items-center justify-between">
-          <div 
+          <Link 
+            to="/"
             className="flex items-center gap-2 cursor-pointer"
-            onClick={() => handleNav('home')}
           >
             <div className="bg-primary-600 text-white p-1.5 rounded-lg">
               <Zap size={20} fill="currentColor" />
@@ -204,48 +207,48 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage = 'home', setPage, type = '
             <span className="text-xl font-bold tracking-tight text-slate-900">
               startupAI
             </span>
-          </div>
+          </Link>
 
           <div className="hidden md:flex items-center gap-8">
-                <button 
-                onClick={() => handleNav('home')}
-                className={`text-sm font-medium transition-colors ${currentPage === 'home' ? 'text-primary-600' : 'text-slate-600 hover:text-primary-600'}`}
+                <Link 
+                to="/"
+                className={`text-sm font-medium transition-colors ${isActive('/') ? 'text-primary-600' : 'text-slate-600 hover:text-primary-600'}`}
                 >
                 Product
-                </button>
-                <button 
-                onClick={() => handleNav('how-it-works')}
-                className={`text-sm font-medium transition-colors ${currentPage === 'how-it-works' ? 'text-primary-600' : 'text-slate-600 hover:text-primary-600'}`}
+                </Link>
+                <Link 
+                to="/how-it-works"
+                className={`text-sm font-medium transition-colors ${isActive('/how-it-works') ? 'text-primary-600' : 'text-slate-600 hover:text-primary-600'}`}
                 >
                 How it Works
-                </button>
-                <button 
-                onClick={() => handleNav('features')}
-                className={`text-sm font-medium transition-colors ${currentPage === 'features' ? 'text-primary-600' : 'text-slate-600 hover:text-primary-600'}`}
+                </Link>
+                <Link 
+                to="/features"
+                className={`text-sm font-medium transition-colors ${isActive('/features') ? 'text-primary-600' : 'text-slate-600 hover:text-primary-600'}`}
                 >
                 Features
-                </button>
-                    <button 
-                onClick={() => handleNav('pricing')}
-                className={`text-sm font-medium transition-colors ${currentPage === 'pricing' ? 'text-primary-600' : 'text-slate-600 hover:text-primary-600'}`}
+                </Link>
+                <Link 
+                to="/pricing"
+                className={`text-sm font-medium transition-colors ${isActive('/pricing') ? 'text-primary-600' : 'text-slate-600 hover:text-primary-600'}`}
                 >
                 Pricing
-                </button>
+                </Link>
           </div>
 
           <div className="hidden md:flex items-center gap-4">
-                <button 
-                    onClick={() => handleNav('login')}
+                <Link 
+                    to="/login"
                     className="text-sm font-medium text-slate-600 hover:text-primary-600 transition-colors"
                 >
                 Log in
-                </button>
-                <button 
-                    onClick={() => handleNav('onboarding')}
+                </Link>
+                <Link 
+                    to="/onboarding"
                     className="bg-slate-900 text-white px-5 py-2.5 rounded-full text-sm font-medium hover:bg-slate-800 transition-all shadow-lg shadow-slate-900/20 active:scale-95"
                 >
                 Start Free
-                </button>
+                </Link>
           </div>
 
           <button 
@@ -282,15 +285,15 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage = 'home', setPage, type = '
             </div>
 
             <div className="flex flex-col gap-6 text-lg font-medium text-slate-900">
-              <button onClick={() => handleNav('home')} className="text-left border-b border-slate-100 pb-4">Product</button>
-              <button onClick={() => handleNav('how-it-works')} className="text-left border-b border-slate-100 pb-4">How it Works</button>
-              <button onClick={() => handleNav('features')} className="text-left border-b border-slate-100 pb-4">Features</button>
-              <button onClick={() => handleNav('pricing')} className="text-left border-b border-slate-100 pb-4">Pricing</button>
+              <button onClick={() => handleNav('/')} className="text-left border-b border-slate-100 pb-4">Product</button>
+              <button onClick={() => handleNav('/how-it-works')} className="text-left border-b border-slate-100 pb-4">How it Works</button>
+              <button onClick={() => handleNav('/features')} className="text-left border-b border-slate-100 pb-4">Features</button>
+              <button onClick={() => handleNav('/pricing')} className="text-left border-b border-slate-100 pb-4">Pricing</button>
             </div>
 
             <div className="mt-auto flex flex-col gap-4">
-              <button onClick={() => handleNav('login')} className="w-full py-3 text-center text-slate-600 font-medium">Log in</button>
-              <button onClick={() => handleNav('onboarding')} className="w-full py-3 bg-primary-600 text-white rounded-xl font-semibold shadow-lg shadow-primary-600/30">
+              <button onClick={() => handleNav('/login')} className="w-full py-3 text-center text-slate-600 font-medium">Log in</button>
+              <button onClick={() => handleNav('/onboarding')} className="w-full py-3 bg-primary-600 text-white rounded-xl font-semibold shadow-lg shadow-primary-600/30">
                 Get Started
               </button>
             </div>

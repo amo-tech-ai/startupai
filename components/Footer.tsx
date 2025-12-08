@@ -1,20 +1,9 @@
 
 import React from 'react';
 import { Zap, Twitter, Linkedin, Github } from 'lucide-react';
-import { PageType } from '../types';
+import { Link } from 'react-router-dom';
 
-interface FooterProps {
-  setPage?: (page: PageType) => void;
-}
-
-const Footer: React.FC<FooterProps> = ({ setPage }) => {
-  const handleNav = (page: PageType) => {
-    if (setPage) {
-      setPage(page);
-      window.scrollTo(0, 0);
-    }
-  };
-
+const Footer: React.FC = () => {
   return (
     <footer className="bg-slate-50 border-t border-slate-200 pt-16 pb-8">
       <div className="container mx-auto px-6">
@@ -35,19 +24,19 @@ const Footer: React.FC<FooterProps> = ({ setPage }) => {
             <h4 className="font-bold text-slate-900 mb-4">Platform</h4>
             <ul className="space-y-2 text-sm text-slate-600">
               <li>
-                <button onClick={() => handleNav('onboarding')} className="hover:text-primary-600 transition-colors">Startup Wizard</button>
+                <Link to="/onboarding" className="hover:text-primary-600 transition-colors">Startup Wizard</Link>
               </li>
               <li>
-                <button onClick={() => handleNav('features')} className="hover:text-primary-600 transition-colors">Features</button>
+                <Link to="/features" className="hover:text-primary-600 transition-colors">Features</Link>
               </li>
               <li>
                 <a href="#" className="hover:text-primary-600 transition-colors">Integrations</a>
               </li>
               <li>
-                <button onClick={() => handleNav('pricing')} className="hover:text-primary-600 transition-colors">Pricing</button>
+                <Link to="/pricing" className="hover:text-primary-600 transition-colors">Pricing</Link>
               </li>
               <li>
-                <button onClick={() => handleNav('dashboard')} className="hover:text-primary-600 transition-colors font-medium text-indigo-600">Dashboard</button>
+                <Link to="/dashboard" className="hover:text-primary-600 transition-colors font-medium text-indigo-600">Dashboard</Link>
               </li>
             </ul>
           </div>

@@ -3,20 +3,23 @@ import React, { useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { Loader2, AlertCircle, ShieldOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useNavigate, useLocation } from 'react-router-dom';
 
-const Login: React.FC<{ setPage: (page: any) => void }> = ({ setPage }) => {
+const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { debugLogin } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!supabase) {
         // Fallback for demo/mock mode if supabase isn't configured
         debugLogin();
-        setPage('dashboard');
+        navigate('/dashboard');
         return;
     }
 
@@ -30,7 +33,9 @@ const Login: React.FC<{ setPage: (page: any) => void }> = ({ setPage }) => {
       });
 
       if (error) throw error;
-      // App.tsx AuthProvider will handle the redirect based on session change
+      // AuthProvider listens to state changes and App.tsx redirects, but we can also push manually
+      const from = (location.state as any)?.from?.pathname || '/dashboard';
+      navigate(from, { replace: true });
     } catch (err: any) {
       setError(err.message || 'Failed to sign in');
     } finally {
@@ -40,7 +45,7 @@ const Login: React.FC<{ setPage: (page: any) => void }> = ({ setPage }) => {
 
   const handleDevBypass = () => {
       debugLogin();
-      setPage('dashboard');
+      navigate('/dashboard');
   };
 
   return (
@@ -49,7 +54,7 @@ const Login: React.FC<{ setPage: (page: any) => void }> = ({ setPage }) => {
         <div className="text-center">
           <h2 className="mt-6 text-3xl font-extrabold text-slate-900">Welcome back</h2>
           <p className="mt-2 text-sm text-slate-600">
-            Or <button onClick={() => setPage('signup')} className="font-medium text-primary-600 hover:text-primary-500">start your 14-day free trial</button>
+            Or <button onClick={() => navigate('/signup')} className="font-medium text-primary-600 hover:text-primary-500">start your 14-day free trial</button>
           </p>
         </div>
         

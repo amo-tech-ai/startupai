@@ -3,26 +3,21 @@ import React from 'react';
 import { Check, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
-import { PageType } from '../types';
+import { useNavigate } from 'react-router-dom';
 
-interface PricingProps {
-  setPage?: (page: PageType) => void;
-}
-
-const Pricing: React.FC<PricingProps> = ({ setPage }) => {
+const Pricing: React.FC = () => {
   const { user } = useAuth();
   const { profile } = useData();
+  const navigate = useNavigate();
 
   const handleAction = (planId: string) => {
-    if (setPage) {
-      if (user) {
-        // Logged in: Go to billing settings to upgrade or manage
-        localStorage.setItem('settings_tab', 'billing');
-        setPage('settings'); 
-      } else {
-        // Visitor: Sign up
-        setPage('signup'); 
-      }
+    if (user) {
+      // Logged in: Go to billing settings to upgrade or manage
+      localStorage.setItem('settings_tab', 'billing');
+      navigate('/settings'); 
+    } else {
+      // Visitor: Sign up
+      navigate('/signup'); 
     }
   };
 

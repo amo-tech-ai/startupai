@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { UserProfile } from '../types';
 import { useData } from '../context/DataContext';
+import { useToast } from '../context/ToastContext';
 import { ProfileHeader } from './profile/ProfileHeader';
 import { AboutSection } from './profile/AboutSection';
 import { ExperienceSection } from './profile/ExperienceSection';
@@ -11,10 +12,16 @@ import { SidebarWidgets } from './profile/SidebarWidgets';
 
 const Profile: React.FC = () => {
   const { userProfile, updateUserProfile, isLoading } = useData();
+  const { error } = useToast();
   const [isEditingHeader, setIsEditingHeader] = useState(false);
 
-  const handleUpdateUser = (data: Partial<UserProfile>) => {
-    updateUserProfile(data);
+  const handleUpdateUser = async (data: Partial<UserProfile>) => {
+    try {
+      await updateUserProfile(data);
+    } catch (err) {
+      console.error("Failed to update profile:", err);
+      error("Failed to save changes. Please try again.");
+    }
   };
 
   if (isLoading) {
@@ -75,7 +82,10 @@ const Profile: React.FC = () => {
 
           {/* SIDEBAR */}
           <aside className="lg:col-span-4 lg:sticky lg:top-24">
-             <SidebarWidgets user={userProfile} />
+             <SidebarWidgets 
+                user={userProfile} 
+                onUpdate={handleUpdateUser}
+             />
           </aside>
 
         </div>

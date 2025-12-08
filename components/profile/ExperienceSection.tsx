@@ -2,6 +2,8 @@
 import React, { useState } from 'react';
 import { Plus, Briefcase, Calendar, Building2, Trash2, Edit2 } from 'lucide-react';
 import { UserProfileExperience } from '../../types';
+import { generateUUID } from '../../lib/utils';
+import { useToast } from '../../context/ToastContext';
 
 interface ExperienceSectionProps {
   experiences: UserProfileExperience[];
@@ -11,6 +13,7 @@ interface ExperienceSectionProps {
 export const ExperienceSection: React.FC<ExperienceSectionProps> = ({ experiences, onUpdate }) => {
   const [editingId, setEditingId] = useState<string | null>(null); // 'new' or UUID
   const [formData, setFormData] = useState<Partial<UserProfileExperience>>({});
+  const { success } = useToast();
 
   const handleAddNew = () => {
       setEditingId('new');
@@ -25,6 +28,7 @@ export const ExperienceSection: React.FC<ExperienceSectionProps> = ({ experience
   const handleDelete = (id: string) => {
     if(confirm("Delete this experience?")) {
       onUpdate(experiences.filter(e => e.id !== id));
+      success("Experience removed");
     }
   };
 
@@ -33,7 +37,7 @@ export const ExperienceSection: React.FC<ExperienceSectionProps> = ({ experience
       if (editingId === 'new') {
           // Create
           const entry: UserProfileExperience = {
-            id: Date.now().toString(),
+            id: generateUUID(),
             company: formData.company,
             role: formData.role,
             startDate: formData.startDate || '',
@@ -42,10 +46,12 @@ export const ExperienceSection: React.FC<ExperienceSectionProps> = ({ experience
             description: formData.description || '',
           };
           onUpdate([entry, ...experiences]);
+          success("Experience added");
       } else {
           // Update
           const updated = experiences.map(e => e.id === editingId ? { ...e, ...formData } as UserProfileExperience : e);
           onUpdate(updated);
+          success("Experience updated");
       }
       setEditingId(null);
       setFormData({});

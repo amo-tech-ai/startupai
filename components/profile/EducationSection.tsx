@@ -2,6 +2,8 @@
 import React, { useState } from 'react';
 import { Plus, GraduationCap, Calendar, Trash2, Edit2 } from 'lucide-react';
 import { UserProfileEducation } from '../../types';
+import { generateUUID } from '../../lib/utils';
+import { useToast } from '../../context/ToastContext';
 
 interface EducationSectionProps {
   education: UserProfileEducation[];
@@ -11,6 +13,7 @@ interface EducationSectionProps {
 export const EducationSection: React.FC<EducationSectionProps> = ({ education, onUpdate }) => {
   const [isEditing, setIsEditing] = useState<string | null>(null); // 'new' or ID
   const [formData, setFormData] = useState<Partial<UserProfileEducation>>({});
+  const { success } = useToast();
 
   const handleEdit = (edu: UserProfileEducation) => {
     setFormData(edu);
@@ -20,6 +23,7 @@ export const EducationSection: React.FC<EducationSectionProps> = ({ education, o
   const handleDelete = (id: string) => {
     if(confirm("Remove this education entry?")) {
       onUpdate(education.filter(e => e.id !== id));
+      success("Education entry removed");
     }
   };
 
@@ -27,16 +31,18 @@ export const EducationSection: React.FC<EducationSectionProps> = ({ education, o
     if (formData.school && formData.degree) {
       if (isEditing === 'new') {
         const newEntry: UserProfileEducation = {
-          id: Date.now().toString(),
+          id: generateUUID(),
           school: formData.school,
           degree: formData.degree,
           year: formData.year || '',
           logoUrl: ''
         };
         onUpdate([newEntry, ...education]);
+        success("Education added");
       } else {
         const updated = education.map(e => e.id === isEditing ? { ...e, ...formData } as UserProfileEducation : e);
         onUpdate(updated);
+        success("Education updated");
       }
       setIsEditing(null);
       setFormData({});

@@ -1,9 +1,10 @@
 
-import React, { useState, useEffect } from 'react';
-import { Camera, MapPin, Link as LinkIcon, RefreshCw, Edit3, CheckCircle, X } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Camera, MapPin, Link as LinkIcon, RefreshCw, Edit3, CheckCircle, X, Loader2 } from 'lucide-react';
 import { UserProfile } from '../../types';
 import { useToast } from '../../context/ToastContext';
 import { EnrichmentService } from '../../services/enrichment';
+import { useData } from '../../context/DataContext';
 
 interface ProfileHeaderProps {
   user: UserProfile;
@@ -13,10 +14,16 @@ interface ProfileHeaderProps {
 }
 
 export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ user, isEditing, onToggleEdit, onUpdate }) => {
+  const { uploadFile } = useData();
   const [isSyncing, setIsSyncing] = useState(false);
-  const { success, error, info } = useToast();
+  const [isUploadingCover, setIsUploadingCover] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const { success, error, info, toast } = useToast();
   
-  // Local state for editing to avoid global re-renders on every keystroke
+  const coverInputRef = useRef<HTMLInputElement>(null);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  
+  // Local state for editing
   const [editData, setEditData] = useState({
     fullName: user.fullName,
     headline: user.headline,
@@ -24,7 +31,6 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ user, isEditing, o
     website: user.socials.website || ''
   });
 
-  // Reset local state when user prop changes or edit mode toggles
   useEffect(() => {
     setEditData({
         fullName: user.fullName,
@@ -56,14 +62,9 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ user, isEditing, o
     
     try {
         const enrichedData = await EnrichmentService.syncLinkedInProfile(user.socials.linkedin);
-        
-        // Merge enriched data with existing user data structure
         onUpdate({
             ...enrichedData,
-            socials: {
-                ...user.socials,
-                ...enrichedData.socials
-            }
+            socials: { ...user.socials, ...enrichedData.socials }
         });
         success("Profile successfully synced from LinkedIn!");
     } catch (err: any) {
@@ -74,25 +75,70 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ user, isEditing, o
     }
   };
 
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, type: 'avatar' | 'cover') => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      const isAvatar = type === 'avatar';
+      
+      if (isAvatar) setIsUploadingAvatar(true);
+      else setIsUploadingCover(true);
+      
+      toast(`Uploading ${type}...`, "info");
+
+      try {
+        const url = await uploadFile(file, isAvatar ? 'avatars' : 'startup-assets');
+        if (url) {
+          if (isAvatar) onUpdate({ avatarUrl: url });
+          else onUpdate({ coverImageUrl: url });
+          success(`${type === 'avatar' ? 'Profile photo' : 'Cover image'} updated!`);
+        }
+      } catch (err) {
+        error("Upload failed");
+      } finally {
+        if (isAvatar) setIsUploadingAvatar(false);
+        else setIsUploadingCover(false);
+      }
+    }
+  };
+
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden relative group">
+      
       {/* Cover Image */}
-      <div className="h-40 bg-slate-200 relative overflow-hidden">
+      <div className="h-40 bg-slate-200 relative overflow-hidden group/cover">
         {user.coverImageUrl ? (
           <img src={user.coverImageUrl} alt="Cover" className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full bg-gradient-to-r from-indigo-500 to-purple-600"></div>
         )}
-        <button className="absolute top-4 right-4 bg-white/20 hover:bg-white/30 text-white p-2 rounded-lg backdrop-blur-sm transition-colors opacity-0 group-hover:opacity-100">
-          <Camera size={18} />
+        <div className="absolute inset-0 bg-black/10 group-hover/cover:bg-black/20 transition-colors"></div>
+        
+        <button 
+          onClick={() => coverInputRef.current?.click()}
+          disabled={isUploadingCover}
+          className="absolute top-4 right-4 bg-white/20 hover:bg-white/30 text-white p-2 rounded-lg backdrop-blur-sm transition-colors opacity-0 group-hover/cover:opacity-100 flex items-center gap-2 text-sm font-medium"
+        >
+          {isUploadingCover ? <Loader2 size={18} className="animate-spin" /> : <Camera size={18} />}
+          <span>Change Cover</span>
         </button>
+        <input 
+            type="file" 
+            ref={coverInputRef} 
+            className="hidden" 
+            accept="image/*"
+            onChange={(e) => handleFileChange(e, 'cover')}
+        />
       </div>
 
       <div className="px-8 pb-8">
         <div className="flex flex-col md:flex-row gap-6 items-start">
+          
           {/* Avatar */}
           <div className="relative -mt-16 shrink-0">
-            <div className="w-32 h-32 rounded-full border-4 border-white bg-slate-100 shadow-md overflow-hidden relative group/avatar cursor-pointer">
+            <div 
+                className="w-32 h-32 rounded-full border-4 border-white bg-slate-100 shadow-md overflow-hidden relative group/avatar cursor-pointer"
+                onClick={() => !isUploadingAvatar && avatarInputRef.current?.click()}
+            >
               {user.avatarUrl ? (
                 <img src={user.avatarUrl} alt="Profile" className="w-full h-full object-cover" />
               ) : (
@@ -100,10 +146,17 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ user, isEditing, o
                   {user.fullName.charAt(0)}
                 </div>
               )}
-              <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover/avatar:opacity-100 transition-opacity">
-                <Camera size={24} className="text-white" />
+              <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover/avatar:opacity-100 transition-opacity">
+                {isUploadingAvatar ? <Loader2 size={24} className="animate-spin text-white" /> : <Camera size={24} className="text-white" />}
               </div>
             </div>
+            <input 
+                type="file" 
+                ref={avatarInputRef} 
+                className="hidden" 
+                accept="image/*"
+                onChange={(e) => handleFileChange(e, 'avatar')}
+            />
           </div>
 
           {/* Info */}

@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { Sparkles, Loader2, Edit3, Save } from 'lucide-react';
+import { useToast } from '../../context/ToastContext';
 
 interface AboutSectionProps {
   bio: string;
@@ -11,10 +12,12 @@ export const AboutSection: React.FC<AboutSectionProps> = ({ bio, onUpdate }) => 
   const [isEditing, setIsEditing] = useState(false);
   const [text, setText] = useState(bio);
   const [isAiProcessing, setIsAiProcessing] = useState(false);
+  const { success } = useToast();
 
   const handleSave = () => {
     onUpdate(text);
     setIsEditing(false);
+    success("Bio updated successfully");
   };
 
   const handleAiRewrite = () => {

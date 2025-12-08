@@ -14,6 +14,7 @@ import { CrmService } from '../services/supabase/crm';
 import { DocumentService } from '../services/supabase/documents';
 import { AssetService } from '../services/supabase/assets';
 import { DashboardService } from '../services/supabase/dashboard';
+import { UserService } from '../services/supabase/user';
 
 interface DataContextType {
   profile: StartupProfile | null;
@@ -85,7 +86,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                return; 
             }
 
-            // 1. Profile & Founders
+            // 1. Fetch User Profile (Separate from Startup Profile)
+            const loadedUserProfile = await UserService.getProfile(user.id);
+            if (loadedUserProfile) {
+              setUserProfile(loadedUserProfile);
+            }
+
+            // 2. Profile & Founders
             const { profile: p, founders: f } = await ProfileService.getByUserId(user.id);
             
             if (p) {
@@ -93,7 +100,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 setProfile(p);
                 setFoundersState(f);
                 
-                // 2. Fetch Dependent Data (Parallel with resilience)
+                // 3. Fetch Dependent Data (Parallel with resilience)
                 const results = await Promise.allSettled([
                     DeckService.getAll(p.id),
                     CrmService.getDeals(p.id),
@@ -116,7 +123,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 setInsights(unwrap(results[5], []));
                 setActivities(unwrap(results[6], []));
 
-                // 3. Setup Realtime Subscriptions
+                // 4. Setup Realtime Subscriptions
                 const channel = supabase.channel('public-db-changes')
                   .on('postgres_changes', { event: '*', schema: 'public', table: 'crm_deals', filter: `startup_id=eq.${p.id}` }, (payload: any) => {
                       if (payload.eventType === 'INSERT') {
@@ -143,7 +150,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 
                 realtimeChannelRef.current = channel;
             } else {
-                // AUTHENTICATED BUT NO PROFILE -> Clear Mocks to trigger Onboarding Wizard
+                // AUTHENTICATED BUT NO STARTUP PROFILE -> Clear Mocks to trigger Onboarding Wizard
                 setProfile(null);
                 setFoundersState([]);
                 setMetrics([]);
@@ -208,9 +215,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const updateUserProfile = (data: Partial<UserProfile>) => {
+  const updateUserProfile = async (data: Partial<UserProfile>) => {
     setUserProfile(prev => prev ? { ...prev, ...data } : null);
-    // In production, we would sync this to Supabase 'profiles' table here
+    if (userProfile?.id && supabase) {
+        await UserService.updateProfile(userProfile.id, data);
+    }
   };
 
   const setFounders = async (foundersData: Founder[]) => {

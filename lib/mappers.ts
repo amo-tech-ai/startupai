@@ -1,5 +1,5 @@
 
-import { StartupProfile, Founder, Deck, Slide, Deal, InvestorDoc, MetricsSnapshot, AICoachInsight, Activity, Task } from '../types';
+import { StartupProfile, Founder, Deck, Slide, Deal, InvestorDoc, MetricsSnapshot, AICoachInsight, Activity, Task, UserProfile } from '../types';
 
 /**
  * STARTUP PROFILE MAPPERS
@@ -65,6 +65,48 @@ export const mapProfileToDB = (data: Partial<StartupProfile>) => {
   if (data.fundingHistory !== undefined) payload.funding_history = data.fundingHistory;
   if (data.isRaising !== undefined) payload.is_raising = data.isRaising;
   if (data.useOfFunds !== undefined) payload.use_of_funds = data.useOfFunds;
+  
+  if (Object.keys(payload).length > 0) {
+      payload.updated_at = new Date().toISOString();
+  }
+  return payload;
+};
+
+/**
+ * USER PROFILE MAPPERS
+ */
+export const mapUserProfileFromDB = (data: any): UserProfile => ({
+  id: data.id,
+  fullName: data.full_name || '',
+  headline: data.headline || '',
+  location: data.location || '',
+  bio: data.bio || '',
+  avatarUrl: data.avatar_url || '',
+  coverImageUrl: data.cover_image_url || '',
+  email: data.email || '',
+  phone: data.phone || '',
+  socials: data.social_links || { linkedin: '', twitter: '', github: '', website: '' },
+  experiences: data.experiences || [],
+  education: data.education || [],
+  skills: data.skills || [],
+  completionScore: data.completion_score || 0
+});
+
+export const mapUserProfileToDB = (data: Partial<UserProfile>) => {
+  const payload: any = {};
+  if (data.fullName !== undefined) payload.full_name = data.fullName;
+  if (data.headline !== undefined) payload.headline = data.headline;
+  if (data.location !== undefined) payload.location = data.location;
+  if (data.bio !== undefined) payload.bio = data.bio;
+  if (data.avatarUrl !== undefined) payload.avatar_url = data.avatarUrl;
+  if (data.coverImageUrl !== undefined) payload.cover_image_url = data.coverImageUrl;
+  if (data.email !== undefined) payload.email = data.email;
+  if (data.phone !== undefined) payload.phone = data.phone;
+  if (data.socials !== undefined) payload.social_links = data.socials;
+  if (data.experiences !== undefined) payload.experiences = data.experiences;
+  if (data.education !== undefined) payload.education = data.education;
+  if (data.skills !== undefined) payload.skills = data.skills;
+  if (data.completionScore !== undefined) payload.completion_score = data.completionScore;
   
   if (Object.keys(payload).length > 0) {
       payload.updated_at = new Date().toISOString();

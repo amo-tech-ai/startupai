@@ -1,13 +1,13 @@
 
 # 👤 **My Profile Screen (LinkedIn-Style) — Master Plan**
 
-**Version:** 2.0 | **Status:** 🟢 Frontend Complete | **Owner:** Product Engineering Team
+**Version:** 2.1 | **Status:** 🟢 **Production Ready** | **Owner:** Product Engineering Team
 
 ---
 
 ## 📊 **Progress Tracker**
 
-**Overall Completion:** 90% (Frontend Complete, Backend Integration Pending)
+**Overall Completion:** **100%** (Feature Complete & Wired)
 
 | Phase | Status | Progress | Notes |
 |-------|--------|----------|-------|
@@ -19,7 +19,7 @@
 | **5. Visual Design** | 🟢 Done | 100% | Tailwind styling applied, clean SaaS aesthetic |
 | **6. Interactions & State** | 🟢 Done | 100% | Local state buffering, Edit Modes, Add/Delete logic |
 | **7. Data Integration** | 🟢 Done | 100% | Connected to global `DataContext` and `mockDatabase` |
-| **8. Backend Integration** | 🟡 Pending | 0% | Connect to Supabase `profiles` table (Next Sprint) |
+| **8. Backend Integration** | 🟢 Done | 100% | `UserService` created, `profiles` JSONB columns mapped, RLS policies active. |
 
 ---
 
@@ -56,42 +56,44 @@ graph TD
 
 ### **2. Entity Relationship Diagram (ERD)**
 
+*Implemented using JSONB for nested lists to ensure fast read performance on the profile view.*
+
 ```mermaid
 erDiagram
-    profiles ||--o{ profile_experiences : has
-    profiles ||--o{ profile_educations : has
-    profiles ||--o{ profile_skills : has
-    
     profiles {
         uuid id PK "FK to auth.users"
         text full_name
-        text headline "New"
-        text location "New"
-        text website "New"
+        text headline
+        text location
         text bio
         text avatar_url
-        text cover_image_url "New"
-        jsonb social_links "New: {linkedin, twitter, github}"
+        text cover_image_url
+        jsonb social_links "{linkedin, twitter, github, website}"
+        jsonb experiences "[{company, role, dates, description}]"
+        jsonb education "[{school, degree, year}]"
+        text[] skills "Array of strings"
         int completion_score
     }
-    profile_experiences {
-        uuid id PK
-        uuid profile_id FK
-        text company
-        text title
-        text start_date
-        text end_date
-        bool is_current
-        text description
-    }
-    profile_educations {
-        uuid id PK
-        uuid profile_id FK
-        text school
-        text degree
-        text year
-    }
 ```
+
+---
+
+## 🚀 **Phase 2: Future Roadmap (V2.1)**
+
+The following tasks are scheduled for the next iteration to enhance the profile system:
+
+### **Public Visibility**
+- [ ] **Vanity URLs**: Allow users to claim `startupai.com/u/alex-rivera`.
+- [ ] **OpenGraph Generation**: Dynamic social preview images showing the user's avatar + headline.
+- [ ] **Public View Mode**: A read-only version of the profile component for non-authenticated visitors.
+
+### **AI Features**
+- [ ] **Resume Parser**: Drag-and-drop a PDF resume to auto-fill Experience and Education (using Gemini 3).
+- [ ] **Smart Match**: Suggest other founders or investors based on `skills` and `industry` overlap.
+
+### **Data Portability**
+- [ ] **PDF Export**: "Download Resume" button generating a clean PDF from profile data.
+- [ ] **JSON Export**: Allow users to download their data for GDPR compliance.
 
 ---
 
@@ -108,7 +110,7 @@ erDiagram
 - **Focus:** 2-column desktop (2/3 + 1/3), Sticky Sidebar, Mobile stacking.
 
 ### **PROMPT 3 — Component Design**
-> detailed component breakdown and interaction design.
+> Detailed component breakdown and interaction design.
 - **Output:** `components/profile/*`
 - **Focus:**
     - `ProfileHeader`: Cover image, Avatar, Edit mode.
@@ -134,16 +136,28 @@ erDiagram
     - Fixed performance issue in Header input (debouncing/local state).
     - Added "Edit" mode to Experience items.
 
+### **PROMPT 6 — Backend & Enrichment**
+> Production readiness and external data services.
+- **Output:** `services/supabase/user.ts`, `services/enrichment.ts`, `lib/mappers.ts`
+- **Focus:**
+    - Created `UserService` for Supabase CRUD operations.
+    - Created `EnrichmentService` for LinkedIn sync simulation.
+    - Added DB mappers to translate `UserProfile` JSONB structures.
+    - Wired "Sync" button to service layer with Toast feedback.
+
 ---
 
 ## ✅ **Success Criteria Checklist**
 
 - [x] **Visuals:** Matches "Professional Network" aesthetic (Clean, White, Indigo accents).
 - [x] **Responsive:** Stacks correctly on mobile, Sidebar sticks on desktop.
-- [x] **Data:** Persists changes to local memory/mock DB.
+- [x] **Data Persistence:**
+    - [x] Context updates optimistic UI instantly.
+    - [x] Changes are sent to Supabase `profiles` table.
+    - [x] File uploads (Avatar/Cover) save to Storage buckets.
 - [x] **Interactions:**
     - [x] Edit Profile Header
     - [x] Add/Edit/Delete Experience
     - [x] Add/Edit/Delete Education
     - [x] Add/Remove Skills
-- [x] **Navigation:** Accessible from Sidebar.
+- [x] **External Sync:** "Sync from LinkedIn" button simulates data enrichment.

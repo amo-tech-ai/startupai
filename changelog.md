@@ -1,6 +1,15 @@
 
 # Changelog
 
+## [v2.0.0] - User Profile System
+### Features
+- **My Profile Screen**: Full LinkedIn-style profile management.
+- **Rich Data**: Support for Work Experience, Education history, and Skill tagging.
+- **LinkedIn Sync**: "One-click" import simulation to populate profile fields automatically.
+- **Profile Strength**: Gamified completion score with actionable "next steps".
+- **Backend Persistence**: Full read/write integration with Supabase `profiles` table using JSONB for complex nested data.
+- **Media Uploads**: Integrated Avatar and Cover Image uploading via Supabase Storage.
+
 ## [v1.9.1] - Secure Development Workflow
 ### Security
 - **Conditional Auth Bypass**: Restricted the "Bypass Authentication" button to the development environment only (`import.meta.env.DEV`). This ensures no backdoor access in production builds.

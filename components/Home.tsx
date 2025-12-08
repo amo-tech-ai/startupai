@@ -16,7 +16,7 @@ interface HomeProps {
 const Home: React.FC<HomeProps> = ({ setPage }) => {
   return (
     <>
-      <Hero />
+      <Hero setPage={setPage} />
       <Features />
       <Workflow />
       <AICapabilities />

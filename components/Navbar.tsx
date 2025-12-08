@@ -241,7 +241,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage = 'home', setPage, type = '
                 Log in
                 </button>
                 <button 
-                    onClick={() => handleNav('signup')}
+                    onClick={() => handleNav('onboarding')}
                     className="bg-slate-900 text-white px-5 py-2.5 rounded-full text-sm font-medium hover:bg-slate-800 transition-all shadow-lg shadow-slate-900/20 active:scale-95"
                 >
                 Start Free
@@ -290,7 +290,7 @@ const Navbar: React.FC<NavbarProps> = ({ currentPage = 'home', setPage, type = '
 
             <div className="mt-auto flex flex-col gap-4">
               <button onClick={() => handleNav('login')} className="w-full py-3 text-center text-slate-600 font-medium">Log in</button>
-              <button onClick={() => handleNav('signup')} className="w-full py-3 bg-primary-600 text-white rounded-xl font-semibold shadow-lg shadow-primary-600/30">
+              <button onClick={() => handleNav('onboarding')} className="w-full py-3 bg-primary-600 text-white rounded-xl font-semibold shadow-lg shadow-primary-600/30">
                 Get Started
               </button>
             </div>

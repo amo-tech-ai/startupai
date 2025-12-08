@@ -60,6 +60,7 @@ const AppContent = () => {
   }, []);
 
   // Define which pages are part of the "App" (require sidebar + auth layout)
+  // Removed 'onboarding' to allow public access
   const appPages: PageType[] = [
     'dashboard', 
     'pitch-decks', 
@@ -67,8 +68,7 @@ const AppContent = () => {
     'documents', 
     'tasks', 
     'settings',
-    'profile',
-    'onboarding'
+    'profile'
   ];
 
   const isAppPage = appPages.includes(page);
@@ -85,15 +85,9 @@ const AppContent = () => {
         }
 
         // 2. Force Onboarding: If user has no profile data, redirect to wizard
-        if (!profile && isAppPage && page !== 'onboarding') {
+        if (!profile && isAppPage) {
            setPage('onboarding');
            return;
-        }
-
-        // 3. Prevent re-entry to onboarding if profile exists (Logic update)
-        if (profile && page === 'onboarding') {
-            setPage('dashboard');
-            return;
         }
 
       } else {

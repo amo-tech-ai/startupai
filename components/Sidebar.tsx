@@ -8,7 +8,8 @@ import {
   Settings, 
   Zap,
   LogOut,
-  Files
+  Files,
+  UserCircle
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { PageType } from '../types';
@@ -32,6 +33,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, setPage }) => {
     { id: 'crm', icon: <Users size={20} />, label: 'CRM' },
     { id: 'documents', icon: <Files size={20} />, label: 'Documents' },
     { id: 'tasks', icon: <CheckSquare size={20} />, label: 'Tasks' },
+    { id: 'profile', icon: <UserCircle size={20} />, label: 'My Profile' },
     { id: 'settings', icon: <Settings size={20} />, label: 'Settings' },
   ];
 

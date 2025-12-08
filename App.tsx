@@ -15,6 +15,7 @@ import CRM from './components/CRM';
 import Documents from './components/Documents';
 import Tasks from './components/Tasks';
 import Settings from './components/Settings';
+import Profile from './components/Profile';
 import StartupWizard from './components/StartupWizard';
 import Footer from './components/Footer';
 import { DataProvider, useData } from './context/DataContext';
@@ -31,7 +32,7 @@ const AppContent = () => {
     const path = window.location.pathname.substring(1); // Remove leading slash
     const validPages: PageType[] = [
       'home', 'how-it-works', 'features', 'pricing', 'login', 'signup',
-      'onboarding', 'dashboard', 'pitch-decks', 'crm', 'documents', 'tasks', 'settings'
+      'onboarding', 'dashboard', 'pitch-decks', 'crm', 'documents', 'tasks', 'settings', 'profile'
     ];
     
     if (path === '' || path === '/') return 'home';
@@ -66,6 +67,7 @@ const AppContent = () => {
     'documents', 
     'tasks', 
     'settings',
+    'profile',
     'onboarding'
   ];
 
@@ -126,6 +128,7 @@ const AppContent = () => {
       case 'documents': return <Documents />;
       case 'tasks': return <Tasks />;
       case 'settings': return <Settings />;
+      case 'profile': return <Profile />;
       default: return <Home setPage={setPage} />;
     }
   };

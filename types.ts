@@ -20,7 +20,8 @@ export type PageType =
   | 'crm'
   | 'documents'
   | 'tasks'
-  | 'settings';
+  | 'settings'
+  | 'profile';
 
 export type StartupStage = 'Idea' | 'MVP' | 'Seed' | 'Series A' | 'Growth' | 'Scale';
 

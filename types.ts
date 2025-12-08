@@ -204,6 +204,49 @@ export interface Deck {
     thumbnailUrl?: string;
 }
 
+// --- Extended User Profile Interfaces (for My Profile Screen) ---
+
+export interface UserProfileExperience {
+  id: string;
+  company: string;
+  role: string;
+  startDate: string;
+  endDate?: string;
+  current: boolean;
+  description: string;
+  logoUrl?: string;
+}
+
+export interface UserProfileEducation {
+  id: string;
+  school: string;
+  degree: string;
+  year: string;
+  logoUrl?: string;
+}
+
+export interface UserProfile {
+  id: string;
+  fullName: string;
+  headline: string;
+  location: string;
+  bio: string;
+  avatarUrl: string;
+  coverImageUrl: string;
+  email: string;
+  phone?: string;
+  socials: {
+    linkedin?: string;
+    twitter?: string;
+    github?: string;
+    website?: string;
+  };
+  experiences: UserProfileExperience[];
+  education: UserProfileEducation[];
+  skills: string[];
+  completionScore: number;
+}
+
 // Complete Schema Context for Application State
 export interface StartupDatabaseSchema {
   profile: StartupProfile | null;

@@ -9,9 +9,11 @@ import {
   Zap,
   LogOut,
   Files,
-  UserCircle
+  UserCircle,
+  LogIn
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useData } from '../context/DataContext';
 import { PageType } from '../types';
 
 interface SidebarProps {
@@ -21,11 +23,15 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ currentPage, setPage }) => {
   const { signOut } = useAuth();
+  const { profile } = useData();
 
   const handleLogout = async () => {
     await signOut();
+    localStorage.removeItem('guest_profile'); // Clear guest data on explicit logout
     setPage('home');
   };
+
+  const isGuest = profile?.userId === 'guest' || profile?.userId === 'mock';
 
   const menuItems: { id: PageType; icon: React.ReactNode; label: string }[] = [
     { id: 'dashboard', icon: <LayoutDashboard size={20} />, label: 'Dashboard' },
@@ -48,6 +54,19 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, setPage }) => {
           startupAI
         </span>
       </div>
+
+      {/* Guest Banner */}
+      {isGuest && (
+        <div className="mx-3 mt-4 p-3 bg-indigo-900/50 border border-indigo-500/30 rounded-xl text-center">
+            <p className="text-xs text-indigo-200 mb-2 font-medium">You are in Guest Mode</p>
+            <button 
+                onClick={() => setPage('signup')}
+                className="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg transition-colors"
+            >
+                Create Account
+            </button>
+        </div>
+      )}
 
       {/* Navigation */}
       <nav className="flex-1 py-6 px-3 space-y-1 overflow-y-auto">
@@ -76,13 +95,23 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, setPage }) => {
 
       {/* Footer / Logout */}
       <div className="p-4 border-t border-slate-800/50">
-        <button 
-            onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-slate-400 hover:bg-slate-800/50 hover:text-rose-400 transition-colors"
-        >
-          <LogOut size={20} />
-          <span className="font-medium">Sign Out</span>
-        </button>
+        {isGuest ? (
+            <button 
+                onClick={() => setPage('login')}
+                className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-slate-400 hover:bg-slate-800/50 hover:text-white transition-colors"
+            >
+                <LogIn size={20} />
+                <span className="font-medium">Log In</span>
+            </button>
+        ) : (
+            <button 
+                onClick={handleLogout}
+                className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-slate-400 hover:bg-slate-800/50 hover:text-rose-400 transition-colors"
+            >
+            <LogOut size={20} />
+            <span className="font-medium">Sign Out</span>
+            </button>
+        )}
       </div>
     </aside>
   );

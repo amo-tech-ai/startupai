@@ -1,5 +1,5 @@
-
 import { GoogleGenAI } from "@google/genai";
+import { cleanJson } from "../lib/utils";
 
 export const WizardService = {
   /**
@@ -41,7 +41,8 @@ export const WizardService = {
         }
       });
 
-      return response.text ? JSON.parse(response.text) : null;
+      const text = cleanJson(response.text);
+      return text ? JSON.parse(text) : null;
     } catch (error) {
       console.error("Wizard AI Context Error:", error);
       return null;
@@ -65,7 +66,8 @@ export const WizardService = {
         contents: prompt,
         config: { responseMimeType: 'application/json' }
       });
-      return response.text ? JSON.parse(response.text).refined : text;
+      const cleaned = cleanJson(response.text);
+      return cleaned ? JSON.parse(cleaned).refined : text;
     } catch (error) {
       return text;
     }
@@ -91,7 +93,8 @@ export const WizardService = {
         contents: prompt,
         config: { responseMimeType: 'application/json' }
       });
-      return response.text ? JSON.parse(response.text).bio : rawBio;
+      const cleaned = cleanJson(response.text);
+      return cleaned ? JSON.parse(cleaned).bio : rawBio;
     } catch (error) {
       return rawBio;
     }
@@ -131,7 +134,8 @@ export const WizardService = {
           thinkingConfig: { thinkingBudget: 1024 }
         }
       });
-      return response.text ? JSON.parse(response.text) : null;
+      const text = cleanJson(response.text);
+      return text ? JSON.parse(text) : null;
     } catch (error) {
       console.error("Wizard AI Business Error:", error);
       return null;
@@ -166,7 +170,8 @@ export const WizardService = {
           responseMimeType: 'application/json',
         }
       });
-      return response.text ? JSON.parse(response.text) : null;
+      const text = cleanJson(response.text);
+      return text ? JSON.parse(text) : null;
     } catch (error) {
       console.error("Valuation Error", error);
       return null;
@@ -190,7 +195,8 @@ export const WizardService = {
         contents: prompt,
         config: { responseMimeType: 'application/json' }
       });
-      return response.text ? JSON.parse(response.text).useOfFunds : [];
+      const text = cleanJson(response.text);
+      return text ? JSON.parse(text).useOfFunds : [];
     } catch (error) {
         return [];
     }
@@ -221,7 +227,8 @@ export const WizardService = {
         contents: prompt,
         config: { responseMimeType: 'application/json' }
       });
-      return response.text ? JSON.parse(response.text).summary : null;
+      const text = cleanJson(response.text);
+      return text ? JSON.parse(text).summary : null;
     } catch (error) {
       return null;
     }

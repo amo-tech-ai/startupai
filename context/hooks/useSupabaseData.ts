@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 import { initialDatabaseState } from '../../data/mockDatabase';
@@ -20,7 +19,7 @@ import { DeckService } from '../../services/supabase/decks';
 import { CrmService } from '../../services/supabase/crm';
 import { DocumentService } from '../../services/supabase/documents';
 import { DashboardService } from '../../services/supabase/dashboard';
-import { mapDealFromDB, mapTaskFromDB, mapActivityFromDB } from '../../lib/mappers';
+import { mapDealFromDB } from '../../lib/mappers';
 
 export const useSupabaseData = () => {
   // Local State (Optimistic UI) - Initialize with mocks for immediate feedback
@@ -34,147 +33,210 @@ export const useSupabaseData = () => {
   const [decks, setDecks] = useState<Deck[]>(initialDatabaseState.decks);
   const [deals, setDeals] = useState<Deal[]>(initialDatabaseState.deals); 
   const [docs, setDocs] = useState<InvestorDoc[]>(initialDatabaseState.docs);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   
   // Realtime Channel Ref for safe cleanup
   const realtimeChannelRef = useRef<any>(null);
 
-  // Helper to reset state on logout
-  const clearData = () => {
-      setProfile(null);
-      setUserProfile(null);
-      setFounders([]);
-      setMetrics([]);
-      setInsights([]);
-      setActivities([]);
-      setTasks([]);
-      setDecks([]);
-      setDeals([]);
-      setDocs([]);
+  // Helper to load guest data from LS
+  const loadGuestData = useCallback(() => {
+      console.log("Loading guest data...");
+      const storedGuest = localStorage.getItem('guest_profile');
+      if (storedGuest) {
+          try {
+              setProfile(JSON.parse(storedGuest));
+              const f = localStorage.getItem('guest_founders'); if(f) setFounders(JSON.parse(f));
+              const m = localStorage.getItem('guest_metrics'); if(m) setMetrics(JSON.parse(m));
+              const i = localStorage.getItem('guest_insights'); if(i) setInsights(JSON.parse(i));
+              const a = localStorage.getItem('guest_activities'); if(a) setActivities(JSON.parse(a));
+              const t = localStorage.getItem('guest_tasks'); if(t) setTasks(JSON.parse(t));
+              const d = localStorage.getItem('guest_decks'); if(d) setDecks(JSON.parse(d));
+              const dl = localStorage.getItem('guest_deals'); if(dl) setDeals(JSON.parse(dl));
+              const do_ = localStorage.getItem('guest_docs'); if(do_) setDocs(JSON.parse(do_));
+          } catch(e) {
+              console.error("Failed to load guest data", e);
+          }
+      } else {
+          // No guest profile, use initial mocks (Demo Mode)
+          // Mocks are already set by default state
+      }
+  }, []);
+
+  const migrateGuestData = async (userId: string, guestProfile: StartupProfile) => {
+      console.log("Migrating guest data to user account...");
+      try {
+          // 1. Create Profile
+          const newProfile = await ProfileService.create(guestProfile, userId);
+          setProfile(newProfile); // Update UI with real ID
+
+          const startupId = newProfile.id;
+
+          // 2. Migrate Children (One-way sync)
+          // Founders
+          const lFounders = localStorage.getItem('guest_founders');
+          if (lFounders) await ProfileService.syncFounders(startupId, JSON.parse(lFounders));
+          
+          // Decks
+          const lDecks = localStorage.getItem('guest_decks');
+          if (lDecks) {
+              const decks: Deck[] = JSON.parse(lDecks);
+              for (const deck of decks) {
+                  await DeckService.create(deck, startupId);
+              }
+          }
+
+          // Deals
+          const lDeals = localStorage.getItem('guest_deals');
+          if (lDeals) {
+              const deals: Deal[] = JSON.parse(lDeals);
+              for (const deal of deals) await CrmService.createDeal(deal, startupId);
+          }
+
+          // Tasks
+          const lTasks = localStorage.getItem('guest_tasks');
+          if (lTasks) {
+              const tasks: Task[] = JSON.parse(lTasks);
+              for (const task of tasks) await CrmService.createTask(task, startupId);
+          }
+
+          // Docs
+          const lDocs = localStorage.getItem('guest_docs');
+          if (lDocs) {
+              const docs: InvestorDoc[] = JSON.parse(lDocs);
+              for (const doc of docs) await DocumentService.create(doc, startupId, userId);
+          }
+
+          // Clear Guest Data
+          localStorage.removeItem('guest_profile');
+          localStorage.removeItem('guest_founders');
+          localStorage.removeItem('guest_decks');
+          localStorage.removeItem('guest_deals');
+          localStorage.removeItem('guest_tasks');
+          localStorage.removeItem('guest_docs');
+          localStorage.removeItem('guest_metrics');
+          localStorage.removeItem('guest_insights');
+          localStorage.removeItem('guest_activities');
+
+          console.log("Migration complete.");
+          return true;
+      } catch (e) {
+          console.error("Migration failed", e);
+          return false;
+      }
   };
 
   const loadData = useCallback(async () => {
-      if (!supabase) return;
-      
       setIsLoading(true);
       try {
-          const { data: { user } } = await supabase.auth.getUser();
-          
-          if (!user) {
-             // If no user is logged in, we shouldn't show stale data or mocks in a production app context
-             // but keeping mocks for demo/guest mode might be desired. 
-             // Here we stick to clearing if specifically checking auth.
-             // However, for the "guest wizard" to work, we handle that via the createStartup return.
-             // If the app expects to be in "demo mode" when logged out, we should re-apply initialDatabaseState.
-             // For now, we assume authenticated users need real data.
-             setIsLoading(false);
-             return; 
-          }
-
-          // 1. Fetch User Profile
-          const loadedUserProfile = await UserService.getProfile(user.id);
-          if (loadedUserProfile) {
-            setUserProfile(loadedUserProfile);
-          }
-
-          // 2. Fetch Startup Profile & Founders
-          const { profile: p, founders: f } = await ProfileService.getByUserId(user.id);
-          
-          if (p) {
-              // USER HAS A PROFILE -> Load everything
-              setProfile(p);
-              setFounders(f);
+          // 1. Try Supabase if available
+          if (supabase) {
+              const { data: { user } } = await supabase.auth.getUser();
               
-              // 3. Fetch Dependent Data (Parallel with resilience)
-              const results = await Promise.allSettled([
-                  DeckService.getAll(p.id),
-                  CrmService.getDeals(p.id),
-                  DocumentService.getAll(p.id),
-                  CrmService.getTasks(p.id),
-                  DashboardService.getMetricsHistory(p.id),
-                  DashboardService.getInsights(p.id),
-                  DashboardService.getActivities(p.id)
-              ]);
+              if (user) {
+                  // LOGGED IN USER
+                  
+                  // A. Fetch User Profile
+                  const loadedUserProfile = await UserService.getProfile(user.id);
+                  if (loadedUserProfile) setUserProfile(loadedUserProfile);
 
-              // Helper to safely extract data from allSettled
-              const unwrap = <T,>(result: PromiseSettledResult<T>, fallback: T): T => 
-                  result.status === 'fulfilled' ? result.value : fallback;
+                  // B. Fetch Startup Profile
+                  const { profile: p, founders: f } = await ProfileService.getByUserId(user.id);
+                  
+                  if (p) {
+                      // HAS PROFILE -> Load normally
+                      setProfile(p);
+                      setFounders(f);
+                      
+                      // Load Relations in parallel
+                      const results = await Promise.allSettled([
+                          DeckService.getAll(p.id),
+                          CrmService.getDeals(p.id),
+                          DocumentService.getAll(p.id),
+                          CrmService.getTasks(p.id),
+                          DashboardService.getMetricsHistory(p.id),
+                          DashboardService.getInsights(p.id),
+                          DashboardService.getActivities(p.id)
+                      ]);
 
-              setDecks(unwrap(results[0], []));
-              setDeals(unwrap(results[1], []));
-              setDocs(unwrap(results[2], []));
-              setTasks(unwrap(results[3], []));
-              setMetrics(unwrap(results[4], []));
-              setInsights(unwrap(results[5], []));
-              setActivities(unwrap(results[6], []));
+                      const unwrap = <T,>(result: PromiseSettledResult<T>, fallback: T): T => 
+                          result.status === 'fulfilled' ? result.value : fallback;
 
-              // 4. Setup Realtime Subscriptions
-              if (realtimeChannelRef.current) {
-                  supabase.removeChannel(realtimeChannelRef.current);
+                      setDecks(unwrap(results[0], []));
+                      setDeals(unwrap(results[1], []));
+                      setDocs(unwrap(results[2], []));
+                      setTasks(unwrap(results[3], []));
+                      setMetrics(unwrap(results[4], []));
+                      setInsights(unwrap(results[5], []));
+                      setActivities(unwrap(results[6], []));
+
+                      // Realtime Setup
+                      if (realtimeChannelRef.current) supabase.removeChannel(realtimeChannelRef.current);
+                      const channel = supabase.channel('public-db-changes')
+                        .on('postgres_changes', { event: '*', schema: 'public', table: 'crm_deals', filter: `startup_id=eq.${p.id}` }, (payload: any) => {
+                            if (payload.eventType === 'INSERT') setDeals(prev => [...prev, mapDealFromDB(payload.new)]);
+                            else if (payload.eventType === 'UPDATE') setDeals(prev => prev.map(d => d.id === payload.new.id ? mapDealFromDB(payload.new) : d));
+                            else if (payload.eventType === 'DELETE') setDeals(prev => prev.filter(d => d.id !== payload.old.id));
+                        })
+                        .subscribe();
+                      realtimeChannelRef.current = channel;
+
+                      setIsLoading(false);
+                      return; // Done loading real user data
+                  } else {
+                      // AUTHENTICATED BUT NO REMOTE PROFILE
+                      // CHECK FOR GUEST DATA TO MIGRATE
+                      const guestProfileStr = localStorage.getItem('guest_profile');
+                      if (guestProfileStr) {
+                          const guestProfile = JSON.parse(guestProfileStr);
+                          await migrateGuestData(user.id, guestProfile);
+                          // Recursive call to reload the migrated data
+                          loadData();
+                          return;
+                      } else {
+                          // Truly new user, clear everything for fresh onboarding
+                          setProfile(null);
+                          setUserProfile(null);
+                          setFounders([]);
+                          setMetrics([]);
+                          setInsights([]);
+                          setActivities([]);
+                          setTasks([]);
+                          setDecks([]);
+                          setDeals([]);
+                          setDocs([]);
+                      }
+                  }
               }
-
-              const channel = supabase.channel('public-db-changes')
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'crm_deals', filter: `startup_id=eq.${p.id}` }, (payload: any) => {
-                    if (payload.eventType === 'INSERT') {
-                        setDeals(prev => [...prev, mapDealFromDB(payload.new)]);
-                    } else if (payload.eventType === 'UPDATE') {
-                        setDeals(prev => prev.map(d => d.id === payload.new.id ? mapDealFromDB(payload.new) : d));
-                    } else if (payload.eventType === 'DELETE') {
-                        setDeals(prev => prev.filter(d => d.id !== payload.old.id));
-                    }
-                })
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks', filter: `startup_id=eq.${p.id}` }, (payload: any) => {
-                    if (payload.eventType === 'INSERT') {
-                        setTasks(prev => [mapTaskFromDB(payload.new), ...prev]);
-                    } else if (payload.eventType === 'UPDATE') {
-                        setTasks(prev => prev.map(t => t.id === payload.new.id ? mapTaskFromDB(payload.new) : t));
-                    } else if (payload.eventType === 'DELETE') {
-                        setTasks(prev => prev.filter(t => t.id !== payload.old.id));
-                    }
-                })
-                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'crm_activities', filter: `startup_id=eq.${p.id}` }, (payload: any) => {
-                    setActivities(prev => [mapActivityFromDB(payload.new), ...prev]);
-                })
-                .subscribe();
-              
-              realtimeChannelRef.current = channel;
-          } else {
-              // AUTHENTICATED BUT NO STARTUP PROFILE -> Clear Mocks to trigger Onboarding Wizard
-              clearData();
           }
+          
+          // 2. Fallback: No User or No Supabase -> Load Guest Data
+          loadGuestData();
+
       } catch (e) {
           console.error("Data Fetch Error:", e);
       } finally {
           setIsLoading(false);
       }
-  }, []);
+  }, [loadGuestData]);
 
   useEffect(() => {
-    if (!supabase) return;
-
-    // Initial Load
     loadData();
-
-    // Auth State Listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-        if (event === 'SIGNED_IN') {
-            loadData();
-        } else if (event === 'SIGNED_OUT') {
-            clearData();
-            if (realtimeChannelRef.current) {
-                supabase.removeChannel(realtimeChannelRef.current);
-                realtimeChannelRef.current = null;
+    
+    // Only set up auth listener if supabase is initialized
+    if (supabase) {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event: string) => {
+            if (event === 'SIGNED_IN') loadData();
+            else if (event === 'SIGNED_OUT') {
+                setProfile(null);
+                loadGuestData(); // Revert to guest data or mocks on logout
             }
-        }
-    });
-
-    return () => {
-        subscription.unsubscribe();
-        if (realtimeChannelRef.current) {
-            supabase.removeChannel(realtimeChannelRef.current);
-        }
-    };
-  }, [loadData]);
+        });
+        return () => {
+            subscription.unsubscribe();
+            if (realtimeChannelRef.current) supabase.removeChannel(realtimeChannelRef.current);
+        };
+    }
+  }, [loadData, loadGuestData]);
 
   return {
     profile, setProfile,

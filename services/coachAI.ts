@@ -1,6 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import { AICoachInsight } from "../types";
-import { generateShortId } from "../lib/utils";
+import { generateShortId, cleanJson } from "../lib/utils";
 
 export const CoachAI = {
   /**
@@ -54,7 +54,7 @@ export const CoachAI = {
             config: { responseMimeType: 'application/json' }
         });
 
-        const text = response.text;
+        const text = cleanJson(response.text);
         if (text) {
             const rawInsights = JSON.parse(text);
             return rawInsights.map((i: any) => ({

@@ -31,3 +31,17 @@ export function generateUUID(): string {
 export function generateShortId(): string {
   return Math.random().toString(36).substring(2, 9);
 }
+
+/**
+ * Cleans markdown code blocks from JSON strings to prevent parsing errors.
+ * Handles ```json, ```, and standard JSON strings.
+ */
+export function cleanJson(text: string | undefined): string {
+  if (!text) return "{}";
+  let cleaned = text.trim();
+  // Remove markdown code blocks
+  if (cleaned.startsWith('```')) {
+    cleaned = cleaned.replace(/^```(json)?\n?/, '').replace(/\n?```$/, '');
+  }
+  return cleaned;
+}

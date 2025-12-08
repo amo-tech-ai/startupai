@@ -1,6 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import { Task } from "../types";
-import { generateUUID } from "../lib/utils";
+import { generateUUID, cleanJson } from "../lib/utils";
 
 export const TaskAI = {
   /**
@@ -33,7 +33,7 @@ export const TaskAI = {
             config: { responseMimeType: 'application/json' }
         });
 
-        const text = response.text;
+        const text = cleanJson(response.text);
         if (text) {
             const rawTasks = JSON.parse(text);
             return rawTasks.map((t: any) => ({

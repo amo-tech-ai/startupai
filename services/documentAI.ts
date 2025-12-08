@@ -1,6 +1,6 @@
-
 import { GoogleGenAI } from "@google/genai";
 import { DocSection } from '../types';
+import { cleanJson } from "../lib/utils";
 
 export const DocumentAI = {
   /**
@@ -59,7 +59,7 @@ export const DocumentAI = {
         config: { responseMimeType: 'application/json' }
       });
 
-      const text = response.text;
+      const text = cleanJson(response.text);
       if (text) {
         const data = JSON.parse(text);
         if (data.sections && Array.isArray(data.sections)) {

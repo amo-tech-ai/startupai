@@ -40,6 +40,15 @@ export const useAppActions = ({
 }: AppActionsProps) => {
   const { error: toastError } = useToast();
 
+  const isGuestMode = () => !profile || profile.userId === 'guest' || profile.userId === 'mock';
+
+  // Helper to persist guest data
+  const persistGuestData = (key: string, data: any) => {
+    if (isGuestMode()) {
+      localStorage.setItem(key, JSON.stringify(data));
+    }
+  };
+
   const uploadFile = async (file: File, bucket: string) => {
       try {
           const url = await AssetService.uploadFile(file, bucket);
@@ -51,40 +60,52 @@ export const useAppActions = ({
   };
 
   const createStartup = async (data: Partial<StartupProfile>): Promise<string | null> => {
-    // If Supabase isn't enabled or configured, fallback to mock immediately
-    if (!supabase) {
+    let isGuest = !supabase;
+    let userId = 'mock';
+
+    if (supabase) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            isGuest = true;
+            userId = 'guest';
+        } else {
+            userId = user.id;
+        }
+    }
+
+    if (isGuest) {
+        console.log("Creating local guest profile.");
         const id = generateShortId();
-        setProfile({ ...data, id, userId: 'mock' } as StartupProfile);
+        const guestProfile = { ...data, id, userId: 'guest' } as StartupProfile;
+        setProfile(guestProfile);
+        persistGuestData('guest_profile', guestProfile);
         return id;
     }
     
     try {
-        const { data: { user } } = await supabase.auth.getUser();
-        
-        // Fallback to local state if no user (Unauthenticated Wizard Flow)
-        if (!user) {
-            console.log("No authenticated user found. Creating local profile.");
-            const id = generateShortId();
-            setProfile({ ...data, id, userId: 'guest' } as StartupProfile);
-            return id;
-        }
-
-        // Authenticated creation
-        const newProfile = await ProfileService.create(data, user.id);
+        const newProfile = await ProfileService.create(data, userId);
         setProfile(newProfile);
         return newProfile.id;
     } catch (e) {
         console.error("Create Profile Error:", e);
-        // Fallback even on error to allow UI to proceed
         const id = generateShortId();
-        setProfile({ ...data, id, userId: 'guest' } as StartupProfile);
+        const fallbackProfile = { ...data, id, userId: 'guest' } as StartupProfile;
+        setProfile(fallbackProfile);
+        persistGuestData('guest_profile', fallbackProfile);
         return id;
     }
   };
 
   const updateProfile = async (data: Partial<StartupProfile>) => {
-    setProfile(prev => prev ? { ...prev, ...data, updatedAt: new Date().toISOString() } : null);
-    if (profile?.id && profile.userId !== 'guest') {
+    setProfile(prev => {
+        const updated = prev ? { ...prev, ...data, updatedAt: new Date().toISOString() } : null;
+        if (updated && (updated.userId === 'guest' || updated.userId === 'mock')) {
+            localStorage.setItem('guest_profile', JSON.stringify(updated));
+        }
+        return updated;
+    });
+
+    if (profile?.id && !isGuestMode()) {
         await ProfileService.update(profile.id, data);
     }
   };
@@ -98,25 +119,32 @@ export const useAppActions = ({
 
   const setFoundersAction = async (foundersData: Founder[]) => {
       setFounders(foundersData);
+      persistGuestData('guest_founders', foundersData);
       
-      // Fix: Use the startupId from the data payload if profile.id isn't available yet (e.g. during wizard flow)
-      const targetStartupId = profile?.id || (foundersData.length > 0 ? foundersData[0].startupId : null);
-      
-      if (targetStartupId && targetStartupId !== 'temp' && targetStartupId !== 'guest') {
+      const targetStartupId = profile?.id;
+      if (targetStartupId && !isGuestMode()) {
           await ProfileService.syncFounders(targetStartupId, foundersData);
       }
   };
 
   const addFounder = (founder: Founder) => {
-      setFounders(prev => [...prev, founder]);
-      if (profile?.id && profile.userId !== 'guest') {
+      setFounders(prev => {
+          const newState = [...prev, founder];
+          persistGuestData('guest_founders', newState);
+          return newState;
+      });
+      if (profile?.id && !isGuestMode()) {
           ProfileService.syncFounders(profile.id, [...founders, founder]);
       }
   };
 
   const removeFounder = (id: string) => {
-      setFounders(prev => prev.filter(f => f.id !== id));
-      if (profile?.id && profile.userId !== 'guest') {
+      setFounders(prev => {
+          const newState = prev.filter(f => f.id !== id);
+          persistGuestData('guest_founders', newState);
+          return newState;
+      });
+      if (profile?.id && !isGuestMode()) {
           ProfileService.deleteFounder(id);
       }
   };
@@ -131,9 +159,10 @@ export const useAppActions = ({
         const last = prev[prev.length - 1];
         const lastDate = last?.period?.split('T')[0];
         
+        let newState;
         if (lastDate === today) {
             const updated = { ...last, ...data, recordedAt: new Date().toISOString() };
-            return [...prev.slice(0, -1), updated];
+            newState = [...prev.slice(0, -1), updated];
         } else {
             const newSnapshot = { 
                 id: generateShortId(),
@@ -147,25 +176,32 @@ export const useAppActions = ({
                 runwayMonths: data.runwayMonths || (last?.runwayMonths || 0),
                 recordedAt: new Date().toISOString()
             };
-            return [...prev, newSnapshot];
+            newState = [...prev, newSnapshot];
         }
+        persistGuestData('guest_metrics', newState);
+        return newState;
     });
     
-    if (targetStartupId !== 'temp' && targetStartupId !== 'guest') {
+    if (targetStartupId !== 'temp' && !isGuestMode()) {
         DashboardService.updateMetrics(data, targetStartupId);
     }
   };
 
   const addInsight = (insight: AICoachInsight) => {
-      setInsights(prev => [insight, ...prev]);
-      if (profile?.id && profile.userId !== 'guest') {
+      setInsights(prev => {
+          const newState = [insight, ...prev];
+          persistGuestData('guest_insights', newState);
+          return newState;
+      });
+      if (profile?.id && !isGuestMode()) {
           DashboardService.saveInsights([insight], profile.id);
       }
   };
   
   const setInsightsHandler = (newInsights: AICoachInsight[]) => {
       setInsights(newInsights);
-      if (profile?.id && profile.userId !== 'guest') {
+      persistGuestData('guest_insights', newInsights);
+      if (profile?.id && !isGuestMode()) {
           DashboardService.saveInsights(newInsights, profile.id);
       }
   };
@@ -177,9 +213,13 @@ export const useAppActions = ({
         startupId: profile?.id || '', 
         timestamp: new Date().toISOString() 
     };
-    setActivities(prev => [newActivity, ...prev]);
+    setActivities(prev => {
+        const newState = [newActivity, ...prev];
+        persistGuestData('guest_activities', newState);
+        return newState;
+    });
     
-    if (profile?.id && profile.userId !== 'guest') {
+    if (profile?.id && !isGuestMode()) {
         DashboardService.logActivity(data, profile.id);
     }
   };
@@ -188,12 +228,16 @@ export const useAppActions = ({
   const addDeck = async (data: Omit<Deck, 'id' | 'startupId'>) => {
       const tempId = generateShortId();
       const newDeck: Deck = { ...data, id: tempId, startupId: profile?.id || 'temp' };
-      setDecks(prev => [newDeck, ...prev]); 
+      
+      setDecks(prev => {
+          const newState = [newDeck, ...prev];
+          persistGuestData('guest_decks', newState);
+          return newState;
+      });
 
-      if (profile?.id && profile.userId !== 'guest') {
+      if (profile?.id && !isGuestMode()) {
           try {
               const realDeck = await DeckService.create(data, profile.id);
-              // Replace optimistic deck with real one to get DB ID
               setDecks(prev => prev.map(d => d.id === tempId ? realDeck : d));
           } catch (e) {
               console.error(e);
@@ -203,8 +247,12 @@ export const useAppActions = ({
   };
 
   const updateDeck = async (id: string, updates: Partial<Deck>) => {
-      setDecks(prev => prev.map(d => d.id === id ? { ...d, ...updates, updatedAt: new Date().toISOString() } : d));
-      if (profile?.id && profile.userId !== 'guest') {
+      setDecks(prev => {
+          const newState = prev.map(d => d.id === id ? { ...d, ...updates, updatedAt: new Date().toISOString() } : d);
+          persistGuestData('guest_decks', newState);
+          return newState;
+      });
+      if (profile?.id && !isGuestMode()) {
           await DeckService.update(id, updates);
       }
   };
@@ -212,9 +260,15 @@ export const useAppActions = ({
   // --- CRM ---
   const addDeal = async (data: Omit<Deal, 'id' | 'startupId'>) => {
       const tempId = generateShortId();
-      setDeals(prev => [...prev, { ...data, id: tempId, startupId: profile?.id || 'temp' }]);
+      const newDeal = { ...data, id: tempId, startupId: profile?.id || 'temp' };
       
-      if (profile?.id && profile.userId !== 'guest') {
+      setDeals(prev => {
+          const newState = [...prev, newDeal];
+          persistGuestData('guest_deals', newState);
+          return newState;
+      });
+      
+      if (profile?.id && !isGuestMode()) {
           try {
               const realId = await CrmService.createDeal(data, profile.id);
               setDeals(prev => prev.map(d => d.id === tempId ? { ...d, id: realId } : d));
@@ -223,8 +277,12 @@ export const useAppActions = ({
   };
 
   const updateDeal = async (id: string, updates: Partial<Deal>) => {
-      setDeals(prev => prev.map(d => d.id === id ? { ...d, ...updates } : d));
-      if (profile?.id && profile.userId !== 'guest') {
+      setDeals(prev => {
+          const newState = prev.map(d => d.id === id ? { ...d, ...updates } : d);
+          persistGuestData('guest_deals', newState);
+          return newState;
+      });
+      if (profile?.id && !isGuestMode()) {
           await CrmService.updateDeal(id, updates);
       }
   };
@@ -232,27 +290,47 @@ export const useAppActions = ({
   // --- TASKS ---
   const addTask = (data: Omit<Task, 'id' | 'startupId'>) => {
       const tempId = generateShortId();
-      setTasks(prev => [{...data, id: tempId, startupId: profile?.id||'temp'}, ...prev]);
-      if(profile?.id && profile.userId !== 'guest') CrmService.createTask(data, profile.id);
+      const newTask = { ...data, id: tempId, startupId: profile?.id || 'temp' };
+      
+      setTasks(prev => {
+          const newState = [newTask, ...prev];
+          persistGuestData('guest_tasks', newState);
+          return newState;
+      });
+      
+      if(profile?.id && !isGuestMode()) CrmService.createTask(data, profile.id);
   };
 
   const updateTask = (id: string, updates: Partial<Task>) => {
-      setTasks(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
-      if(profile?.id && profile.userId !== 'guest') CrmService.updateTask(id, updates);
+      setTasks(prev => {
+          const newState = prev.map(t => t.id === id ? { ...t, ...updates } : t);
+          persistGuestData('guest_tasks', newState);
+          return newState;
+      });
+      if(profile?.id && !isGuestMode()) CrmService.updateTask(id, updates);
   };
 
   const deleteTask = (id: string) => {
-      setTasks(prev => prev.filter(t => t.id !== id));
-      if(profile?.id && profile.userId !== 'guest') CrmService.deleteTask(id);
+      setTasks(prev => {
+          const newState = prev.filter(t => t.id !== id);
+          persistGuestData('guest_tasks', newState);
+          return newState;
+      });
+      if(profile?.id && !isGuestMode()) CrmService.deleteTask(id);
   };
 
   // --- DOCS ---
   const addDoc = async (data: Omit<InvestorDoc, 'id' | 'startupId' | 'updatedAt'>) => {
       const tempId = generateShortId();
       const newDoc = { ...data, id: tempId, startupId: profile?.id || 'temp', updatedAt: new Date().toISOString() };
-      setDocs(prev => [newDoc, ...prev]);
+      
+      setDocs(prev => {
+          const newState = [newDoc, ...prev];
+          persistGuestData('guest_docs', newState);
+          return newState;
+      });
 
-      if (profile?.id && supabase && profile.userId !== 'guest') {
+      if (profile?.id && supabase && !isGuestMode()) {
           try {
               const { data: { user } } = await supabase.auth.getUser();
               if(user) {
@@ -266,15 +344,23 @@ export const useAppActions = ({
   };
 
   const updateDoc = async (id: string, updates: Partial<InvestorDoc>) => {
-      setDocs(prev => prev.map(d => d.id === id ? { ...d, ...updates, updatedAt: new Date().toISOString() } : d));
-      if (profile?.id && profile.userId !== 'guest') {
+      setDocs(prev => {
+          const newState = prev.map(d => d.id === id ? { ...d, ...updates, updatedAt: new Date().toISOString() } : d);
+          persistGuestData('guest_docs', newState);
+          return newState;
+      });
+      if (profile?.id && !isGuestMode()) {
           await DocumentService.update(id, updates);
       }
   };
 
   const deleteDoc = async (id: string) => {
-      setDocs(prev => prev.filter(d => d.id !== id));
-      if (profile?.id && profile.userId !== 'guest') {
+      setDocs(prev => {
+          const newState = prev.filter(d => d.id !== id);
+          persistGuestData('guest_docs', newState);
+          return newState;
+      });
+      if (profile?.id && !isGuestMode()) {
           await DocumentService.delete(id);
       }
   };

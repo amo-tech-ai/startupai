@@ -60,7 +60,6 @@ const AppContent = () => {
   }, []);
 
   // Define which pages are part of the "App" (require sidebar + auth layout)
-  // Removed 'onboarding' to allow public access
   const appPages: PageType[] = [
     'dashboard', 
     'pitch-decks', 
@@ -74,30 +73,38 @@ const AppContent = () => {
   const isAppPage = appPages.includes(page);
   const isWizard = page === 'onboarding';
 
+  // Check if user is in "Guest Mode" (has a profile but no auth session)
+  const isGuestUser = !user && profile && (profile.userId === 'guest' || profile.userId === 'mock');
+
   // Auth & Data Redirection Logic
   useEffect(() => {
     if (!authLoading && !dataLoading) {
       if (user) {
-        // 1. If logged in and on public auth pages, go to dashboard (or onboarding)
+        // 1. Logged in user on public auth pages -> Go to dashboard
         if (page === 'login' || page === 'signup') {
           setPage(profile ? 'dashboard' : 'onboarding');
           return;
         }
 
-        // 2. Force Onboarding: If user has no profile data, redirect to wizard
-        if (!profile && isAppPage) {
+        // 2. Logged in user without profile -> Force Onboarding (unless already there)
+        if (!profile && isAppPage && page !== 'onboarding') {
            setPage('onboarding');
            return;
         }
 
       } else {
-        // 4. If not logged in and on protected page, go to login
+        // 3. Not logged in
         if (isAppPage && page !== 'home') { 
+           // Allow access if they are a valid Guest (have a profile in memory/storage)
+           if (isGuestUser) {
+             return;
+           }
+           // Otherwise redirect to login
            setPage('login');
         }
       }
     }
-  }, [user, profile, authLoading, dataLoading, page, isAppPage]);
+  }, [user, profile, authLoading, dataLoading, page, isAppPage, isGuestUser]);
 
   if (authLoading || (user && dataLoading)) {
     return (
@@ -135,7 +142,8 @@ const AppContent = () => {
     )
   }
 
-  if (isAppPage && user) {
+  // Render App Layout for Logged In User OR Guest User
+  if (isAppPage && (user || isGuestUser)) {
     return (
       <div className="flex min-h-screen bg-slate-50 font-sans text-slate-900">
         <Sidebar currentPage={page} setPage={setPage} />

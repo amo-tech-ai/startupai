@@ -1,7 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 import { Deck, Slide, StartupProfile } from '../types';
 import { supabase } from '../lib/supabaseClient';
-import { generateUUID } from "../lib/utils";
+import { generateUUID, cleanJson } from "../lib/utils";
 
 /**
  * EDGE FUNCTION SERVICE
@@ -88,7 +88,7 @@ export async function generateDeckEdge(
         config: { responseMimeType: 'application/json' }
     });
 
-    const text = response.text;
+    const text = cleanJson(response.text);
     if (!text) return null;
 
     const slides: Slide[] = JSON.parse(text).map((s: any) => ({
@@ -149,7 +149,7 @@ export async function slideAIEdge(
             contents: prompt,
             config: { responseMimeType: 'application/json' }
         });
-        const text = response.text;
+        const text = cleanJson(response.text);
         return text ? JSON.parse(text) : null;
     } catch (e) {
         console.error("Edge Function Error (slide-ai):", e);

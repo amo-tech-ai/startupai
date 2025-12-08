@@ -28,43 +28,50 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check if Supabase is configured or if we have a mock session
-    if (!supabase) {
-        // Try to restore mock session from local storage for dev persistence
+    const initAuth = async () => {
+        // 1. Try to recover mock session first (Dev Override)
         const mockSession = localStorage.getItem('mock_session');
         if (mockSession) {
             try {
                 const parsedSession = JSON.parse(mockSession);
                 setSession(parsedSession);
                 setUser(parsedSession.user);
+                setLoading(false);
+                return; // Use mock session and stop
             } catch (e) {
                 console.error("Failed to parse mock session", e);
                 localStorage.removeItem('mock_session');
             }
         }
-        setLoading(false);
-        return;
-    }
 
-    // Initial session check
-    supabase.auth.getSession().then(({ data }: any) => {
-      setSession(data.session);
-      setUser(data.session?.user ?? null);
-      setLoading(false);
-    });
-
-    // Listen for auth changes
-    const { data } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    return () => {
-      if (data && data.subscription) {
-        data.subscription.unsubscribe();
-      }
+        // 2. If no mock session, try Supabase if configured
+        if (supabase) {
+            const { data } = await supabase.auth.getSession();
+            setSession(data.session);
+            setUser(data.session?.user ?? null);
+            
+            // Listen for auth changes
+            const { data: authListener } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
+                // Only update if we aren't using a mock session
+                if (!localStorage.getItem('mock_session')) {
+                    setSession(session);
+                    setUser(session?.user ?? null);
+                }
+            });
+            
+            setLoading(false);
+            
+            return () => {
+                if (authListener && authListener.subscription) {
+                    authListener.subscription.unsubscribe();
+                }
+            };
+        } else {
+            setLoading(false);
+        }
     };
+
+    initAuth();
   }, []);
 
   const signOut = async () => {
@@ -83,7 +90,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const mockUser = { 
         id: 'debug-user', 
         email: 'demo@startupai.com', 
-        user_metadata: { full_name: 'Demo Founder', avatar_url: 'https://picsum.photos/200' },
+        user_metadata: { full_name: 'Demo Founder', avatar_url: 'https://ui-avatars.com/api/?name=Demo+Founder&background=6366f1&color=fff' },
         aud: 'authenticated',
         role: 'authenticated'
     };

@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
-import { StartupProfile, MetricsSnapshot, AICoachInsight, Founder, Activity, Task, Deck, Deal, InvestorDoc } from '../types';
+import { StartupProfile, MetricsSnapshot, AICoachInsight, Founder, Activity, Task, Deck, Deal, InvestorDoc, UserProfile } from '../types';
 import { initialDatabaseState } from '../data/mockDatabase';
 import { supabase } from '../lib/supabaseClient';
 import { useToast } from './ToastContext';
@@ -17,6 +17,7 @@ import { DashboardService } from '../services/supabase/dashboard';
 
 interface DataContextType {
   profile: StartupProfile | null;
+  userProfile: UserProfile | null;
   founders: Founder[];
   metrics: MetricsSnapshot[];
   insights: AICoachInsight[];
@@ -27,6 +28,7 @@ interface DataContextType {
   docs: InvestorDoc[];
   createStartup: (data: Partial<StartupProfile>) => Promise<string | null>;
   updateProfile: (data: Partial<StartupProfile>) => Promise<void>;
+  updateUserProfile: (data: Partial<UserProfile>) => void;
   setFounders: (founders: Founder[]) => void;
   addFounder: (founder: Founder) => void;
   removeFounder: (id: string) => void;
@@ -53,6 +55,7 @@ const DataContext = createContext<DataContextType | undefined>(undefined);
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Local State (Optimistic UI)
   const [profile, setProfile] = useState<StartupProfile | null>(initialDatabaseState.profile);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(initialDatabaseState.userProfile);
   const [founders, setFoundersState] = useState<Founder[]>(initialDatabaseState.founders);
   const [metrics, setMetrics] = useState<MetricsSnapshot[]>(initialDatabaseState.metrics);
   const [insights, setInsights] = useState<AICoachInsight[]>(initialDatabaseState.insights);
@@ -203,6 +206,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (profile?.id) {
         await ProfileService.update(profile.id, data);
     }
+  };
+
+  const updateUserProfile = (data: Partial<UserProfile>) => {
+    setUserProfile(prev => prev ? { ...prev, ...data } : null);
+    // In production, we would sync this to Supabase 'profiles' table here
   };
 
   const setFounders = async (foundersData: Founder[]) => {
@@ -379,8 +387,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   return (
     <DataContext.Provider value={{ 
-      profile, founders, metrics, insights, activities, tasks, decks, deals, docs,
-      createStartup, updateProfile, setFounders, addFounder, removeFounder,
+      profile, userProfile, founders, metrics, insights, activities, tasks, decks, deals, docs,
+      createStartup, updateProfile, updateUserProfile, setFounders, addFounder, removeFounder,
       updateMetrics, setInsights: setInsightsHandler, addInsight, addActivity, 
       addTask, updateTask, deleteTask,
       addDeck, updateDeck,

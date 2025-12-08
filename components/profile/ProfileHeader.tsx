@@ -1,7 +1,9 @@
 
-import React, { useState } from 'react';
-import { Camera, MapPin, Link as LinkIcon, RefreshCw, Edit3, CheckCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Camera, MapPin, Link as LinkIcon, RefreshCw, Edit3, CheckCircle, X } from 'lucide-react';
 import { UserProfile } from '../../types';
+import { useToast } from '../../context/ToastContext';
+import { EnrichmentService } from '../../services/enrichment';
 
 interface ProfileHeaderProps {
   user: UserProfile;
@@ -12,14 +14,64 @@ interface ProfileHeaderProps {
 
 export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ user, isEditing, onToggleEdit, onUpdate }) => {
   const [isSyncing, setIsSyncing] = useState(false);
+  const { success, error, info } = useToast();
+  
+  // Local state for editing to avoid global re-renders on every keystroke
+  const [editData, setEditData] = useState({
+    fullName: user.fullName,
+    headline: user.headline,
+    location: user.location,
+    website: user.socials.website || ''
+  });
 
-  const handleSyncLinkedIn = () => {
+  // Reset local state when user prop changes or edit mode toggles
+  useEffect(() => {
+    setEditData({
+        fullName: user.fullName,
+        headline: user.headline,
+        location: user.location,
+        website: user.socials.website || ''
+    });
+  }, [user, isEditing]);
+
+  const handleSave = () => {
+    onUpdate({
+        fullName: editData.fullName,
+        headline: editData.headline,
+        location: editData.location,
+        socials: { ...user.socials, website: editData.website }
+    });
+    onToggleEdit();
+    success("Profile updated successfully");
+  };
+
+  const handleSyncLinkedIn = async () => {
+    if (!user.socials.linkedin) {
+        error("No LinkedIn URL found. Please add it in the sidebar widgets first.");
+        return;
+    }
+
     setIsSyncing(true);
-    // Simulate API call
-    setTimeout(() => {
-      setIsSyncing(false);
-      alert("LinkedIn Sync Complete (Simulation): Profile updated with latest data.");
-    }, 2000);
+    info("Connecting to LinkedIn...");
+    
+    try {
+        const enrichedData = await EnrichmentService.syncLinkedInProfile(user.socials.linkedin);
+        
+        // Merge enriched data with existing user data structure
+        onUpdate({
+            ...enrichedData,
+            socials: {
+                ...user.socials,
+                ...enrichedData.socials
+            }
+        });
+        success("Profile successfully synced from LinkedIn!");
+    } catch (err: any) {
+        console.error(err);
+        error(err.message || "Failed to sync with LinkedIn");
+    } finally {
+        setIsSyncing(false);
+    }
   };
 
   return (
@@ -62,25 +114,32 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ user, isEditing, o
                   <div className="space-y-3 max-w-md">
                     <input 
                       type="text" 
-                      value={user.fullName}
-                      onChange={(e) => onUpdate({ fullName: e.target.value })}
-                      className="text-2xl font-bold text-slate-900 w-full border-b border-slate-300 focus:border-indigo-500 outline-none pb-1"
+                      value={editData.fullName}
+                      onChange={(e) => setEditData({ ...editData, fullName: e.target.value })}
+                      className="text-2xl font-bold text-slate-900 w-full border-b border-slate-300 focus:border-indigo-500 outline-none pb-1 bg-transparent"
                       placeholder="Full Name"
                     />
                     <input 
                       type="text" 
-                      value={user.headline}
-                      onChange={(e) => onUpdate({ headline: e.target.value })}
-                      className="text-lg text-slate-600 w-full border-b border-slate-300 focus:border-indigo-500 outline-none pb-1"
+                      value={editData.headline}
+                      onChange={(e) => setEditData({ ...editData, headline: e.target.value })}
+                      className="text-lg text-slate-600 w-full border-b border-slate-300 focus:border-indigo-500 outline-none pb-1 bg-transparent"
                       placeholder="Headline (e.g. Founder at StartupAI)"
                     />
-                    <div className="flex gap-2">
+                    <div className="flex gap-4">
                       <input 
                         type="text" 
-                        value={user.location}
-                        onChange={(e) => onUpdate({ location: e.target.value })}
-                        className="text-sm text-slate-500 w-1/2 border-b border-slate-300 focus:border-indigo-500 outline-none pb-1"
+                        value={editData.location}
+                        onChange={(e) => setEditData({ ...editData, location: e.target.value })}
+                        className="text-sm text-slate-500 w-1/2 border-b border-slate-300 focus:border-indigo-500 outline-none pb-1 bg-transparent"
                         placeholder="Location"
+                      />
+                       <input 
+                        type="text" 
+                        value={editData.website}
+                        onChange={(e) => setEditData({ ...editData, website: e.target.value })}
+                        className="text-sm text-slate-500 w-1/2 border-b border-slate-300 focus:border-indigo-500 outline-none pb-1 bg-transparent"
+                        placeholder="Website URL"
                       />
                     </div>
                   </div>
@@ -108,28 +167,39 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ user, isEditing, o
 
               {/* Actions */}
               <div className="flex items-center gap-3">
-                <button 
-                  onClick={handleSyncLinkedIn}
-                  disabled={isSyncing}
-                  className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 font-medium rounded-lg border border-indigo-100 hover:bg-indigo-100 transition-colors disabled:opacity-70"
-                >
-                  <RefreshCw size={16} className={isSyncing ? "animate-spin" : ""} />
-                  <span className="hidden sm:inline">{isSyncing ? "Syncing..." : "Sync LinkedIn"}</span>
-                </button>
-                <button 
-                  onClick={onToggleEdit}
-                  className={`flex items-center gap-2 px-4 py-2 font-medium rounded-lg transition-colors border ${isEditing ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'}`}
-                >
-                  {isEditing ? (
+                {isEditing ? (
                     <>
-                      <CheckCircle size={16} /> <span>Save</span>
+                        <button 
+                            onClick={onToggleEdit}
+                            className="flex items-center gap-2 px-4 py-2 border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 transition-colors"
+                        >
+                            <X size={16} /> Cancel
+                        </button>
+                        <button 
+                            onClick={handleSave}
+                            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
+                        >
+                            <CheckCircle size={16} /> Save Changes
+                        </button>
                     </>
-                  ) : (
+                ) : (
                     <>
-                      <Edit3 size={16} /> <span>Edit</span>
+                        <button 
+                        onClick={handleSyncLinkedIn}
+                        disabled={isSyncing}
+                        className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 font-medium rounded-lg border border-indigo-100 hover:bg-indigo-100 transition-colors disabled:opacity-70"
+                        >
+                        <RefreshCw size={16} className={isSyncing ? "animate-spin" : ""} />
+                        <span className="hidden sm:inline">{isSyncing ? "Syncing..." : "Sync LinkedIn"}</span>
+                        </button>
+                        <button 
+                        onClick={onToggleEdit}
+                        className="flex items-center gap-2 px-4 py-2 bg-white text-slate-700 border border-slate-200 font-medium rounded-lg hover:bg-slate-50 transition-colors"
+                        >
+                        <Edit3 size={16} /> <span>Edit Profile</span>
+                        </button>
                     </>
-                  )}
-                </button>
+                )}
               </div>
             </div>
           </div>

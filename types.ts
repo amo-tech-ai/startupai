@@ -250,13 +250,14 @@ export interface UserProfile {
 // Complete Schema Context for Application State
 export interface StartupDatabaseSchema {
   profile: StartupProfile | null;
+  userProfile: UserProfile | null; // Added UserProfile
   founders: Founder[];
   competitors: Competitor[];
   metrics: MetricsSnapshot[];
   insights: AICoachInsight[];
   tasks: Task[];
   deals: Deal[];
-  docs: InvestorDoc[]; // Added docs
+  docs: InvestorDoc[]; 
   activities: Activity[];
   decks: Deck[];
 }

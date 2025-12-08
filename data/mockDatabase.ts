@@ -1,5 +1,5 @@
 
-import { StartupDatabaseSchema, StartupProfile, Founder, Competitor, AICoachInsight, Activity, Task, Deck, Deal, InvestorDoc } from '../types';
+import { StartupDatabaseSchema, StartupProfile, Founder, Competitor, AICoachInsight, Activity, Task, Deck, Deal, InvestorDoc, UserProfile } from '../types';
 
 /**
  * Mock Data Validation
@@ -192,9 +192,56 @@ const mockDocs: InvestorDoc[] = [
     }
 ];
 
+const mockUserProfile: UserProfile = {
+  id: 'user_123',
+  fullName: 'Alex Rivera',
+  headline: 'Founder @ StartupAI • Ex-Google Product Lead',
+  location: 'San Francisco, CA',
+  bio: "I'm a product-focused founder with over 10 years of experience building scalable SaaS applications. Previously led product teams at Google and Stripe. Passionate about AI, developer tools, and democratization of technology.",
+  avatarUrl: 'https://ui-avatars.com/api/?name=Alex+Rivera&background=6366f1&color=fff&size=256',
+  coverImageUrl: 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=2000&q=80',
+  email: 'alex@startupai.com',
+  phone: '+1 (555) 123-4567',
+  socials: {
+    linkedin: 'https://linkedin.com/in/alexrivera',
+    twitter: 'https://twitter.com/alexrivera',
+    website: 'https://alexrivera.io'
+  },
+  experiences: [
+    {
+      id: 'exp_1',
+      role: 'Founder & CEO',
+      company: 'StartupAI',
+      startDate: 'Jan 2024',
+      current: true,
+      description: 'Building the operating system for modern founders. Leveraging Generative AI to automate fundraising and operations.',
+    },
+    {
+      id: 'exp_2',
+      role: 'Senior Product Manager',
+      company: 'Google',
+      startDate: 'Jun 2019',
+      endDate: 'Dec 2023',
+      current: false,
+      description: 'Led the Google Cloud AI developer experience team. Launched 3 major products serving 1M+ developers.',
+    }
+  ],
+  education: [
+      {
+          id: 'edu_1',
+          school: 'Stanford University',
+          degree: 'BS, Computer Science',
+          year: '2015-2019'
+      }
+  ],
+  skills: ['Product Strategy', 'React', 'TypeScript', 'GenAI', 'Fundraising', 'Go-to-Market'],
+  completionScore: 85
+};
+
 // Initial Store State
 export const initialDatabaseState: StartupDatabaseSchema = {
   profile: mockProfile,
+  userProfile: mockUserProfile,
   founders: mockFounders,
   competitors: mockCompetitors,
   metrics: [],

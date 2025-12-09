@@ -7,21 +7,57 @@ import { useToast } from '../context/ToastContext';
 import { AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-// Components
-import { WelcomeHeader } from './dashboard/WelcomeHeader';
-import { KPIGrid } from './dashboard/KPIGrid';
+// New V2 Components
+import { FounderCommandCenter } from './dashboard/v2/FounderCommandCenter';
+import { HealthScorecard } from './dashboard/v2/HealthScorecard';
+import { AICoachWidget } from './dashboard/v2/AICoachWidget';
+import { MilestonesTimeline } from './dashboard/v2/MilestonesTimeline';
+import { AIInsightsDigest } from './dashboard/v2/AIInsightsDigest';
+import { CRMSnapshot } from './dashboard/v2/CRMSnapshot';
+import { SmartAlerts } from './dashboard/v2/SmartAlerts';
+import { SetupChecklist } from './dashboard/v2/SetupChecklist';
 import { ActivityFeed } from './dashboard/ActivityFeed';
-import { ProfileStrength } from './dashboard/ProfileStrength';
-import { AICoach } from './dashboard/AICoach';
-import { AIJourney } from './dashboard/AIJourney';
+import { WelcomeHeader } from './dashboard/WelcomeHeader';
 
 const Dashboard: React.FC = () => {
-  const { profile, metrics, insights, activities, setInsights, addActivity } = useData();
+  const { profile, metrics, insights, activities, deals, decks, setInsights, addActivity } = useData();
   const { toast, error, success } = useToast();
   const [isGeneratingInsights, setIsGeneratingInsights] = useState(false);
   const navigate = useNavigate();
 
   const isGuest = profile?.userId === 'guest' || profile?.userId === 'mock';
+
+  // --- HEALTH SCORE LOGIC ---
+  const calculateHealth = () => {
+      let score = 0;
+      const missing: string[] = [];
+      const mrr = metrics[metrics.length - 1]?.mrr || 0;
+      const runway = metrics[metrics.length - 1]?.runwayMonths || 0;
+
+      // 1. Business (25%)
+      if (mrr > 0) score += 25; else missing.push("Revenue");
+      // 2. Fundraising (25%)
+      if (decks.length > 0) score += 25; else missing.push("Pitch Deck");
+      // 3. Operations (25%)
+      if (runway > 6) score += 25; else if (runway > 3) score += 10; else missing.push("Runway");
+      // 4. Profile (25%)
+      // Assuming a simplistic check for profile completeness here, real logic is in ProfileStrength component
+      if (profile?.websiteUrl) score += 10;
+      if (profile?.coverImageUrl) score += 15;
+
+      return {
+          score: Math.min(score, 100),
+          metrics: {
+              mrrGrowth: mrr > 0, // Simplified
+              deckReady: decks.length > 0,
+              runwayHealthy: runway > 6,
+              profileComplete: score >= 75
+          },
+          missing
+      };
+  };
+
+  const healthData = calculateHealth();
 
   // --- AI COACH LOGIC ---
   const refreshInsights = async () => {
@@ -66,21 +102,13 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  // Auto-trigger on mount if no insights
-  useEffect(() => {
-      if (profile && insights.length === 0 && API_KEY && !isGeneratingInsights) {
-          // Small delay to allow UI to render first
-          const timer = setTimeout(() => {
-              refreshInsights();
-          }, 1500);
-          return () => clearTimeout(timer);
-      }
-  }, [profile, insights.length]);
+  // Filter Milestones
+  const milestones = activities.filter(a => a.type === 'milestone');
 
   return (
-    <div className="p-6 md:p-8 lg:p-12 max-w-7xl mx-auto space-y-12 animate-in fade-in duration-700">
+    <div className="p-4 md:p-8 lg:p-10 max-w-[1600px] mx-auto space-y-8 animate-in fade-in duration-700 bg-slate-50/50 min-h-screen">
       
-      {/* Guest Banner */}
+      {/* Top Banner for Guests */}
       {isGuest && (
         <div className="bg-indigo-600 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-white shadow-lg shadow-indigo-200">
             <div className="flex items-center gap-3">
@@ -99,7 +127,7 @@ const Dashboard: React.FC = () => {
         </div>
       )}
 
-      {/* 4️⃣ WELCOME SECTION */}
+      {/* Header */}
       <WelcomeHeader 
         profile={profile} 
         onNewDeck={() => navigate('/pitch-decks')}
@@ -107,31 +135,52 @@ const Dashboard: React.FC = () => {
         onCreateDoc={() => navigate('/documents')}
       />
 
-      {/* 5️⃣ KPI CARDS ROW */}
-      <KPIGrid metrics={metrics} profile={profile} />
+      {/* 3-Column Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          
+          {/* MAIN COLUMN (8 Cols) */}
+          <div className="lg:col-span-8 space-y-8">
+              {/* 1. Command Center */}
+              <FounderCommandCenter metrics={metrics} />
 
-      {/* 6️⃣ GRID: ACTIVITY & AI INSIGHTS */}
-      <section className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-         {/* Recent Activity (60% -> 3 cols) */}
-         <div className="lg:col-span-3">
-            <ActivityFeed activities={activities} />
-         </div>
+              {/* 2. AI Coach */}
+              <AICoachWidget 
+                  insights={insights} 
+                  isGenerating={isGeneratingInsights} 
+                  onRefresh={refreshInsights} 
+              />
 
-         {/* Right Column: Profile Score & AI Coach (40% -> 2 cols) */}
-         <div className="lg:col-span-2 space-y-6">
-            <ProfileStrength profile={profile} />
-            <AICoach 
-              insights={insights} 
-              isGenerating={isGeneratingInsights} 
-              onRefresh={refreshInsights} 
-            />
-         </div>
-      </section>
+              {/* 3. CRM & Milestones Row */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <CRMSnapshot deals={deals} />
+                  <MilestonesTimeline milestones={milestones} />
+              </div>
+          </div>
 
-      {/* 8️⃣ AI JOURNEY GRID */}
-      <AIJourney />
+          {/* SIDEBAR COLUMN (4 Cols) */}
+          <div className="lg:col-span-4 space-y-8">
+              {/* 1. Alerts */}
+              <SmartAlerts />
 
-      <div className="h-12"></div> {/* Bottom Spacer */}
+              {/* 2. Health Score */}
+              <HealthScorecard 
+                  score={healthData.score} 
+                  metrics={healthData.metrics} 
+                  missing={healthData.missing} 
+              />
+
+              {/* 3. Setup Checklist */}
+              <SetupChecklist profile={profile} />
+
+              {/* 4. AI Digest */}
+              <AIInsightsDigest />
+
+              {/* 5. Recent Activity */}
+              <ActivityFeed activities={activities} />
+          </div>
+      </div>
+
+      <div className="h-12"></div>
     </div>
   );
 };

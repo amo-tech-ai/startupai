@@ -35,9 +35,9 @@ const ScrollToTop = () => {
 
 // Layouts
 const PublicLayout = () => (
-  <div className="min-h-screen text-slate-900 overflow-x-hidden font-sans">
+  <div className="min-h-screen text-slate-900 overflow-x-hidden font-sans flex flex-col">
     <Navbar type="public" />
-    <main>
+    <main className="flex-1">
       <Outlet />
     </main>
     <Footer />
@@ -45,11 +45,11 @@ const PublicLayout = () => (
 );
 
 const AppLayout = () => (
-  <div className="flex min-h-screen bg-slate-50 font-sans text-slate-900">
+  <div className="fixed inset-0 flex bg-slate-50 font-sans text-slate-900 overflow-hidden">
     <Sidebar />
-    <div className="flex-1 flex flex-col h-screen overflow-hidden">
+    <div className="flex-1 flex flex-col h-full overflow-hidden relative">
       <Navbar type="app" />
-      <main className="flex-1 overflow-y-auto overflow-x-hidden">
+      <main className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar">
         <Outlet />
       </main>
     </div>

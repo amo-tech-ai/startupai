@@ -15,7 +15,7 @@ interface HealthScorecardProps {
 }
 
 export const HealthScorecard: React.FC<HealthScorecardProps> = ({ score, metrics, missing }) => {
-  const getColor = (s: number) => s >= 80 ? '#10b981' : s >= 60 ? '#f59e0b' : '#f43f5e';
+  const getColor = (s: number) => s >= 80 ? '#166534' : s >= 60 ? '#92400E' : '#991B1B';
   const color = getColor(score);
 
   const data = [
@@ -24,15 +24,15 @@ export const HealthScorecard: React.FC<HealthScorecardProps> = ({ score, metrics
   ];
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-      <div className="flex justify-between items-center mb-2">
-        <h3 className="font-bold text-slate-900 flex items-center gap-2">
-          <HeartPulse className="text-rose-500" size={20} /> Startup Health
+    <div className="bg-white rounded-2xl shadow-sm border border-[#E5E5E5] p-6">
+      <div className="flex justify-between items-center mb-6">
+        <h3 className="font-serif font-bold text-[#1A1A1A] flex items-center gap-2">
+          Startup Health
         </h3>
       </div>
 
       {/* Radial Progress Chart */}
-      <div className="relative h-40 flex items-center justify-center mb-4">
+      <div className="relative h-40 min-w-0 flex items-center justify-center mb-8">
          <ResponsiveContainer width="100%" height="100%">
             <PieChart>
                 <Pie
@@ -47,13 +47,13 @@ export const HealthScorecard: React.FC<HealthScorecardProps> = ({ score, metrics
                     stroke="none"
                 >
                     <Cell fill={color} />
-                    <Cell fill="#f1f5f9" />
+                    <Cell fill="#F7F7F5" />
                 </Pie>
             </PieChart>
          </ResponsiveContainer>
          <div className="absolute inset-0 flex flex-col items-center justify-center">
-             <span className="text-3xl font-bold text-slate-900">{score}%</span>
-             <span className="text-xs text-slate-400 font-medium uppercase tracking-wide">Score</span>
+             <span className="text-3xl font-serif font-bold text-[#1A1A1A]">{score}%</span>
+             <span className="text-xs text-[#6B7280] font-medium uppercase tracking-wide">Score</span>
          </div>
       </div>
 
@@ -89,7 +89,7 @@ export const HealthScorecard: React.FC<HealthScorecardProps> = ({ score, metrics
       </div>
 
       {missing.length > 0 && (
-        <div className="mt-6 p-3 bg-amber-50 border border-amber-100 rounded-xl text-xs text-amber-800">
+        <div className="mt-6 p-4 bg-[#FEF3C7] border border-[#FDE68A] rounded-xl text-xs text-[#92400E]">
             <strong>Needs Attention:</strong> {missing.join(', ')}
         </div>
       )}
@@ -99,8 +99,8 @@ export const HealthScorecard: React.FC<HealthScorecardProps> = ({ score, metrics
 
 const HealthItem = ({ label, status, positive, negative, icon }: any) => (
     <div className="flex justify-between items-center text-sm">
-        <span className="text-slate-600">{label}</span>
-        <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-bold ${status ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
+        <span className="text-[#6B7280]">{label}</span>
+        <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${status ? 'bg-[#DCFCE7] text-[#166534] border-[#bbf7d0]' : 'bg-[#FEE2E2] text-[#991B1B] border-[#fecaca]'}`}>
             {status ? icon : <XCircle size={14} />}
             {status ? positive : negative}
         </div>

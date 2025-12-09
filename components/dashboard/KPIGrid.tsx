@@ -56,7 +56,7 @@ export const KPIGrid: React.FC<KPIGridProps> = ({ metrics, profile }) => {
              <div className="text-slate-500 text-sm font-medium mb-1">Monthly Revenue</div>
              <div className="text-3xl font-bold text-slate-900">${mrr.toLocaleString()}</div>
           </div>
-          <div className="h-10 w-full opacity-50">
+          <div className="h-10 w-full min-w-0 opacity-50">
              <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={chartData}>
                    <Area type="monotone" dataKey="v" stroke="#4f46e5" fill="#e0e7ff" strokeWidth={2} />
@@ -99,7 +99,7 @@ export const KPIGrid: React.FC<KPIGridProps> = ({ metrics, profile }) => {
              <div className="text-slate-500 text-sm font-medium mb-1">Active Users</div>
              <div className="text-3xl font-bold text-slate-900">{activeUsers.toLocaleString()}</div>
           </div>
-          <div className="h-10 w-full opacity-50">
+          <div className="h-10 w-full min-w-0 opacity-50">
              <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData}>
                    <Bar dataKey="users" fill="#2dd4bf" radius={[2, 2, 0, 0]} />
@@ -122,7 +122,7 @@ export const KPIGrid: React.FC<KPIGridProps> = ({ metrics, profile }) => {
              <div className="text-slate-500 text-sm font-medium mb-1">Docs Generated</div>
              <div className="text-3xl font-bold text-slate-900">12</div>
           </div>
-          <div className="h-10 w-full opacity-50">
+          <div className="h-10 w-full min-w-0 opacity-50">
              <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData}>
                    <Bar dataKey="v" fill="#fb7185" radius={[2, 2, 0, 0]} />

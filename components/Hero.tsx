@@ -78,7 +78,7 @@ const Hero: React.FC = () => {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
-            className="relative"
+            className="relative w-full min-w-0"
           >
             <div className="relative z-10 bg-white rounded-3xl shadow-2xl shadow-indigo-500/10 border border-slate-200 overflow-hidden">
                 {/* Window Controls */}
@@ -100,7 +100,8 @@ const Hero: React.FC = () => {
                         </div>
                     </div>
                     
-                    <div className="h-64 w-full">
+                    {/* Recharts Container Fix: Explicit height, min-width, relative */}
+                    <div className="h-64 w-full min-w-0 relative bg-slate-50/50 rounded-xl border border-slate-100 p-2">
                         <ResponsiveContainer width="100%" height="100%">
                             <AreaChart data={data}>
                                 <defs>

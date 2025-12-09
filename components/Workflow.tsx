@@ -272,7 +272,7 @@ const ExecuteVisual = () => {
              <div className="text-xs font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded">+12%</div>
           </div>
           
-          <div className="flex-1 w-full relative">
+          <div className="h-40 w-full relative min-w-0">
              <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={data}>
                    <defs>

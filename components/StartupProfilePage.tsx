@@ -17,7 +17,7 @@ const StartupProfilePage: React.FC = () => {
   const { profile: globalProfile } = useData(); 
   const { data: profileDTO, loading, reload } = useStartupProfile(globalProfile?.id);
   const { saveProfile, isSaving } = useSaveStartupProfile();
-  const { success } = useToast();
+  const { success, error: toastError } = useToast();
   const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<'edit' | 'investor'>('edit');
 
@@ -121,10 +121,16 @@ const StartupProfilePage: React.FC = () => {
       reload();
   };
 
-  const copyPublicLink = () => {
-      const url = `${window.location.origin}/s/${displayProfile!.id}`;
-      navigator.clipboard.writeText(url);
-      success("Public profile link copied!");
+  const copyPublicLink = async () => {
+      try {
+        const url = `${window.location.origin}/#/s/${displayProfile!.id}`;
+        await navigator.clipboard.writeText(url);
+        success("Public profile link copied!");
+      } catch (err) {
+        // Fallback or quiet fail if permissions denied
+        console.warn("Clipboard access denied", err);
+        toastError("Could not copy link to clipboard.");
+      }
   };
 
   return (
@@ -225,7 +231,7 @@ const StartupProfilePage: React.FC = () => {
                                 <Copy size={14} /> Copy Link
                             </button>
                             <button 
-                                onClick={() => window.open(`/s/${displayProfile!.id}`, '_blank')}
+                                onClick={() => window.open(`/#/s/${displayProfile!.id}`, '_blank')}
                                 className="py-2 border border-slate-200 text-indigo-600 text-xs font-bold rounded-lg hover:bg-indigo-50 flex items-center justify-center gap-2 transition-colors"
                             >
                                 <Share2 size={14} /> View Public

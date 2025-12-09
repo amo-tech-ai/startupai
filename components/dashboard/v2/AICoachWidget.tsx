@@ -18,43 +18,40 @@ export const AICoachWidget: React.FC<AICoachWidgetProps> = ({ insights, onRefres
   ];
 
   return (
-    <div className="bg-gradient-to-br from-indigo-900 to-slate-900 rounded-2xl shadow-lg p-6 text-white relative overflow-hidden">
-      {/* Background Decor */}
-      <div className="absolute top-0 right-0 p-24 bg-purple-500/20 rounded-full blur-3xl -mr-12 -mt-12 pointer-events-none"></div>
-
+    <div className="bg-white rounded-2xl shadow-sm border border-[#E5E5E5] p-8 relative overflow-hidden">
       <div className="flex justify-between items-center mb-6 relative z-10">
         <div className="flex items-center gap-2">
-          <div className="p-1.5 bg-white/10 rounded-lg">
-            <Sparkles size={18} className="text-purple-300" />
+          <div className="p-1.5 bg-[#F3E8FF] rounded-lg border border-[#e9d5ff]">
+            <Sparkles size={18} className="text-[#6B21A8]" />
           </div>
-          <h3 className="font-bold text-lg">AI Coach</h3>
+          <h3 className="font-serif font-bold text-lg text-[#1A1A1A]">AI Coach</h3>
         </div>
         <button 
             onClick={onRefresh}
             disabled={isGenerating}
-            className="p-2 hover:bg-white/10 rounded-full transition-colors text-slate-300 hover:text-white disabled:opacity-50"
+            className="p-2 hover:bg-gray-50 rounded-full transition-colors text-[#6B7280] hover:text-[#1A1A1A] disabled:opacity-50"
         >
             {isGenerating ? <Loader2 size={16} className="animate-spin"/> : <RefreshCw size={16} />}
         </button>
       </div>
 
-      <div className="space-y-3 relative z-10">
+      <div className="space-y-4 relative z-10">
         {displayInsights.map((item: any, idx) => (
-            <div key={idx} className="bg-white/5 border border-white/10 hover:bg-white/10 transition-colors p-3 rounded-xl flex items-center justify-between group cursor-pointer">
-                <div className="flex items-center gap-3">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
-                        item.type === 'Risk' ? 'bg-rose-500/20 text-rose-300' : 
-                        item.type === 'Opportunity' ? 'bg-emerald-500/20 text-emerald-300' :
-                        'bg-indigo-500/20 text-indigo-300'
+            <div key={idx} className="bg-[#F7F7F5] border border-[#E5E5E5] hover:bg-white hover:border-[#A855F7]/30 hover:shadow-sm transition-all p-4 rounded-xl flex items-center justify-between group cursor-pointer">
+                <div className="flex items-center gap-4">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 border ${
+                        item.type === 'Risk' ? 'bg-[#FEE2E2] text-[#991B1B] border-[#fecaca]' : 
+                        item.type === 'Opportunity' ? 'bg-[#DCFCE7] text-[#166534] border-[#bbf7d0]' :
+                        'bg-[#F3E8FF] text-[#6B21A8] border-[#e9d5ff]'
                     }`}>
-                        <Zap size={14} fill="currentColor" />
+                        <Zap size={16} fill="currentColor" />
                     </div>
                     <div>
-                        <div className="text-sm font-bold text-slate-100">{item.title}</div>
-                        <div className="text-[10px] text-slate-400 uppercase tracking-wide font-bold">{item.category}</div>
+                        <div className="text-sm font-bold text-[#1A1A1A]">{item.title}</div>
+                        <div className="text-[10px] text-[#6B7280] uppercase tracking-wide font-bold">{item.category}</div>
                     </div>
                 </div>
-                <button className="text-xs font-bold bg-white text-indigo-900 px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 transform translate-x-2 group-hover:translate-x-0 duration-200">
+                <button className="text-xs font-bold text-[#1A1A1A] px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 transform translate-x-2 group-hover:translate-x-0 duration-200">
                     Fix Now <ArrowRight size={12} />
                 </button>
             </div>

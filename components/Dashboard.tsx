@@ -107,21 +107,21 @@ const Dashboard: React.FC = () => {
   const milestones = activities.filter(a => a.type === 'milestone');
 
   return (
-    <div className="p-4 md:p-8 lg:p-10 max-w-[1600px] mx-auto space-y-8 animate-in fade-in duration-700 bg-slate-50/50 min-h-screen">
+    <div className="p-6 md:p-10 lg:p-12 max-w-[1600px] mx-auto space-y-10 animate-in fade-in duration-700 bg-[#F7F7F5] min-h-screen text-[#1A1A1A]">
       
       {/* Top Banner for Guests */}
       {isGuest && (
-        <div className="bg-indigo-600 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-white shadow-lg shadow-indigo-200">
+        <div className="bg-[#1A1A1A] rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-white shadow-md">
             <div className="flex items-center gap-3">
-                <AlertCircle className="shrink-0" />
+                <AlertCircle className="shrink-0 text-white" />
                 <div>
                     <div className="font-bold">Guest Mode Active</div>
-                    <div className="text-sm text-indigo-100">Your data is only saved in this browser. Create an account to save it permanently.</div>
+                    <div className="text-sm text-gray-400">Your data is only saved in this browser. Create an account to save it permanently.</div>
                 </div>
             </div>
             <button 
                 onClick={() => navigate('/signup')}
-                className="whitespace-nowrap px-5 py-2 bg-white text-indigo-600 font-bold rounded-lg hover:bg-indigo-50 transition-colors"
+                className="whitespace-nowrap px-5 py-2 bg-white text-black font-bold rounded-lg hover:bg-gray-100 transition-colors"
             >
                 Create Account
             </button>

@@ -202,7 +202,7 @@ export const TractionCard: React.FC<TractionCardProps> = ({ viewMode, profile, m
                 </div>
 
                 {/* Growth Chart */}
-                <div className="h-40 w-full">
+                <div className="h-40 w-full min-w-0">
                     <ResponsiveContainer width="100%" height="100%">
                         <AreaChart data={chartData}>
                             <defs>

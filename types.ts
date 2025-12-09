@@ -149,6 +149,7 @@ export interface MetricsSnapshot {
   ltv: number; 
   burnRate: number;
   runwayMonths: number;
+  cashBalance: number;
   recordedAt: string;
 }
 

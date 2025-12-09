@@ -2,9 +2,9 @@
 # 🚀 Founder Command Center (Dashboard v2.0) - Master Plan
 
 **Target URL:** `/dashboard`
-**Status:** 🟢 Live / Implementation Complete
+**Status:** 🟢 Live / Production Ready
 **Priority:** P0 (Core Value Prop)
-**Version:** 2.0
+**Version:** 2.1
 
 ---
 
@@ -63,7 +63,7 @@ The "Founder Command Center" transforms the dashboard from a simple navigation h
 
 ### 2. 🩺 Health Scorecard (Top Sidebar)
 *   **Purpose:** Gamified holistic view of startup readiness.
-*   **Visuals:** 0-100% Score with radial progress bar.
+*   **Visuals:** 0-100% Score with radial progress bar (Donut chart).
 *   **Sub-Metrics:**
     *   *Business:* MRR Growth > 0.
     *   *Fundraising:* Pitch Deck exists.
@@ -185,37 +185,12 @@ graph TD
     Hook -->|Write| DB
 ```
 
-### **Entity Relationship Diagram (Dashboard Specific)**
-
-```mermaid
-erDiagram
-    startups ||--o{ startup_metrics_snapshots : "tracks history"
-    startups ||--o{ ai_coach_insights : "receives"
-    startups ||--o{ crm_deals : "manages"
-    startups ||--o{ activities : "logs"
-    
-    startup_metrics_snapshots {
-        uuid id
-        date snapshot_date
-        float mrr
-        float burn_rate
-        float cash_balance
-    }
-    
-    ai_coach_insights {
-        uuid id
-        string type "Risk/Opportunity"
-        string title
-        string priority
-    }
-```
-
 ---
 
 ## ✅ Production Checklist
 
 ### **Database & Backend**
-- [x] **Table Check:** Ensure `startup_metrics_snapshots` exists and has `burn_rate` column.
+- [x] **Table Check:** Ensure `startup_metrics_snapshots` exists and has `burn_rate` and `cash_balance` columns.
 - [x] **RLS Policies:** Verify users can only read their own metrics.
 - [x] **Indexing:** Add index on `startup_metrics_snapshots(startup_id, snapshot_date)` for fast history lookup.
 
@@ -228,5 +203,4 @@ erDiagram
 ### **Wiring**
 - [x] **Context:** Dashboard correctly consumes `useData()` context.
 - [x] **Navigation:** "New Deck" button correctly routes to `/pitch-decks/new`.
-- [x] **Updates:** "Update Financials" button triggers correct modal/form.
-
+- [x] **Updates:** "Update Financials" button triggers correct modal/form in Traction module.

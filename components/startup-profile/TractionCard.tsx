@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { TrendingUp, Edit2, DollarSign, Users, Loader2 } from 'lucide-react';
 import { AreaChart, Area, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
@@ -9,7 +10,7 @@ import { useToast } from '../../context/ToastContext';
 interface TractionCardProps {
   viewMode: 'edit' | 'investor';
   profile: StartupProfile;
-  metrics: { monthly_revenue: number; monthly_active_users: number } | null | undefined;
+  metrics: { monthly_revenue: number; monthly_active_users: number; burn_rate?: number; cash_balance?: number } | null | undefined;
   // Handler accepts combined data structure that the parent page will split
   onSave: (data: Partial<StartupProfile> & { metrics?: any }) => Promise<void>;
 }
@@ -25,19 +26,23 @@ export const TractionCard: React.FC<TractionCardProps> = ({ viewMode, profile, m
   // Normalize metrics from props or default to 0
   const mrr = metrics?.monthly_revenue || 0;
   const activeUsers = metrics?.monthly_active_users || 0;
+  const burnRate = metrics?.burn_rate || 0;
+  const cashBalance = metrics?.cash_balance || 0;
 
   useEffect(() => {
     if (profile) {
         setFormData({
             mrr: mrr,
             activeUsers: activeUsers,
+            burnRate: burnRate,
+            cashBalance: cashBalance,
             fundingGoal: profile.fundingGoal,
             isRaising: profile.isRaising,
             fundingHistory: profile.fundingHistory || [],
             useOfFunds: profile.useOfFunds || []
         });
     }
-  }, [profile, mrr, activeUsers]);
+  }, [profile, mrr, activeUsers, burnRate, cashBalance]);
 
   const handleSaveClick = async () => {
       // Split the data: Profile fields vs Metrics fields
@@ -50,7 +55,9 @@ export const TractionCard: React.FC<TractionCardProps> = ({ viewMode, profile, m
 
       const metricsUpdates = {
           monthly_revenue: Number(formData.mrr),
-          monthly_active_users: Number(formData.activeUsers)
+          monthly_active_users: Number(formData.activeUsers),
+          burn_rate: Number(formData.burnRate),
+          cash_balance: Number(formData.cashBalance)
       };
 
       await onSave({ 
@@ -116,6 +123,22 @@ export const TractionCard: React.FC<TractionCardProps> = ({ viewMode, profile, m
                             className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
                         />
                     </div>
+                    <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Cash in Bank ($)</label>
+                        <input 
+                            type="number"
+                            value={formData.cashBalance} onChange={e => setFormData({...formData, cashBalance: e.target.value})}
+                            className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Monthly Burn ($)</label>
+                        <input 
+                            type="number"
+                            value={formData.burnRate} onChange={e => setFormData({...formData, burnRate: e.target.value})}
+                            className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                        />
+                    </div>
                 </div>
 
                 <div className="border-t border-slate-100 pt-4">
@@ -160,6 +183,22 @@ export const TractionCard: React.FC<TractionCardProps> = ({ viewMode, profile, m
                         </div>
                         <div className="text-2xl font-bold text-slate-900">{activeUsers.toLocaleString()}</div>
                     </div>
+                    {(burnRate > 0 || cashBalance > 0) && (
+                        <>
+                            <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                                <div className="flex items-center gap-2 text-slate-500 text-xs font-bold uppercase mb-1">
+                                    <TrendingUp size={14} /> Burn
+                                </div>
+                                <div className="text-xl font-bold text-slate-900">${burnRate.toLocaleString()}</div>
+                            </div>
+                            <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                                <div className="flex items-center gap-2 text-slate-500 text-xs font-bold uppercase mb-1">
+                                    <DollarSign size={14} /> Cash
+                                </div>
+                                <div className="text-xl font-bold text-slate-900">${cashBalance.toLocaleString()}</div>
+                            </div>
+                        </>
+                    )}
                 </div>
 
                 {/* Growth Chart */}

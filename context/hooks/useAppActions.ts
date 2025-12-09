@@ -190,6 +190,7 @@ export const useAppActions = ({
                 ltv: data.ltv || (last?.ltv || 0), 
                 burnRate: data.burnRate || (last?.burnRate || 0), 
                 runwayMonths: data.runwayMonths || (last?.runwayMonths || 0),
+                cashBalance: data.cashBalance || (last?.cashBalance || 0),
                 recordedAt: new Date().toISOString()
             };
             newState = [...prev, newSnapshot];

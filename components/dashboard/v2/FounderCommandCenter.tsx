@@ -1,32 +1,40 @@
 
 import React from 'react';
 import { TrendingUp, TrendingDown, DollarSign, Activity, AlertTriangle } from 'lucide-react';
-import { AreaChart, Area, ResponsiveContainer, Tooltip, XAxis } from 'recharts';
+import { AreaChart, Area, ResponsiveContainer, Tooltip } from 'recharts';
 import { MetricsSnapshot } from '../../../types';
+import { useNavigate } from 'react-router-dom';
 
 interface FounderCommandCenterProps {
   metrics: MetricsSnapshot[];
 }
 
 export const FounderCommandCenter: React.FC<FounderCommandCenterProps> = ({ metrics }) => {
+  const navigate = useNavigate();
   const latest = metrics[metrics.length - 1] || { 
     mrr: 0, 
-    burnRate: 12000, // Fallback/Goal
-    runwayMonths: 8.4, 
-    cashBalance: 95000 
+    burnRate: 0, 
+    runwayMonths: 0, 
+    cashBalance: 0 
   };
 
-  // Derive cash if not explicit (Cash = Burn * Runway)
-  const burnRate = latest.burnRate || 10000;
-  const runway = latest.runwayMonths || 0;
-  const cash = (latest as any).cashBalance || (burnRate * runway);
+  // Values with fallbacks
+  const burnRate = latest.burnRate || 0;
+  const cash = latest.cashBalance || 0;
   
-  // Projection Data (Mocked based on MRR trend)
+  // Calculate runway if not explicit (Cash / Burn)
+  let runway = latest.runwayMonths;
+  if (!runway && burnRate > 0) {
+      runway = cash / burnRate;
+  }
+  runway = runway || 0;
+  
+  // Projection Data (Mocked based on MRR trend if no history)
   const projectionData = metrics.length > 1 
     ? metrics.map((m, i) => ({ month: `M${i}`, value: (m.mrr || 0) * 12 }))
-    : Array.from({ length: 12 }, (_, i) => ({ month: `M${i}`, value: (latest.mrr || 0) * 12 * (1 + i * 0.05) }));
+    : Array(12).fill(0).map((_, i) => ({ month: `M${i}`, value: (latest.mrr || 0) * 12 * (1 + i * 0.05) }));
 
-  const isUrgent = runway < 6;
+  const isUrgent = runway < 6 && runway > 0;
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 relative overflow-hidden">
@@ -38,7 +46,10 @@ export const FounderCommandCenter: React.FC<FounderCommandCenterProps> = ({ metr
           </h2>
           <p className="text-sm text-slate-500">Financial health snapshot</p>
         </div>
-        <button className="text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg hover:bg-indigo-100 transition-colors">
+        <button 
+            onClick={() => navigate('/startup-profile')} 
+            className="text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg hover:bg-indigo-100 transition-colors"
+        >
           Update Financials
         </button>
       </div>
@@ -67,7 +78,7 @@ export const FounderCommandCenter: React.FC<FounderCommandCenterProps> = ({ metr
             Runway
           </div>
           <div className={`text-xl font-bold ${isUrgent ? 'text-amber-600' : 'text-slate-900'}`}>
-            {runway.toFixed(1)} <span className="text-xs font-normal text-slate-400">months</span>
+            {runway === Infinity ? '∞' : runway.toFixed(1)} <span className="text-xs font-normal text-slate-400">months</span>
           </div>
         </div>
 

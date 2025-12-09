@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { HeartPulse, CheckCircle2, XCircle, ArrowUpRight, AlertCircle } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 
 interface HealthScorecardProps {
   score: number;
@@ -14,30 +14,47 @@ interface HealthScorecardProps {
   missing: string[];
 }
 
-// Workaround for strict type checking
-const MotionDiv = motion.div as any;
-
 export const HealthScorecard: React.FC<HealthScorecardProps> = ({ score, metrics, missing }) => {
-  const getColor = (s: number) => s >= 80 ? 'text-emerald-500' : s >= 60 ? 'text-amber-500' : 'text-rose-500';
-  const getBg = (s: number) => s >= 80 ? 'bg-emerald-500' : s >= 60 ? 'bg-amber-500' : 'bg-rose-500';
+  const getColor = (s: number) => s >= 80 ? '#10b981' : s >= 60 ? '#f59e0b' : '#f43f5e';
+  const color = getColor(score);
+
+  const data = [
+    { value: score },
+    { value: 100 - score }
+  ];
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-center mb-2">
         <h3 className="font-bold text-slate-900 flex items-center gap-2">
           <HeartPulse className="text-rose-500" size={20} /> Startup Health
         </h3>
-        <span className={`text-2xl font-bold ${getColor(score)}`}>{score}%</span>
       </div>
 
-      {/* Radial Progress Concept - Simplified with CSS/Divs for reliability */}
-      <div className="relative h-2 bg-slate-100 rounded-full overflow-hidden mb-6">
-         <MotionDiv 
-            initial={{ width: 0 }}
-            animate={{ width: `${score}%` }}
-            className={`h-full rounded-full ${getBg(score)}`}
-            transition={{ duration: 1, ease: "easeOut" }}
-         />
+      {/* Radial Progress Chart */}
+      <div className="relative h-40 flex items-center justify-center mb-4">
+         <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+                <Pie
+                    data={data}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={55}
+                    outerRadius={70}
+                    startAngle={90}
+                    endAngle={-270}
+                    dataKey="value"
+                    stroke="none"
+                >
+                    <Cell fill={color} />
+                    <Cell fill="#f1f5f9" />
+                </Pie>
+            </PieChart>
+         </ResponsiveContainer>
+         <div className="absolute inset-0 flex flex-col items-center justify-center">
+             <span className="text-3xl font-bold text-slate-900">{score}%</span>
+             <span className="text-xs text-slate-400 font-medium uppercase tracking-wide">Score</span>
+         </div>
       </div>
 
       <div className="space-y-4">

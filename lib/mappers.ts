@@ -248,6 +248,7 @@ export const mapMetricsFromDB = (m: any): MetricsSnapshot => ({
     ltv: m.ltv || 0,
     burnRate: m.burn_rate || 0,
     runwayMonths: m.runway_months || 0,
+    cashBalance: m.cash_balance || 0,
     recordedAt: m.created_at
 });
 
@@ -259,7 +260,8 @@ export const mapMetricsToDB = (m: Partial<MetricsSnapshot>, startupId: string) =
     cac: m.cac,
     ltv: m.ltv,
     burn_rate: m.burnRate,
-    runway_months: m.runwayMonths
+    runway_months: m.runwayMonths,
+    cash_balance: m.cashBalance
 });
 
 /**

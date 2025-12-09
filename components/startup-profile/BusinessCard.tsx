@@ -1,17 +1,18 @@
 
 import React, { useState } from 'react';
-import { Target, Edit2, Tag, Loader2, Sparkles, AlertCircle, CheckCircle2 } from 'lucide-react';
-import { useData } from '../../context/DataContext';
-import { useToast } from '../../context/ToastContext';
+import { Target, Edit2, Loader2, Sparkles, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { WizardService } from '../../services/wizardAI';
 import { API_KEY } from '../../lib/env';
+import { StartupProfile } from '../../types';
+import { useToast } from '../../context/ToastContext';
 
 interface BusinessCardProps {
   viewMode: 'edit' | 'investor';
+  profile: StartupProfile;
+  onSave: (data: Partial<StartupProfile>) => Promise<void>;
 }
 
-export const BusinessCard: React.FC<BusinessCardProps> = ({ viewMode }) => {
-  const { profile, updateProfile } = useData();
+export const BusinessCard: React.FC<BusinessCardProps> = ({ viewMode, profile, onSave }) => {
   const { success } = useToast();
   
   const [isEditing, setIsEditing] = useState(false);
@@ -30,8 +31,8 @@ export const BusinessCard: React.FC<BusinessCardProps> = ({ viewMode }) => {
       setIsEditing(true);
   };
 
-  const handleSave = async () => {
-      await updateProfile(formData);
+  const handleSaveClick = async () => {
+      await onSave(formData);
       setIsEditing(false);
       success("Business model updated");
   };
@@ -150,7 +151,7 @@ export const BusinessCard: React.FC<BusinessCardProps> = ({ viewMode }) => {
 
                 <div className="flex justify-end gap-2 pt-2">
                     <button onClick={() => setIsEditing(false)} className="px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 rounded">Cancel</button>
-                    <button onClick={handleSave} className="px-3 py-1.5 text-sm bg-indigo-600 text-white rounded font-medium hover:bg-indigo-700">Save Changes</button>
+                    <button onClick={handleSaveClick} className="px-3 py-1.5 text-sm bg-indigo-600 text-white rounded font-medium hover:bg-indigo-700">Save Changes</button>
                 </div>
             </div>
         ) : (

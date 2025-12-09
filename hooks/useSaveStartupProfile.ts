@@ -9,6 +9,7 @@ interface UpdateProfilePayload {
   context?: Record<string, any>;
   founders?: any[];
   metrics?: Record<string, any>;
+  competitors?: string[];
 }
 
 export const useSaveStartupProfile = () => {

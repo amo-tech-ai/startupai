@@ -1,17 +1,20 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Camera, Globe, Sparkles, Edit2, Save, X, Building2, Loader2, Link as LinkIcon } from 'lucide-react';
+import { Camera, Globe, Sparkles, Edit2, Save, X, Building2, Loader2 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { useToast } from '../../context/ToastContext';
 import { WizardService } from '../../services/wizardAI';
 import { API_KEY } from '../../lib/env';
+import { StartupProfile } from '../../types';
 
 interface OverviewCardProps {
   viewMode: 'edit' | 'investor';
+  profile: StartupProfile;
+  onSave: (data: Partial<StartupProfile>) => Promise<void>;
 }
 
-export const OverviewCard: React.FC<OverviewCardProps> = ({ viewMode }) => {
-  const { profile, updateProfile, uploadFile } = useData();
+export const OverviewCard: React.FC<OverviewCardProps> = ({ viewMode, profile, onSave }) => {
+  const { uploadFile } = useData(); // Only use global for file upload utility
   const { success, error, toast } = useToast();
   
   const [isEditing, setIsEditing] = useState(false);
@@ -32,8 +35,8 @@ export const OverviewCard: React.FC<OverviewCardProps> = ({ viewMode }) => {
     }
   }, [profile, isEditing]);
 
-  const handleSave = async () => {
-    await updateProfile(formData);
+  const handleSaveClick = async () => {
+    await onSave(formData);
     setIsEditing(false);
     success("Overview updated");
   };
@@ -57,8 +60,8 @@ export const OverviewCard: React.FC<OverviewCardProps> = ({ viewMode }) => {
         try {
             const url = await uploadFile(e.target.files[0], 'startup-assets');
             if (url) {
-                if (type === 'cover') updateProfile({ coverImageUrl: url });
-                else updateProfile({ logoUrl: url });
+                if (type === 'cover') onSave({ coverImageUrl: url });
+                else onSave({ logoUrl: url });
                 success(`${type === 'cover' ? 'Cover image' : 'Logo'} updated`);
             }
         } catch (e) { error("Upload failed"); }
@@ -162,7 +165,7 @@ export const OverviewCard: React.FC<OverviewCardProps> = ({ viewMode }) => {
                         </div>
                         <div className="flex justify-end gap-2 pt-2">
                             <button onClick={() => setIsEditing(false)} className="px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 rounded">Cancel</button>
-                            <button onClick={handleSave} className="px-3 py-1.5 text-sm bg-indigo-600 text-white rounded font-medium hover:bg-indigo-700">Save</button>
+                            <button onClick={handleSaveClick} className="px-3 py-1.5 text-sm bg-indigo-600 text-white rounded font-medium hover:bg-indigo-700">Save</button>
                         </div>
                     </div>
                 ) : (

@@ -88,6 +88,7 @@ export interface StartupProfileDTO {
     name: string;
     tagline?: string;
     description?: string;
+    mission?: string;
     stage?: string;
     industry?: string;
     website_url?: string;
@@ -95,26 +96,35 @@ export interface StartupProfileDTO {
     logo_url?: string;
     problem_statement?: string;
     solution_statement?: string;
-    business_model?: string | string[]; // Schema has text[], logic often uses string
+    business_model?: string;
     pricing_model?: string;
-    target_market?: string | string[];
+    target_market?: string;
     funding_goal?: number;
     is_raising?: boolean;
     use_of_funds?: string[];
     year_founded?: number;
+    competitors?: string[];
+    key_features?: string[];
   };
-  founders: Founder[];
+  founders: {
+    id: string;
+    full_name: string; // RPC returns column names
+    role: string;
+    bio: string;
+    linkedin_url?: string;
+    email?: string;
+    avatar_url?: string;
+    is_primary?: boolean;
+  }[];
   metrics: {
     id: string;
-    mrr: number;
-    activeUsers: number;
-    growthRate?: number;
-    period: string;
+    monthly_revenue: number;
+    monthly_active_users: number;
+    snapshot_date: string;
   } | null;
-  links: any[]; 
+  competitors?: string[]; // Added top level competitors from RPC aggregation
   ai_summary?: string;
   profile_strength?: number;
-  missing_fields?: string[];
 }
 
 // Table: startup_competitors

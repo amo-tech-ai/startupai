@@ -1,21 +1,18 @@
 
 import React, { useState } from 'react';
-import { Users, Plus, Edit2, Trash2, Linkedin, Mail, Globe, Sparkles, Loader2 } from 'lucide-react';
-import { useData } from '../../context/DataContext';
+import { Users, Plus, Edit2, Trash2, Linkedin, Mail, Sparkles, Loader2 } from 'lucide-react';
 import { WizardService } from '../../services/wizardAI';
 import { API_KEY } from '../../lib/env';
-import { useToast } from '../../context/ToastContext';
 import { Founder } from '../../types';
 import { generateShortId } from '../../lib/utils';
 
 interface TeamCardProps {
   viewMode: 'edit' | 'investor';
+  founders: Founder[];
+  onSave: (founders: Founder[]) => void;
 }
 
-export const TeamCard: React.FC<TeamCardProps> = ({ viewMode }) => {
-  const { founders, addFounder, removeFounder, setFounders } = useData();
-  const { toast } = useToast();
-  
+export const TeamCard: React.FC<TeamCardProps> = ({ viewMode, founders, onSave }) => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState<Partial<Founder>>({});
   const [isRewriting, setIsRewriting] = useState(false);
@@ -25,10 +22,10 @@ export const TeamCard: React.FC<TeamCardProps> = ({ viewMode }) => {
     setFormData(founder);
   };
 
-  const handleSave = () => {
+  const handleSaveClick = () => {
     if (editingId && formData.name) {
         const updatedFounders = founders.map(f => f.id === editingId ? { ...f, ...formData } as Founder : f);
-        setFounders(updatedFounders);
+        onSave(updatedFounders);
         setEditingId(null);
     }
   };
@@ -43,8 +40,14 @@ export const TeamCard: React.FC<TeamCardProps> = ({ viewMode }) => {
           bio: '',
           isPrimaryContact: false
       };
-      addFounder(newFounder);
+      // Optimistically add to list for editing
+      const newList = [...founders, newFounder];
+      onSave(newList); // Save immediately to sync list state
       handleEdit(newFounder); // Immediately edit
+  };
+
+  const handleRemove = (id: string) => {
+      onSave(founders.filter(f => f.id !== id));
   };
 
   const handleRewriteBio = async () => {
@@ -79,7 +82,7 @@ export const TeamCard: React.FC<TeamCardProps> = ({ viewMode }) => {
                             <button onClick={() => handleEdit(founder)} className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded">
                                 <Edit2 size={14} />
                             </button>
-                            <button onClick={() => removeFounder(founder.id)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded">
+                            <button onClick={() => handleRemove(founder.id)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded">
                                 <Trash2 size={14} />
                             </button>
                         </div>
@@ -126,7 +129,7 @@ export const TeamCard: React.FC<TeamCardProps> = ({ viewMode }) => {
                             </div>
                             <div className="flex justify-end gap-2">
                                 <button onClick={() => setEditingId(null)} className="px-3 py-1.5 text-xs font-bold text-slate-500 hover:text-slate-700">Cancel</button>
-                                <button onClick={handleSave} className="px-3 py-1.5 text-xs font-bold bg-indigo-600 text-white rounded hover:bg-indigo-700">Save</button>
+                                <button onClick={handleSaveClick} className="px-3 py-1.5 text-xs font-bold bg-indigo-600 text-white rounded hover:bg-indigo-700">Save</button>
                             </div>
                         </div>
                     ) : (

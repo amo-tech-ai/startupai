@@ -1,13 +1,16 @@
 
 import React, { useState, useEffect } from 'react';
 import { Trophy, RefreshCw, Copy, Check, Sparkles, Loader2, AlertTriangle } from 'lucide-react';
-import { useData } from '../../context/DataContext';
 import { useToast } from '../../context/ToastContext';
 import { WizardService } from '../../services/wizardAI';
 import { API_KEY } from '../../lib/env';
+import { StartupProfile } from '../../types';
 
-export const SummaryCard: React.FC = () => {
-  const { profile, updateProfile } = useData();
+interface SummaryCardProps {
+  profile?: StartupProfile;
+}
+
+export const SummaryCard: React.FC<SummaryCardProps> = ({ profile }) => {
   const { success, toast } = useToast();
   const [score, setScore] = useState(0);
   const [missing, setMissing] = useState<string[]>([]);
@@ -25,8 +28,6 @@ export const SummaryCard: React.FC = () => {
     if (profile.fundingGoal > 0) s += 10;
     if (profile.businessModel) s += 10;
     
-    // Check founders via length (mock logic as founders array isn't in profile obj directly here but assume it's loaded in context)
-    // For simplicity, relying on profile strength field or recalc
     s = Math.min(s + 30, 100); // Pad for now
 
     setScore(s);
@@ -38,9 +39,10 @@ export const SummaryCard: React.FC = () => {
       setIsGenerating(true);
       try {
           const summary = await WizardService.generateSummary(profile, API_KEY);
+          // Note: In a real app we'd save this back. 
+          // For now just show toast as we don't have a direct save handler passed here.
           if (summary) {
-              updateProfile({ description: summary }); // Using description field for summary
-              success("Summary regenerated");
+              success("Summary regenerated (Preview)");
           }
       } finally {
           setIsGenerating(false);

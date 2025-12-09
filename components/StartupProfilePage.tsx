@@ -1,6 +1,6 @@
 
-import React, { useState, useEffect } from 'react';
-import { Eye, Edit3, Presentation, CheckCircle2, Save } from 'lucide-react';
+import React, { useState } from 'react';
+import { Eye, Edit3, Presentation, CheckCircle2 } from 'lucide-react';
 import { useData } from '../context/DataContext';
 import { OverviewCard } from './startup-profile/OverviewCard';
 import { TeamCard } from './startup-profile/TeamCard';
@@ -10,41 +10,102 @@ import { SummaryCard } from './startup-profile/SummaryCard';
 import { useNavigate } from 'react-router-dom';
 import { useSaveStartupProfile } from '../hooks/useSaveStartupProfile';
 import { useStartupProfile } from '../hooks/useStartupProfile';
+import { StartupProfile, Founder } from '../types';
 
 const StartupProfilePage: React.FC = () => {
-  const { profile: globalProfile } = useData(); // Fallback for ID
+  const { profile: globalProfile } = useData(); 
   const { data: profileDTO, loading, reload } = useStartupProfile(globalProfile?.id);
   const { saveProfile, isSaving } = useSaveStartupProfile();
   const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<'edit' | 'investor'>('edit');
 
-  if (loading) return (
+  if (loading && !globalProfile) return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
           <div className="animate-pulse flex flex-col items-center gap-4">
               <div className="h-12 w-12 bg-indigo-200 rounded-full"></div>
-              <div className="text-slate-500 font-medium">Loading profile data...</div>
+              <div className="text-slate-500 font-medium">Loading profile...</div>
           </div>
       </div>
   );
 
-  if (!profileDTO && !globalProfile) return (
+  // Merge RPC DTO with base type if available, else fallback to global context (Legacy/Demo support)
+  let displayProfile: StartupProfile | null = globalProfile;
+  let displayFounders: Founder[] = [];
+
+  if (profileDTO) {
+      displayProfile = {
+          ...globalProfile!, // Maintain structure
+          id: profileDTO.startup_id,
+          name: profileDTO.context.name,
+          tagline: profileDTO.context.tagline || '',
+          description: profileDTO.context.description || '',
+          mission: profileDTO.context.mission || '',
+          websiteUrl: profileDTO.context.website_url,
+          logoUrl: profileDTO.context.logo_url,
+          coverImageUrl: profileDTO.context.cover_image_url,
+          industry: profileDTO.context.industry,
+          yearFounded: profileDTO.context.year_founded,
+          stage: (profileDTO.context.stage as any) || 'Seed',
+          problemStatement: profileDTO.context.problem_statement || '',
+          solutionStatement: profileDTO.context.solution_statement || '',
+          businessModel: profileDTO.context.business_model || '',
+          pricingModel: profileDTO.context.pricing_model,
+          fundingGoal: profileDTO.context.funding_goal || 0,
+          isRaising: profileDTO.context.is_raising,
+          targetMarket: profileDTO.context.target_market || '',
+          // Use competitors from DTO root if available (mapped from RPC), fallback to context
+          competitors: profileDTO.competitors || profileDTO.context.competitors || [],
+          keyFeatures: profileDTO.context.key_features || [],
+          useOfFunds: profileDTO.context.use_of_funds || []
+      };
+
+      displayFounders = profileDTO.founders.map(f => ({
+          id: f.id,
+          startupId: profileDTO.startup_id,
+          name: f.full_name,
+          title: f.role,
+          bio: f.bio,
+          linkedinProfile: f.linkedin_url,
+          email: f.email,
+          avatarUrl: f.avatar_url,
+          isPrimaryContact: f.is_primary || false
+      }));
+  }
+
+  if (!displayProfile) return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 text-center">
           <div>
               <h2 className="text-xl font-bold text-slate-900 mb-2">Profile Not Found</h2>
-              <p className="text-slate-500 mb-6">Please complete the onboarding wizard first.</p>
               <button onClick={() => navigate('/onboarding')} className="px-6 py-2 bg-indigo-600 text-white rounded-lg font-bold">Go to Wizard</button>
           </div>
       </div>
   );
 
-  // Use DTO if available, otherwise global context (optimistic/legacy)
-  const displayProfile = profileDTO ? {
-      ...globalProfile, // Keep base methods/props
-      ...profileDTO.context, // Override with fresh DB data
-      id: profileDTO.startup_id
-  } : globalProfile;
+  const handleSaveContext = async (data: Partial<StartupProfile>) => {
+      // Map back to schema keys
+      const payload: any = {};
+      if (data.name) payload.name = data.name;
+      if (data.tagline) payload.tagline = data.tagline;
+      if (data.websiteUrl) payload.website_url = data.websiteUrl;
+      if (data.industry) payload.industry = data.industry;
+      if (data.yearFounded) payload.year_founded = data.yearFounded;
+      if (data.problemStatement) payload.problem = data.problemStatement;
+      if (data.solutionStatement) payload.solution = data.solutionStatement;
+      if (data.businessModel) payload.business_model = data.businessModel;
+      if (data.pricingModel) payload.pricing_model = data.pricingModel;
+      if (data.fundingGoal) payload.raise_amount = data.fundingGoal;
+      if (data.keyFeatures) payload.unique_value = data.keyFeatures.join(', '); // Simple mapping
 
-  if (!displayProfile) return null;
+      // Extract competitors to send as separate array
+      const competitorsPayload = data.competitors;
+
+      await saveProfile({ 
+          startup_id: displayProfile!.id,
+          context: payload,
+          competitors: competitorsPayload
+      });
+      reload();
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 pb-20 font-sans text-slate-900">
@@ -92,19 +153,32 @@ const StartupProfilePage: React.FC = () => {
             
             {/* MAIN COLUMN (8 cols) */}
             <div className="lg:col-span-8 space-y-8">
-                {/* Note: Cards handle their own local saves via context currently. 
-                    We can refactor them to accept onSave props to use useSaveStartupProfile, 
-                    but for this iteration we rely on the context's persistence layer 
-                    updated in the hooks. */}
-                <OverviewCard viewMode={viewMode} />
-                <BusinessCard viewMode={viewMode} />
-                <TractionCard viewMode={viewMode} />
-                <TeamCard viewMode={viewMode} />
+                <OverviewCard 
+                    viewMode={viewMode} 
+                    profile={displayProfile} 
+                    onSave={handleSaveContext} 
+                />
+                <BusinessCard 
+                    viewMode={viewMode} 
+                    profile={displayProfile}
+                    onSave={handleSaveContext}
+                />
+                <TractionCard 
+                    viewMode={viewMode} 
+                    profile={displayProfile}
+                    metrics={profileDTO?.metrics}
+                    onSave={handleSaveContext}
+                />
+                <TeamCard 
+                    viewMode={viewMode} 
+                    founders={displayFounders}
+                    onSave={(founders) => saveProfile({ startup_id: displayProfile!.id, founders })}
+                />
             </div>
 
             {/* SIDEBAR COLUMN (4 cols) */}
             <div className="lg:col-span-4 space-y-6 lg:sticky lg:top-24">
-                <SummaryCard />
+                <SummaryCard profile={displayProfile} />
                 
                 <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
                     <h3 className="font-bold text-slate-900 mb-3">Profile Status</h3>

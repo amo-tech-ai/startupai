@@ -26,7 +26,8 @@ export const useStartupProfile = (startupId?: string) => {
       
       setData(rpcData as StartupProfileDTO);
     } catch (err: any) {
-      console.error('Fetch Profile Error:', err);
+      // Quietly fail for now or handle demo mode
+      console.warn('Fetch Profile Warning:', err.message);
       setError(err);
     } finally {
       setLoading(false);

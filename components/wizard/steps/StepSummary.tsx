@@ -1,9 +1,9 @@
 
 import React, { useEffect, useState } from 'react';
 import { 
-  Trophy, AlertTriangle, ArrowRight, Sparkles, Loader2, Check, 
+  Trophy, AlertTriangle, Sparkles, Loader2, Check, 
   Building2, Users, TrendingUp, Target, DollarSign, Globe,
-  Layout, Briefcase, FileText, RefreshCw, Layers
+  RefreshCw
 } from 'lucide-react';
 import { WizardService } from '../../../services/wizardAI';
 import { API_KEY } from '../../../lib/env';
@@ -22,7 +22,7 @@ export const StepSummary: React.FC<StepSummaryProps> = ({ formData, setFormData 
   useEffect(() => {
     // Calculate Score
     let score = 0;
-    const missing = [];
+    const missing: string[] = [];
     
     // Context (30%)
     if (formData.name) score += 5;
@@ -55,16 +55,19 @@ export const StepSummary: React.FC<StepSummaryProps> = ({ formData, setFormData 
     setMissingItems(missing);
 
     // Auto-generate summary if empty
-    if (!formData.aiSummary && API_KEY) {
+    if (!formData.aiSummary && API_KEY && !isGenerating) {
         handleImproveWithAI();
     }
-  }, []);
+  }, []); // Only run on mount (and missing items calc)
 
   const handleImproveWithAI = async () => {
+      if (!API_KEY) return;
       setIsGenerating(true);
       try {
-        const summary = await WizardService.generateSummary(formData, API_KEY!);
+        const summary = await WizardService.generateSummary(formData, API_KEY);
         if (summary) setFormData((prev: any) => ({ ...prev, aiSummary: summary }));
+      } catch (e) {
+        console.error("Failed to generate summary", e);
       } finally {
         setIsGenerating(false);
       }

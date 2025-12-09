@@ -105,17 +105,19 @@ const AppContent = () => {
         <Route element={<RequireAuth><AppLayout /></RequireAuth>}>
           <Route path="/dashboard" element={<Dashboard />} />
           
-          {/* Parameterized Routes for Deep Linking */}
+          {/* Pitch Decks Deep Linking */}
           <Route path="/pitch-decks" element={<PitchDecks />} />
           <Route path="/pitch-decks/:deckId" element={<PitchDecks />} />
           
           <Route path="/crm" element={<CRM />} />
           
+          {/* Documents Deep Linking */}
           <Route path="/documents" element={<Documents />} />
           <Route path="/documents/:docId" element={<Documents />} />
           
           <Route path="/tasks" element={<Tasks />} />
           
+          {/* Settings Deep Linking */}
           <Route path="/settings" element={<Settings />} />
           <Route path="/settings/:tab" element={<Settings />} />
           

@@ -9,24 +9,24 @@ import { useParams, useNavigate } from 'react-router-dom';
 type Tab = 'account' | 'general' | 'team' | 'billing';
 
 const Settings: React.FC = () => {
-  const { tab } = useParams<{ tab: string }>();
+  const { tab } = useParams();
   const navigate = useNavigate();
   
-  // Default to account if no tab is specified or invalid
-  const activeTab: Tab = (tab && ['account', 'general', 'team', 'billing'].includes(tab)) 
-    ? (tab as Tab) 
-    : 'account';
-
-  const handleTabChange = (newTab: Tab) => {
-    navigate(`/settings/${newTab}`);
-  };
-
   const tabs: { id: Tab; label: string }[] = [
     { id: 'account', label: 'My Account' },
     { id: 'general', label: 'Startup Profile' },
     { id: 'team', label: 'Team Members' },
     { id: 'billing', label: 'Billing & Plan' },
   ];
+
+  // Validate tab from URL or default to 'account'
+  const activeTab: Tab = (tab && tabs.some(t => t.id === tab)) 
+    ? (tab as Tab) 
+    : 'account';
+
+  const handleTabChange = (newTab: Tab) => {
+    navigate(`/settings/${newTab}`);
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 pt-10 px-6 pb-12">

@@ -8,7 +8,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 
 const Documents: React.FC = () => {
   const { docs, addDoc, deleteDoc } = useData();
-  const { docId } = useParams<{ docId: string }>();
+  const { docId } = useParams();
   const navigate = useNavigate();
 
   // Derive active doc from URL param
@@ -41,6 +41,11 @@ const Documents: React.FC = () => {
       if (activeDoc?.id === id) {
           navigate('/documents');
       }
+  }
+
+  if (docId && !activeDoc && docs.length > 0) {
+      navigate('/documents', { replace: true });
+      return null;
   }
 
   return (

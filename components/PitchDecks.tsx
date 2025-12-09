@@ -10,7 +10,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 
 const PitchDecks: React.FC = () => {
   const { decks } = useData();
-  const { deckId } = useParams<{ deckId: string }>();
+  const { deckId } = useParams();
   const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -29,6 +29,13 @@ const PitchDecks: React.FC = () => {
     setIsModalOpen(false);
     navigate(`/pitch-decks/${newId}`);
   };
+
+  // If a deckId is present in URL but not found in data (and data is loaded), redirect back
+  // Note: We check decks.length to ensure we don't redirect while initial data is loading
+  if (deckId && !selectedDeck && decks.length > 0) {
+    navigate('/pitch-decks', { replace: true });
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 relative">

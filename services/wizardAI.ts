@@ -21,7 +21,7 @@ export const WizardService = {
       3. If not found, infer from name and industry patterns.
       4. Think deeply about the target audience and core value proposition.
       
-      Return a JSON object with:
+      Return a VALID JSON object with the following keys:
       - tagline (max 10 words, catchy)
       - industry (e.g. Fintech, Edtech, SaaS)
       - target_audience (e.g. SMBs, Enterprise)
@@ -29,6 +29,8 @@ export const WizardService = {
       - solution_statement (how they solve it)
       - pricing_model_hint (e.g. SaaS, Freemium, Marketplace)
       - social_links: { linkedin: string, twitter: string, github: string } (Find these if possible, otherwise empty strings)
+      
+      IMPORTANT: Return ONLY valid JSON.
     `;
 
     try {
@@ -37,8 +39,8 @@ export const WizardService = {
         contents: prompt,
         config: {
           tools: [{ googleSearch: {} }],
-          responseMimeType: 'application/json',
-          thinkingConfig: { thinkingBudget: 2048 } // Enable thinking for deeper research synthesis
+          // responseMimeType is NOT allowed when using googleSearch
+          thinkingConfig: { thinkingBudget: 2048 } 
         }
       });
 
@@ -117,7 +119,7 @@ export const WizardService = {
       3. Suggest a strong "Core Differentiator".
       4. Suggest 3 key features.
       
-      Return JSON:
+      Return valid JSON:
       {
         "competitors": ["Name 1", "Name 2"],
         "coreDifferentiator": "...",
@@ -131,7 +133,7 @@ export const WizardService = {
         contents: prompt,
         config: {
           tools: [{ googleSearch: {} }],
-          responseMimeType: 'application/json',
+          // responseMimeType: 'application/json', // Not allowed with search
           thinkingConfig: { thinkingBudget: 1024 }
         }
       });
@@ -145,7 +147,7 @@ export const WizardService = {
 
   /**
    * STEP 4: Traction & Valuation
-   * Uses Search + Code Execution for precise calculation.
+   * Uses Search + Thinking. Code execution removed to prevent conflicts with Search.
    */
   async estimateValuation(industry: string, stage: string, mrr: number, apiKey: string) {
     const ai = new GoogleGenAI({ apiKey });
@@ -155,7 +157,7 @@ export const WizardService = {
       
       Steps:
       1. Search for current revenue valuation multiples for ${industry} startups at ${stage} stage (e.g., "SaaS seed valuation multiples 2024").
-      2. Use Code Execution to calculate the valuation range (Low/High) based on MRR * 12 (Annualized) * Multiple.
+      2. Calculate the valuation range (Low/High) based on MRR * 12 (Annualized) * Multiple.
       3. Return reasoning and numbers in millions.
       
       Output JSON: { "min": number, "max": number, "reasoning": "string" }
@@ -166,9 +168,8 @@ export const WizardService = {
         model: 'gemini-3-pro-preview',
         contents: prompt,
         config: {
-          // Combining Search for data and Code for math
-          tools: [{ googleSearch: {} }, { codeExecution: {} }],
-          responseMimeType: 'application/json',
+          tools: [{ googleSearch: {} }],
+          // responseMimeType: 'application/json', // Not allowed with search
         }
       });
       const text = cleanJson(response.text);
@@ -248,7 +249,7 @@ export const WizardService = {
         model: 'gemini-3-pro-preview',
         contents: prompt,
         config: { 
-            responseMimeType: 'application/json',
+            // responseMimeType: 'application/json', // Not allowed with search
             tools: [{ googleSearch: {} }] 
         }
       });

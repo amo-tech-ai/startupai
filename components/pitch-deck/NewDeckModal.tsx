@@ -50,7 +50,6 @@ export const NewDeckModal: React.FC<NewDeckModalProps> = ({ isOpen, onClose, onS
         });
         success("Deck created successfully!");
         onSuccess(id); // Use the returned ID to navigate
-        onClose();
       } else {
         error("AI failed to generate deck content.");
       }

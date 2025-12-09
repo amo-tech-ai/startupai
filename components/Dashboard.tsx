@@ -18,13 +18,13 @@ import { SmartAlerts } from './dashboard/v2/SmartAlerts';
 import { SetupChecklist } from './dashboard/v2/SetupChecklist';
 import { ActivityFeed } from './dashboard/ActivityFeed';
 import { WelcomeHeader } from './dashboard/WelcomeHeader';
-import { AddContactSidebar } from './dashboard/AddContactSidebar'; // Imported sidebar
+import { AddContactSidebar } from './dashboard/AddContactSidebar';
 
 const Dashboard: React.FC = () => {
   const { profile, metrics, insights, activities, deals, decks, setInsights, addActivity } = useData();
   const { toast, error, success } = useToast();
   const [isGeneratingInsights, setIsGeneratingInsights] = useState(false);
-  const [isContactSidebarOpen, setIsContactSidebarOpen] = useState(false); // State for sidebar
+  const [isContactSidebarOpen, setIsContactSidebarOpen] = useState(false);
   const navigate = useNavigate();
 
   const isGuest = profile?.userId === 'guest' || profile?.userId === 'mock';
@@ -132,7 +132,7 @@ const Dashboard: React.FC = () => {
       <WelcomeHeader 
         profile={profile} 
         onNewDeck={() => navigate('/pitch-decks')}
-        onAddContact={() => setIsContactSidebarOpen(true)} // Open Sidebar
+        onAddContact={() => setIsContactSidebarOpen(true)}
         onCreateDoc={() => navigate('/documents')}
       />
 

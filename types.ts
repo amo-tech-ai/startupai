@@ -212,6 +212,8 @@ export interface Contact {
   role?: string;
   type?: ContactType;
   linkedinUrl?: string;
+  tags?: string[];
+  notes?: string;
   createdAt: string;
 }
 

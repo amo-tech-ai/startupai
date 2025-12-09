@@ -44,15 +44,15 @@ export const AddContactSidebar: React.FC<AddContactSidebarProps> = ({ isOpen, on
       setFormData({
         fullName: `${contact.firstName} ${contact.lastName}`.trim(),
         role: contact.role || '',
-        company: '', // Note: Company is not persisted in Contact type yet, will need to extract from role if encoded or left empty
+        company: '', 
         email: contact.email || '',
         phone: contact.phone || '',
         contactType: contact.type || 'Lead',
-        tags: [], // Tags not persisted in Contact type yet
-        notes: '', // Notes not persisted in Contact type yet
+        tags: contact.tags || [],
+        notes: contact.notes || '',
         sector: ''
       });
-      // Try to extract company from role if formatted as "Role at Company"
+      // Extract company from role if formatted as "Role at Company"
       if (contact.role && contact.role.includes(' at ')) {
           const parts = contact.role.split(' at ');
           if (parts.length > 1) {
@@ -91,24 +91,23 @@ export const AddContactSidebar: React.FC<AddContactSidebarProps> = ({ isOpen, on
           role: data.role || prev.role,
           company: data.company || prev.company,
           email: data.email || prev.email,
-          tags: data.tags || prev.tags,
-          notes: data.summary || prev.notes,
+          tags: (Array.isArray(data.tags) && data.tags.length > 0) ? data.tags : prev.tags,
+          notes: data.summary ? (prev.notes ? `${data.summary}\n\n${prev.notes}` : data.summary) : prev.notes,
           sector: data.sector || prev.sector || 'Tech'
         }));
-        success("Data imported successfully!");
+        success("✅ Data imported from URL. Review before saving.");
       } else {
         error("We couldn't read that URL. Please check the link or fill fields manually.");
       }
     } catch (e) {
       console.error(e);
-      error("AI extraction failed.");
+      error("We couldn't read that URL. Please check the link or fill fields manually.");
     } finally {
       setIsAnalyzing(false);
     }
   };
 
   const handleSaveContact = async () => {
-    // 1. Validate required fields
     if (!formData.fullName) {
       error("Full Name is required.");
       return;
@@ -117,16 +116,19 @@ export const AddContactSidebar: React.FC<AddContactSidebarProps> = ({ isOpen, on
     setIsSaving(true);
 
     try {
-      // 2. Prepare Data
       const nameParts = formData.fullName.split(' ');
       const firstName = nameParts[0];
       const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
       
-      // Hack: Store company in role string if company is provided, to persist it lightly
-      const finalRole = formData.company ? `${formData.role} at ${formData.company}` : formData.role;
+      // Compose Role to include Company if present
+      let finalRole = formData.role;
+      if (formData.company && !finalRole.includes(' at ')) {
+          finalRole = `${formData.role} at ${formData.company}`;
+      } else if (!finalRole && formData.company) {
+          finalRole = `at ${formData.company}`;
+      }
 
       if (contact) {
-          // UPDATE EXISTING
           await updateContact(contact.id, {
             firstName,
             lastName,
@@ -134,11 +136,12 @@ export const AddContactSidebar: React.FC<AddContactSidebarProps> = ({ isOpen, on
             phone: formData.phone,
             role: finalRole,
             type: formData.contactType,
-            linkedinUrl: url.includes('linkedin') ? url : contact.linkedinUrl
+            linkedinUrl: url.includes('linkedin') ? url : contact.linkedinUrl,
+            tags: formData.tags,
+            notes: formData.notes
           });
           success("Contact updated.");
       } else {
-          // CREATE NEW
           await addContact({
             firstName,
             lastName,
@@ -146,10 +149,12 @@ export const AddContactSidebar: React.FC<AddContactSidebarProps> = ({ isOpen, on
             phone: formData.phone || undefined,
             role: finalRole,
             type: formData.contactType,
-            linkedinUrl: url.includes('linkedin') ? url : undefined
+            linkedinUrl: url.includes('linkedin') ? url : undefined,
+            tags: formData.tags,
+            notes: formData.notes
           });
 
-          // Create associated Deal if it's a Lead (only on creation)
+          // Create associated Deal if it's a Lead (to update Dashboard snapshot)
           if (formData.contactType === 'Lead' || formData.contactType === 'Customer') {
             await addDeal({
               company: formData.company || 'Unknown Company',
@@ -165,9 +170,7 @@ export const AddContactSidebar: React.FC<AddContactSidebarProps> = ({ isOpen, on
           }
           success("Contact added to CRM.");
       }
-      
       onClose();
-
     } catch (e) {
       console.error(e);
       error("There was a problem saving this contact. Please try again.");
@@ -180,7 +183,6 @@ export const AddContactSidebar: React.FC<AddContactSidebarProps> = ({ isOpen, on
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop */}
           <MotionDiv
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -189,7 +191,6 @@ export const AddContactSidebar: React.FC<AddContactSidebarProps> = ({ isOpen, on
             className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-40"
           />
 
-          {/* Drawer */}
           <MotionDiv
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
@@ -213,9 +214,8 @@ export const AddContactSidebar: React.FC<AddContactSidebarProps> = ({ isOpen, on
               </button>
             </div>
 
-            {/* Scrollable Content */}
+            {/* Content */}
             <div className="flex-1 overflow-y-auto p-6 space-y-8">
-              
               {/* AI Section */}
               <div className="bg-gradient-to-br from-indigo-50 to-purple-50 p-4 rounded-xl border border-indigo-100">
                 <label className="block text-xs font-bold text-indigo-900 uppercase mb-2 flex items-center gap-1">
@@ -242,7 +242,7 @@ export const AddContactSidebar: React.FC<AddContactSidebarProps> = ({ isOpen, on
                 </p>
               </div>
 
-              {/* Manual Form */}
+              {/* Form */}
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Full Name <span className="text-red-500">*</span></label>

@@ -1,6 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { GoogleGenAI, Type } from "npm:@google/genai";
+import { GoogleGenAI } from "npm:@google/genai";
 
 declare const Deno: any;
 
@@ -8,6 +8,16 @@ const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Helper for JSON cleaning (simple version)
+function cleanJson(text: string | undefined): string {
+  if (!text) return "{}";
+  let cleaned = text.trim();
+  if (cleaned.startsWith('```')) {
+    cleaned = cleaned.replace(/^```(json)?\n?/, '').replace(/\n?```$/, '');
+  }
+  return cleaned;
+}
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -45,33 +55,16 @@ serve(async (req) => {
       - sector (string): The primary industry sector.
     `;
 
+    // Using googleSearch tool implies we cannot enforce responseSchema via config.
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-preview',
       contents: prompt,
       config: {
-        tools: [{ googleSearch: {} }],
-        responseMimeType: 'application/json',
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            full_name: { type: Type.STRING },
-            role: { type: Type.STRING },
-            company: { type: Type.STRING },
-            email: { type: Type.STRING, nullable: true },
-            tags: { type: Type.ARRAY, items: { type: Type.STRING } },
-            summary: { type: Type.STRING },
-            sector: { type: Type.STRING }
-          },
-          required: ['full_name', 'company', 'tags']
-        }
+        tools: [{ googleSearch: {} }]
       }
     });
 
-    // Clean JSON if needed (though responseMimeType usually handles it)
-    let text = response.text || "{}";
-    if (text.startsWith('```')) {
-      text = text.replace(/^```(json)?\n?/, '').replace(/\n?```$/, '');
-    }
+    const text = cleanJson(response.text);
     const data = JSON.parse(text);
 
     return new Response(JSON.stringify(data), {

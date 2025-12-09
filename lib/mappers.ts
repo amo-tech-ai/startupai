@@ -210,6 +210,8 @@ export const mapContactFromDB = (c: any): Contact => ({
   role: c.role || c.title,
   type: c.contact_type,
   linkedinUrl: c.linkedin_url,
+  tags: c.tags || [],
+  notes: c.notes || '',
   createdAt: c.created_at
 });
 
@@ -221,7 +223,9 @@ export const mapContactToDB = (c: Partial<Contact>, startupId: string) => ({
   phone: c.phone,
   role: c.role,
   contact_type: c.type,
-  linkedin_url: c.linkedinUrl
+  linkedin_url: c.linkedinUrl,
+  tags: c.tags,
+  notes: c.notes
 });
 
 /**

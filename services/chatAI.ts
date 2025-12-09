@@ -1,6 +1,7 @@
 
 import { GoogleGenAI } from "@google/genai";
 import { StartupProfile, MetricsSnapshot } from "../types";
+import { supabase } from "../lib/supabaseClient";
 
 export const ChatAI = {
   async sendMessage(
@@ -12,9 +13,31 @@ export const ChatAI = {
         metrics: MetricsSnapshot[];
     }
   ) {
+    // 1. Try Supabase Edge Function (Preferred for Security)
+    if (supabase) {
+        try {
+            const { data, error } = await supabase.functions.invoke('chat-copilot', {
+                body: { 
+                    history, 
+                    message, 
+                    context: {
+                        profile: context.profile,
+                        // Minimize payload size if metrics history is huge
+                        metrics: context.metrics.slice(-12) 
+                    } 
+                }
+            });
+
+            if (error) throw error;
+            if (data && data.text) return data.text;
+        } catch (err) {
+            console.warn("Chat Edge Function failed, falling back to client-side SDK.", err);
+        }
+    }
+
+    // 2. Client-Side Fallback (Development/Demo)
     const ai = new GoogleGenAI({ apiKey });
     
-    // Construct System Prompt with Context
     const profileContext = context.profile ? `
       Startup Name: ${context.profile.name}
       Description: ${context.profile.tagline}
@@ -44,14 +67,9 @@ export const ChatAI = {
       - Be concise, actionable, and encouraging but realistic.
       - If asked about metrics, refer to the data provided.
       - If asked for advice, use Paul Graham / Y Combinator principles.
-      - Do not invent data if it's missing from the context; ask the user to provide it.
     `;
 
     try {
-      const model = ai.models.generateContent; // Use simple generateContent for now to keep it stateless or manage history manually
-      // Note: For multi-turn, we usually use chats.create, but here we'll just send the history as a prompt or use the chat model if available.
-      // Simpler for this implementation: Use chat model with history.
-      
       const chat = ai.chats.create({
         model: 'gemini-3-pro-preview',
         config: { systemInstruction },

@@ -25,7 +25,7 @@ export const ContactListView: React.FC<ContactListViewProps> = ({ contacts, onDe
     <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         {/* Header */}
         <div className="grid grid-cols-12 gap-4 px-6 py-3 bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-500 uppercase tracking-wide">
-            <div className="col-span-4">Name</div>
+            <div className="col-span-4">Name & Tags</div>
             <div className="col-span-3">Role & Company</div>
             <div className="col-span-2">Type</div>
             <div className="col-span-2">Contact</div>
@@ -42,22 +42,31 @@ export const ContactListView: React.FC<ContactListViewProps> = ({ contacts, onDe
                 contacts.map((contact) => (
                     <div key={contact.id} className="grid grid-cols-12 gap-4 px-6 py-4 items-center hover:bg-slate-50/80 transition-colors group">
                         {/* Name */}
-                        <div className="col-span-4 flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold border border-slate-200">
-                                {contact.firstName.charAt(0)}{contact.lastName ? contact.lastName.charAt(0) : ''}
-                            </div>
-                            <div>
-                                <div className="font-bold text-slate-900 text-sm">{contact.firstName} {contact.lastName}</div>
-                                {contact.linkedinUrl && (
-                                    <a 
-                                        href={contact.linkedinUrl} 
-                                        target="_blank" 
-                                        rel="noreferrer"
-                                        className="text-xs text-blue-600 hover:underline flex items-center gap-1 mt-0.5"
-                                    >
-                                        <Linkedin size={10} /> LinkedIn Profile
-                                    </a>
-                                )}
+                        <div className="col-span-4">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold border border-slate-200 shrink-0">
+                                    {contact.firstName.charAt(0)}{contact.lastName ? contact.lastName.charAt(0) : ''}
+                                </div>
+                                <div>
+                                    <div className="font-bold text-slate-900 text-sm">{contact.firstName} {contact.lastName}</div>
+                                    <div className="flex flex-wrap gap-1 mt-1">
+                                        {contact.linkedinUrl && (
+                                            <a 
+                                                href={contact.linkedinUrl} 
+                                                target="_blank" 
+                                                rel="noreferrer"
+                                                className="text-xs text-blue-600 hover:underline flex items-center gap-1 mr-2"
+                                            >
+                                                <Linkedin size={10} /> LinkedIn
+                                            </a>
+                                        )}
+                                        {contact.tags && contact.tags.length > 0 && contact.tags.slice(0, 2).map((tag, i) => (
+                                            <span key={i} className="text-[10px] px-1.5 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-500">
+                                                {tag}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
                             </div>
                         </div>
 

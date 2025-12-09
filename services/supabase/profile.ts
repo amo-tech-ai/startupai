@@ -27,6 +27,29 @@ export const ProfileService = {
     return { profile, founders };
   },
 
+  async getById(id: string): Promise<{ profile: StartupProfile | null, founders: Founder[] }> {
+    if (!supabase) return { profile: null, founders: [] };
+
+    const { data: profileData } = await supabase
+      .from('startups')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (!profileData) return { profile: null, founders: [] };
+
+    const profile = mapProfileFromDB(profileData);
+
+    const { data: founderData } = await supabase
+      .from('startup_founders')
+      .select('*')
+      .eq('startup_id', profile.id);
+
+    const founders = founderData ? founderData.map(mapFounderFromDB) : [];
+
+    return { profile, founders };
+  },
+
   async create(data: Partial<StartupProfile>, userId: string): Promise<StartupProfile> {
     if (!supabase) throw new Error("Supabase client not initialized");
 

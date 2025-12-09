@@ -2,7 +2,7 @@
 import { supabase } from '../../lib/supabaseClient';
 
 export const AssetService = {
-  async uploadFile(file: File, bucket: string): Promise<string | null> {
+  async uploadFile(file: File, bucket: string, pathPrefix?: string): Promise<string | null> {
     // Helper: Convert File to Base64 string
     const toBase64 = (file: File): Promise<string> => {
         return new Promise((resolve, reject) => {
@@ -20,8 +20,13 @@ export const AssetService = {
     
     try {
         const fileExt = file.name.split('.').pop();
-        const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
-        const filePath = `${fileName}`;
+        const randomId = Math.random().toString(36).substring(2);
+        const timestamp = Date.now();
+        // Use timestamp + random to ensure uniqueness
+        const fileName = `${timestamp}-${randomId}.${fileExt}`;
+        
+        // Use prefix (userId/startupId) if provided to organize bucket and prevent global collisions
+        const filePath = pathPrefix ? `${pathPrefix}/${fileName}` : fileName;
 
         const { error } = await supabase.storage.from(bucket).upload(filePath, file);
         if (error) throw error;

@@ -18,6 +18,7 @@ import Settings from './components/Settings';
 import Profile from './components/Profile';
 import StartupProfilePage from './components/StartupProfilePage';
 import StartupWizard from './components/StartupWizard';
+import PublicStartupProfile from './components/PublicStartupProfile';
 import Footer from './components/Footer';
 import { DataProvider, useData } from './context/DataContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -98,6 +99,9 @@ const AppContent = () => {
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
         </Route>
+
+        {/* Public Shared Profile (No Auth Required) */}
+        <Route path="/s/:id" element={<PublicStartupProfile />} />
 
         {/* Standalone Route (Wizard) */}
         <Route path="/onboarding" element={<StartupWizard />} />

@@ -1,5 +1,6 @@
+
 import React, { useState } from 'react';
-import { Eye, Edit3, Presentation, CheckCircle2 } from 'lucide-react';
+import { Eye, Edit3, Presentation, CheckCircle2, Share2, Copy } from 'lucide-react';
 import { useData } from '../context/DataContext';
 import { OverviewCard } from './startup-profile/OverviewCard';
 import { TeamCard } from './startup-profile/TeamCard';
@@ -10,11 +11,13 @@ import { useNavigate } from 'react-router-dom';
 import { useSaveStartupProfile } from '../hooks/useSaveStartupProfile';
 import { useStartupProfile } from '../hooks/useStartupProfile';
 import { StartupProfile, Founder } from '../types';
+import { useToast } from '../context/ToastContext';
 
 const StartupProfilePage: React.FC = () => {
   const { profile: globalProfile } = useData(); 
   const { data: profileDTO, loading, reload } = useStartupProfile(globalProfile?.id);
   const { saveProfile, isSaving } = useSaveStartupProfile();
+  const { success } = useToast();
   const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<'edit' | 'investor'>('edit');
 
@@ -118,6 +121,12 @@ const StartupProfilePage: React.FC = () => {
       reload();
   };
 
+  const copyPublicLink = () => {
+      const url = `${window.location.origin}/s/${displayProfile!.id}`;
+      navigator.clipboard.writeText(url);
+      success("Public profile link copied!");
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 pb-20 font-sans text-slate-900">
       <div className="container mx-auto px-4 md:px-6 lg:px-8 max-w-7xl pt-4 lg:pt-8 animate-in fade-in duration-500">
@@ -204,15 +213,24 @@ const StartupProfilePage: React.FC = () => {
                         <div className="flex items-center justify-between text-sm">
                             <span className="text-slate-500">Visibility</span>
                             <span className="inline-flex items-center gap-1.5 text-green-600 bg-green-50 px-2 py-0.5 rounded-full font-bold text-xs">
-                                <CheckCircle2 size={12} /> Private
+                                <CheckCircle2 size={12} /> Public Ready
                             </span>
                         </div>
-                        <button 
-                            onClick={() => reload()}
-                            className="w-full mt-2 py-2 border border-slate-200 text-slate-600 text-xs font-bold rounded-lg hover:bg-slate-50 flex items-center justify-center gap-2"
-                        >
-                            Refresh Data
-                        </button>
+                        
+                        <div className="grid grid-cols-2 gap-2 mt-4">
+                            <button 
+                                onClick={copyPublicLink}
+                                className="py-2 border border-slate-200 text-slate-600 text-xs font-bold rounded-lg hover:bg-slate-50 flex items-center justify-center gap-2 transition-colors"
+                            >
+                                <Copy size={14} /> Copy Link
+                            </button>
+                            <button 
+                                onClick={() => window.open(`/s/${displayProfile!.id}`, '_blank')}
+                                className="py-2 border border-slate-200 text-indigo-600 text-xs font-bold rounded-lg hover:bg-indigo-50 flex items-center justify-center gap-2 transition-colors"
+                            >
+                                <Share2 size={14} /> View Public
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>

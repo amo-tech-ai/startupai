@@ -51,7 +51,9 @@ export const useAppActions = ({
 
   const uploadFile = async (file: File, bucket: string) => {
       try {
-          const url = await AssetService.uploadFile(file, bucket);
+          // Use startup ID or user ID as folder prefix to avoid collisions
+          const prefix = profile?.id || userProfile?.id || 'guest';
+          const url = await AssetService.uploadFile(file, bucket, prefix);
           return url;
       } catch (e) {
           toastError("Upload failed");

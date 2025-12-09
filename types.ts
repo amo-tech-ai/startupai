@@ -2,9 +2,6 @@
 /**
  * Database Schema Definitions
  * ---------------------------
- * These interfaces mirror the SQL schema requirements for the Startup Wizard.
- * They provide type safety for the frontend application and simulate the 
- * structure of the backend tables.
  */
 
 export type PageType = 
@@ -28,44 +25,44 @@ export type StartupStage = 'Idea' | 'MVP' | 'Seed' | 'Series A' | 'Growth' | 'Sc
 // Table: startups
 export interface StartupProfile {
   id: string;
-  userId: string; // For Row-Level Security (RLS) simulation
+  userId: string; 
   name: string;
   tagline: string;
   description: string;
   mission: string;
   stage: StartupStage;
-  yearFounded?: number; // New
-  plan?: 'free' | 'founder' | 'growth'; // New: Subscription Plan
+  yearFounded?: number;
+  plan?: 'free' | 'founder' | 'growth';
   problemStatement: string;
   solutionStatement: string;
-  businessModel: string; // e.g., "B2B SaaS", "Marketplace"
-  pricingModel?: string; // New
+  businessModel: string;
+  pricingModel?: string;
   targetMarket: string;
-  industry?: string; // Added to match Wizard
-  customerSegments?: string[]; // New
-  keyFeatures?: string[]; // New
-  competitors?: string[]; // New: added to match Wizard form data
-  coreDifferentiator?: string; // New
+  industry?: string;
+  customerSegments?: string[];
+  keyFeatures?: string[];
+  competitors?: string[];
+  coreDifferentiator?: string;
   fundingGoal: number;
   currency: string;
   websiteUrl?: string;
   logoUrl?: string;
-  coverImageUrl?: string; // New
-  socialLinks?: { // New
+  coverImageUrl?: string;
+  socialLinks?: {
     linkedin?: string;
     twitter?: string;
     github?: string;
     pitchDeck?: string;
   };
-  fundingHistory?: { // New
+  fundingHistory?: {
     id: string;
     round: string;
     date: string;
     amount: number;
     investors: string;
   }[];
-  isRaising?: boolean; // New
-  useOfFunds?: string[]; // New
+  isRaising?: boolean;
+  useOfFunds?: string[];
   createdAt: string;
   updatedAt: string;
 }
@@ -75,13 +72,49 @@ export interface Founder {
   id: string;
   startupId: string;
   name: string;
-  title: string; // Changed from role for consistency
+  title: string;
   bio: string;
   linkedinProfile?: string;
-  email?: string; // New
-  personalWebsite?: string; // New
+  email?: string;
+  personalWebsite?: string;
   avatarUrl?: string;
   isPrimaryContact: boolean;
+}
+
+// DTO for Full Profile Fetch (RPC Response Structure)
+export interface StartupProfileDTO {
+  startup_id: string;
+  context: {
+    name: string;
+    tagline?: string;
+    description?: string;
+    stage?: string;
+    industry?: string;
+    website_url?: string;
+    cover_image_url?: string;
+    logo_url?: string;
+    problem_statement?: string;
+    solution_statement?: string;
+    business_model?: string | string[]; // Schema has text[], logic often uses string
+    pricing_model?: string;
+    target_market?: string | string[];
+    funding_goal?: number;
+    is_raising?: boolean;
+    use_of_funds?: string[];
+    year_founded?: number;
+  };
+  founders: Founder[];
+  metrics: {
+    id: string;
+    mrr: number;
+    activeUsers: number;
+    growthRate?: number;
+    period: string;
+  } | null;
+  links: any[]; 
+  ai_summary?: string;
+  profile_strength?: number;
+  missing_fields?: string[];
 }
 
 // Table: startup_competitors
@@ -91,7 +124,7 @@ export interface Competitor {
   name: string;
   strength?: string;
   weakness?: string;
-  differentiation?: string; // How we win
+  differentiation?: string;
   websiteUrl?: string;
 }
 
@@ -99,37 +132,14 @@ export interface Competitor {
 export interface MetricsSnapshot {
   id: string;
   startupId: string;
-  period: string; // e.g., "2023-10"
+  period: string;
   mrr: number;
   activeUsers: number;
-  cac: number; // Customer Acquisition Cost
-  ltv: number; // Lifetime Value
+  cac: number; 
+  ltv: number; 
   burnRate: number;
   runwayMonths: number;
   recordedAt: string;
-}
-
-// DTO for Full Profile Fetch (RPC)
-export interface StartupProfileDTO {
-  startup_id: string;
-  context: Partial<StartupProfile> & {
-    problem_statement?: string;
-    solution_statement?: string;
-    pricing_model?: string;
-    business_model?: string;
-    website_url?: string;
-    cover_image_url?: string;
-    year_founded?: number;
-    use_of_funds?: string[];
-    is_raising?: boolean;
-    funding_goal?: number;
-  };
-  founders: Founder[];
-  metrics: Partial<MetricsSnapshot> | null;
-  links: any[]; 
-  ai_summary?: string;
-  profile_strength?: number;
-  missing_fields?: string[];
 }
 
 // Table: ai_coach_insights
@@ -145,7 +155,7 @@ export interface AICoachInsight {
   generatedAt: string;
 }
 
-// Table: tasks (New)
+// Table: tasks
 export type TaskStatus = 'Backlog' | 'In Progress' | 'Review' | 'Done';
 export type TaskPriority = 'Low' | 'Medium' | 'High';
 
@@ -161,7 +171,7 @@ export interface Task {
   aiGenerated: boolean;
 }
 
-// Table: crm_deals (New)
+// Table: crm_deals
 export type DealStage = 'Lead' | 'Qualified' | 'Meeting' | 'Proposal' | 'Closed';
 
 export interface Deal {
@@ -178,7 +188,7 @@ export interface Deal {
   ownerColor: string;
 }
 
-// Table: investor_docs (New)
+// Table: investor_docs
 export interface DocSection {
   id: string;
   title: string;
@@ -195,7 +205,7 @@ export interface InvestorDoc {
   updatedAt: string;
 }
 
-// Table: activity_log (New for Dashboard Feed)
+// Table: activity_log
 export interface Activity {
   id: string;
   startupId: string;
@@ -206,15 +216,15 @@ export interface Activity {
   actionUrl?: string;
 }
 
-// Table: decks (New for Pitch Deck Module)
+// Table: decks
 export interface Slide {
     id: string;
     title: string;
     bullets: string[];
-    visualDescription?: string; // AI suggestion for image/chart
-    imageUrl?: string; // Base64 or URL of generated image
-    chartType?: string; // AI suggestion for chart type (line, bar, pie, etc.)
-    chartData?: { label: string; value: number }[]; // Structured data for charts
+    visualDescription?: string;
+    imageUrl?: string;
+    chartType?: string;
+    chartData?: { label: string; value: number }[];
 }
 
 export interface Deck {
@@ -224,11 +234,9 @@ export interface Deck {
     template: 'Y Combinator' | 'Sequoia' | 'Guy Kawasaki' | 'Custom';
     slides: Slide[];
     updatedAt: string;
-    thumbnailUrl?: string;
 }
 
-// --- Extended User Profile Interfaces (for My Profile Screen) ---
-
+// User Profile
 export interface UserProfileExperience {
   id: string;
   company: string;
@@ -270,10 +278,9 @@ export interface UserProfile {
   completionScore: number;
 }
 
-// Complete Schema Context for Application State
 export interface StartupDatabaseSchema {
   profile: StartupProfile | null;
-  userProfile: UserProfile | null; // Added UserProfile
+  userProfile: UserProfile | null;
   founders: Founder[];
   competitors: Competitor[];
   metrics: MetricsSnapshot[];

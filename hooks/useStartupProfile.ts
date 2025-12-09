@@ -2,13 +2,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { StartupProfileDTO } from '../types';
-import { useToast } from '../context/ToastContext';
 
 export const useStartupProfile = (startupId?: string) => {
   const [data, setData] = useState<StartupProfileDTO | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
-  const { error: toastError } = useToast();
 
   const fetchProfile = useCallback(async () => {
     if (!startupId) {
@@ -26,12 +24,10 @@ export const useStartupProfile = (startupId?: string) => {
 
       if (rpcError) throw rpcError;
       
-      // Transform if necessary (RPC returns JSON)
       setData(rpcData as StartupProfileDTO);
     } catch (err: any) {
       console.error('Fetch Profile Error:', err);
       setError(err);
-      // Don't toast error immediately on load to avoid spamming if offline
     } finally {
       setLoading(false);
     }

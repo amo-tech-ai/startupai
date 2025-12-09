@@ -1,18 +1,18 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { useData } from '../context/DataContext';
-import { useToast } from '../context/ToastContext';
 import { DocumentDashboard } from './documents/DocumentDashboard';
 import { DocumentEditor } from './documents/DocumentEditor';
-
-type ViewState = 'dashboard' | 'editor';
+import { useParams, useNavigate } from 'react-router-dom';
 
 const Documents: React.FC = () => {
-  const [view, setView] = useState<ViewState>('dashboard');
-  const [activeDocId, setActiveDocId] = useState<string | null>(null);
   const { docs, addDoc, deleteDoc } = useData();
-  const { toast } = useToast();
+  const { docId } = useParams<{ docId: string }>();
+  const navigate = useNavigate();
+
+  // Derive active doc from URL param
+  const activeDoc = docId ? docs.find(d => d.id === docId) : null;
 
   const handleStartDoc = async (type: string) => {
     const newTitle = `Untitled ${type}`;
@@ -24,40 +24,42 @@ const Documents: React.FC = () => {
     });
     
     if (id) {
-        setActiveDocId(id);
-        setView('editor');
+        navigate(`/documents/${id}`);
     }
   };
 
   const handleOpenDoc = (id: string) => {
-      setActiveDocId(id);
-      setView('editor');
+      navigate(`/documents/${id}`);
   }
 
-  // Find the active document object
-  const activeDoc = docs.find(d => d.id === activeDocId);
+  const handleBack = () => {
+      navigate('/documents');
+  }
+
+  const handleDelete = (id: string) => {
+      deleteDoc(id);
+      if (activeDoc?.id === id) {
+          navigate('/documents');
+      }
+  }
 
   return (
     <div className="flex flex-col h-full bg-slate-50 relative overflow-hidden">
       <AnimatePresence mode="wait">
-        {view === 'dashboard' ? (
+        {!activeDoc ? (
           <DocumentDashboard 
             key="dashboard" 
             docs={docs}
             onStartDoc={handleStartDoc} 
             onOpenDoc={handleOpenDoc}
-            onDeleteDoc={deleteDoc}
+            onDeleteDoc={handleDelete}
           />
         ) : (
-          activeDoc ? (
             <DocumentEditor 
                 key="editor" 
                 doc={activeDoc} 
-                onBack={() => setView('dashboard')} 
+                onBack={handleBack} 
             />
-          ) : (
-            <div className="flex items-center justify-center h-full">Document not found.</div>
-          )
         )}
       </AnimatePresence>
     </div>

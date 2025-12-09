@@ -29,7 +29,7 @@ export interface DataContextType {
   updateTask: (id: string, updates: Partial<Task>) => void;
   deleteTask: (id: string) => void;
   
-  addDeck: (deck: Omit<Deck, 'id' | 'startupId'>) => void;
+  addDeck: (deck: Omit<Deck, 'id' | 'startupId'>) => Promise<string>;
   updateDeck: (id: string, updates: Partial<Deck>) => void;
   
   addDeal: (deal: Omit<Deal, 'id' | 'startupId'>) => void;

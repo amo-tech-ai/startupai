@@ -13,8 +13,7 @@ const Pricing: React.FC = () => {
   const handleAction = (planId: string) => {
     if (user) {
       // Logged in: Go to billing settings to upgrade or manage
-      localStorage.setItem('settings_tab', 'billing');
-      navigate('/settings'); 
+      navigate('/settings/billing'); 
     } else {
       // Visitor: Sign up
       navigate('/signup'); 

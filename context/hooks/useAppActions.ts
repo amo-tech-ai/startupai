@@ -240,7 +240,7 @@ export const useAppActions = ({
   };
 
   // --- DECKS ---
-  const addDeck = async (data: Omit<Deck, 'id' | 'startupId'>) => {
+  const addDeck = async (data: Omit<Deck, 'id' | 'startupId'>): Promise<string> => {
       const tempId = generateShortId();
       const newDeck: Deck = { ...data, id: tempId, startupId: profile?.id || 'temp' };
       
@@ -253,12 +253,17 @@ export const useAppActions = ({
       if (profile?.id && !isGuestMode()) {
           try {
               const realDeck = await DeckService.create(data, profile.id);
+              // Optimistic update correction
               setDecks(prev => prev.map(d => d.id === tempId ? realDeck : d));
+              return realDeck.id;
           } catch (e) {
               console.error(e);
               toastError("Failed to save deck");
+              // Fallback to tempId in case of error so user isn't stuck
+              return tempId;
           }
       }
+      return tempId;
   };
 
   const updateDeck = async (id: string, updates: Partial<Deck>) => {

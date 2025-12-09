@@ -104,11 +104,20 @@ const AppContent = () => {
         {/* Protected App Routes */}
         <Route element={<RequireAuth><AppLayout /></RequireAuth>}>
           <Route path="/dashboard" element={<Dashboard />} />
+          
           <Route path="/pitch-decks" element={<PitchDecks />} />
+          <Route path="/pitch-decks/:deckId" element={<PitchDecks />} />
+          
           <Route path="/crm" element={<CRM />} />
+          
           <Route path="/documents" element={<Documents />} />
+          <Route path="/documents/:docId" element={<Documents />} />
+          
           <Route path="/tasks" element={<Tasks />} />
+          
           <Route path="/settings" element={<Settings />} />
+          <Route path="/settings/:tab" element={<Settings />} />
+          
           <Route path="/profile" element={<Profile />} />
         </Route>
 

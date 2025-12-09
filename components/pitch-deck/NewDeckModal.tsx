@@ -10,7 +10,7 @@ import { useToast } from '../../context/ToastContext';
 interface NewDeckModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (deckId: string) => void;
 }
 
 // Workaround for strict type checking issues with framer-motion in some environments
@@ -42,14 +42,14 @@ export const NewDeckModal: React.FC<NewDeckModalProps> = ({ isOpen, onClose, onS
       const deckData = await generateDeckEdge(API_KEY, profile, selectedTemplate);
 
       if (deckData) {
-        addDeck(deckData);
+        const id = await addDeck(deckData);
         addActivity({ 
           type: 'milestone', 
           title: 'Pitch Deck Created', 
           description: `Generated ${deckData.slides.length} slides using ${selectedTemplate} template.` 
         });
         success("Deck created successfully!");
-        onSuccess();
+        onSuccess(id);
         onClose();
       } else {
         error("AI failed to generate deck content.");

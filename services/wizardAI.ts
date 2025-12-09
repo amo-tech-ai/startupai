@@ -1,3 +1,4 @@
+
 import { GoogleGenAI } from "@google/genai";
 import { cleanJson } from "../lib/utils";
 
@@ -203,33 +204,58 @@ export const WizardService = {
   },
 
   /**
-   * STEP 5: Executive Summary Generation
+   * STEP 5: Executive Summary Generation with Grounding
    */
   async generateSummary(profileData: any, apiKey: string) {
     const ai = new GoogleGenAI({ apiKey });
     
+    // Construct a rich context from all profile data
+    const context = JSON.stringify({
+        name: profileData.name,
+        tagline: profileData.tagline,
+        website: profileData.website,
+        industry: profileData.industry,
+        stage: profileData.stage,
+        problem: profileData.problem,
+        solution: profileData.solution,
+        businessModel: profileData.businessModel,
+        traction: {
+            mrr: profileData.mrr,
+            users: profileData.totalUsers,
+            raising: profileData.isRaising
+        },
+        team: profileData.founders.map((f:any) => `${f.name} (${f.title}) - ${f.bio}`).join('; ')
+    });
+
     const prompt = `
-      Generate an investor executive summary (200 words max) based on:
-      ${JSON.stringify(profileData)}
+      Act as a venture capital analyst. Write a compelling, 3-paragraph executive summary for this startup.
       
-      Structure:
-      - Problem & Solution
-      - Market & Business Model
-      - Traction
-      - Team
+      Startup Data:
+      ${context}
       
-      Return JSON: { "summary": "..." }
+      Requirements:
+      1. Paragraph 1: The Hook (Problem & Solution).
+      2. Paragraph 2: The Business (Market, Model, Traction).
+      3. Paragraph 3: The Team & Ask (Why this team? Fundraising status).
+      
+      Use Google Search to validate the market opportunity if industry is provided to make the summary stronger.
+      
+      Return JSON: { "summary": "HTML string with <p> tags..." }
     `;
 
     try {
       const response = await ai.models.generateContent({
         model: 'gemini-3-pro-preview',
         contents: prompt,
-        config: { responseMimeType: 'application/json' }
+        config: { 
+            responseMimeType: 'application/json',
+            tools: [{ googleSearch: {} }] 
+        }
       });
       const text = cleanJson(response.text);
       return text ? JSON.parse(text).summary : null;
     } catch (error) {
+      console.error("Summary Gen Error", error);
       return null;
     }
   }

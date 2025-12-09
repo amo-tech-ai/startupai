@@ -105,6 +105,7 @@ const AppContent = () => {
         <Route element={<RequireAuth><AppLayout /></RequireAuth>}>
           <Route path="/dashboard" element={<Dashboard />} />
           
+          {/* Parameterized Routes for Deep Linking */}
           <Route path="/pitch-decks" element={<PitchDecks />} />
           <Route path="/pitch-decks/:deckId" element={<PitchDecks />} />
           

@@ -1,11 +1,16 @@
 
 import React, { useEffect, useState } from 'react';
-import { Trophy, AlertTriangle, ArrowRight, Sparkles, Loader2, Check } from 'lucide-react';
+import { 
+  Trophy, AlertTriangle, ArrowRight, Sparkles, Loader2, Check, 
+  Building2, Users, TrendingUp, Target, DollarSign, Globe,
+  Layout, Briefcase, FileText, RefreshCw, Layers
+} from 'lucide-react';
 import { WizardService } from '../../../services/wizardAI';
 import { API_KEY } from '../../../lib/env';
+import { WizardFormData } from '../types';
 
 interface StepSummaryProps {
-  formData: any;
+  formData: WizardFormData;
   setFormData: (data: any) => void;
 }
 
@@ -18,47 +23,93 @@ export const StepSummary: React.FC<StepSummaryProps> = ({ formData, setFormData 
     // Calculate Score
     let score = 0;
     const missing = [];
-    if (formData.name) score += 10;
-    if (formData.website) score += 10;
-    if (formData.tagline) score += 10;
-    if (formData.founders.length > 0 && formData.founders[0].bio) score += 20; else missing.push("Founder Bios");
-    if (formData.businessModel) score += 10; else missing.push("Business Model");
-    if (formData.mrr > 0 || formData.totalUsers > 0) score += 20; else missing.push("Traction Metrics");
-    if (formData.competitors.length > 0) score += 10; else missing.push("Competitors");
-    if (formData.coreDifferentiator) score += 10; else missing.push("Differentiator");
+    
+    // Context (30%)
+    if (formData.name) score += 5;
+    if (formData.website) score += 5;
+    if (formData.tagline) score += 5;
+    if (formData.industry) score += 5;
+    if (formData.yearFounded) score += 5;
+    if (formData.stage) score += 5;
+
+    // Team (20%)
+    if (formData.founders.length > 0) {
+        score += 10;
+        if (formData.founders[0].bio) score += 10; else missing.push("Founder Bios");
+    } else {
+        missing.push("Founders");
+    }
+
+    // Business (25%)
+    if (formData.businessModel) score += 5; else missing.push("Business Model");
+    if (formData.problem) score += 10; else missing.push("Problem Statement");
+    if (formData.solution) score += 10; else missing.push("Solution Statement");
+
+    // Traction (25%)
+    if (formData.mrr > 0 || formData.totalUsers > 0) score += 15; else missing.push("Traction Metrics");
+    if (formData.isRaising && formData.targetRaise > 0) score += 10; 
+    else if (!formData.isRaising) score += 10; // Bonus for explicit "not raising"
+    else missing.push("Fundraising Target");
     
     setProfileScore(Math.min(100, score));
     setMissingItems(missing);
 
     // Auto-generate summary if empty
     if (!formData.aiSummary && API_KEY) {
-        setIsGenerating(true);
-        WizardService.generateSummary(formData, API_KEY).then(summary => {
-            if (summary) setFormData((prev:any) => ({...prev, aiSummary: summary}));
-            setIsGenerating(false);
-        });
+        handleImproveWithAI();
     }
   }, []);
 
-  return (
-    <div className="space-y-8 animate-in slide-in-from-right-4 duration-500">
-       <div className="text-center">
-          <h2 className="text-3xl font-bold text-slate-900 mb-2">Review & Summary</h2>
-          <p className="text-slate-500">Ensure your profile is investor-ready.</p>
-       </div>
+  const handleImproveWithAI = async () => {
+      setIsGenerating(true);
+      try {
+        const summary = await WizardService.generateSummary(formData, API_KEY!);
+        if (summary) setFormData((prev: any) => ({ ...prev, aiSummary: summary }));
+      } finally {
+        setIsGenerating(false);
+      }
+  };
 
-       {/* PROFILE STRENGTH */}
-       <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-200">
-          <div className="flex flex-col md:flex-row gap-8 items-center">
-             <div className="flex-1 w-full">
-                <div className="flex justify-between items-center mb-4">
-                   <div className="flex items-center gap-2">
-                      <Trophy className="text-amber-500" />
-                      <h3 className="font-bold text-xl text-slate-900">Profile Strength</h3>
+  const InfoRow = ({ label, value }: { label: string, value: string | number | undefined }) => (
+      <div className="flex justify-between items-center py-2 border-b border-slate-100 last:border-0">
+          <span className="text-slate-500 text-sm">{label}</span>
+          <span className="font-medium text-slate-900 text-sm text-right max-w-[60%] truncate" title={String(value)}>
+              {value || '-'}
+          </span>
+      </div>
+  );
+
+  const TagList = ({ tags }: { tags: string[] }) => (
+      <div className="flex flex-wrap gap-1.5 mt-2">
+          {tags.length > 0 ? tags.slice(0, 5).map((t, i) => (
+              <span key={i} className="px-2 py-0.5 bg-slate-100 text-slate-600 text-xs rounded border border-slate-200">
+                  {t}
+              </span>
+          )) : <span className="text-slate-400 text-xs italic">None listed</span>}
+      </div>
+  );
+
+  return (
+    <div className="space-y-8 animate-in slide-in-from-right-4 duration-500 pb-12">
+       {/* 1. Header & Score */}
+       <div className="grid md:grid-cols-3 gap-6">
+           {/* Profile Strength */}
+           <div className="md:col-span-2 bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+               <div className="flex justify-between items-start mb-4">
+                   <div>
+                       <h3 className="font-bold text-lg text-slate-900 flex items-center gap-2">
+                           <Trophy className="text-amber-500" size={20} />
+                           Profile Strength
+                       </h3>
+                       <p className="text-slate-500 text-sm">Completeness of your investor profile</p>
                    </div>
-                   <span className="text-3xl font-bold text-slate-900">{profileScore}%</span>
-                </div>
-                <div className="w-full bg-slate-100 h-4 rounded-full overflow-hidden">
+                   <span className={`text-3xl font-bold ${
+                       profileScore < 50 ? 'text-red-500' : profileScore < 80 ? 'text-amber-500' : 'text-green-500'
+                   }`}>
+                       {profileScore}%
+                   </span>
+               </div>
+               <div className="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
                    <div 
                       className={`h-full rounded-full transition-all duration-1000 ${
                          profileScore < 50 ? 'bg-red-500' : 
@@ -66,71 +117,211 @@ export const StepSummary: React.FC<StepSummaryProps> = ({ formData, setFormData 
                       }`} 
                       style={{ width: `${profileScore}%` }}
                    ></div>
-                </div>
-             </div>
-             
-             <div className="w-full md:w-1/3 space-y-2">
-                {missingItems.length > 0 ? (
-                   missingItems.slice(0, 3).map((item, idx) => (
-                      <div key={idx} className="flex items-center gap-2 text-sm text-slate-600 bg-slate-50 p-3 rounded-lg">
-                         <AlertTriangle size={14} className="text-amber-500" />
-                         <span>Add <strong>{item}</strong></span>
-                         <ArrowRight size={14} className="ml-auto text-slate-400" />
-                      </div>
-                   ))
-                ) : (
-                   <div className="flex items-center gap-2 text-green-700 bg-green-50 p-4 rounded-lg font-bold">
-                      <Check size={20} /> All set! Great profile.
+               </div>
+           </div>
+
+           {/* Missing Fields */}
+           <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 overflow-y-auto max-h-[160px] custom-scrollbar">
+               <h3 className="font-bold text-sm text-slate-900 mb-3 flex items-center gap-2">
+                   <AlertTriangle size={16} className="text-rose-500" />
+                   Missing Items
+               </h3>
+               {missingItems.length > 0 ? (
+                   <div className="space-y-2">
+                       {missingItems.map((item, idx) => (
+                           <div key={idx} className="flex items-center gap-2 text-xs text-slate-600 bg-rose-50 px-2 py-1.5 rounded border border-rose-100">
+                               <div className="w-1.5 h-1.5 rounded-full bg-rose-400"></div>
+                               <span>{item}</span>
+                           </div>
+                       ))}
                    </div>
-                )}
-             </div>
-          </div>
+               ) : (
+                   <div className="flex flex-col items-center justify-center h-full text-green-600 text-xs text-center">
+                       <Check size={24} className="mb-1" />
+                       <span className="font-bold">Profile Complete!</span>
+                   </div>
+               )}
+           </div>
        </div>
 
-       {/* AI SUMMARY CARD */}
-       <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-200">
-          <div className="bg-gradient-to-r from-slate-900 to-slate-800 p-6 text-white flex justify-between items-center">
-             <div>
-                <h3 className="font-bold text-lg">{formData.name}</h3>
-                <div className="flex gap-2 mt-2">
-                   <span className="px-2 py-0.5 bg-white/20 rounded text-xs font-medium">{formData.industry || 'Tech'}</span>
-                   <span className="px-2 py-0.5 bg-white/20 rounded text-xs font-medium">{formData.isRaising ? 'Raising' : 'Active'}</span>
-                </div>
-             </div>
-             <div className="p-3 bg-white/10 rounded-xl">
-                <Sparkles className="text-purple-300" />
-             </div>
-          </div>
-          
-          <div className="p-8">
-             <h4 className="text-sm font-bold text-slate-500 uppercase tracking-wide mb-4">Investor Summary (AI Generated)</h4>
-             {isGenerating ? (
-                <div className="flex items-center gap-3 text-slate-400 py-8">
-                   <Loader2 className="animate-spin" /> Generating executive summary...
-                </div>
-             ) : (
-                <div className="prose prose-slate max-w-none">
-                   <p className="text-lg leading-relaxed text-slate-700 whitespace-pre-line">
-                      {formData.aiSummary || "No summary generated."}
-                   </p>
-                </div>
-             )}
-             
-             <div className="mt-8 flex justify-end">
-                <button 
-                   onClick={() => {
-                      setIsGenerating(true);
-                      WizardService.generateSummary(formData, API_KEY!).then(s => {
-                         if(s) setFormData((prev:any) => ({...prev, aiSummary: s}));
-                         setIsGenerating(false);
-                      });
-                   }}
-                   className="text-purple-600 font-bold hover:bg-purple-50 px-4 py-2 rounded-lg transition-colors text-sm"
-                >
-                   Regenerate Summary
-                </button>
-             </div>
-          </div>
+       {/* 2. Startup Header Card */}
+       <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 flex flex-col md:flex-row items-center md:items-start gap-6">
+           <div className="w-24 h-24 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center shrink-0 overflow-hidden">
+               {formData.coverImage ? (
+                   <img src={formData.coverImage} alt="Logo" className="w-full h-full object-cover" />
+               ) : (
+                   <Building2 size={32} className="text-indigo-300" />
+               )}
+           </div>
+           <div className="flex-1 text-center md:text-left">
+               <h1 className="text-3xl font-bold text-slate-900">{formData.name || "Startup Name"}</h1>
+               <p className="text-lg text-slate-600 mt-1">{formData.tagline || "No tagline provided."}</p>
+               <div className="flex flex-wrap justify-center md:justify-start gap-2 mt-4">
+                   <span className="px-3 py-1 bg-slate-100 text-slate-600 text-xs font-bold rounded-full uppercase tracking-wide">
+                       {formData.stage}
+                   </span>
+                   <span className="px-3 py-1 bg-slate-100 text-slate-600 text-xs font-bold rounded-full uppercase tracking-wide">
+                       {formData.industry}
+                   </span>
+                   {formData.isRaising && (
+                       <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full uppercase tracking-wide flex items-center gap-1">
+                           <TrendingUp size={12} /> Raising
+                       </span>
+                   )}
+                   {formData.website && (
+                       <a href={formData.website} target="_blank" rel="noreferrer" className="px-3 py-1 bg-indigo-50 text-indigo-600 text-xs font-bold rounded-full flex items-center gap-1 hover:bg-indigo-100">
+                           <Globe size={12} /> Website
+                       </a>
+                   )}
+               </div>
+           </div>
+       </div>
+
+       {/* 3. AI Investor Summary */}
+       <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-8 text-white relative overflow-hidden shadow-lg">
+           <div className="absolute top-0 right-0 p-32 bg-purple-500/10 rounded-full blur-3xl"></div>
+           <div className="relative z-10">
+               <div className="flex justify-between items-start mb-6">
+                   <div className="flex items-center gap-3">
+                       <div className="p-2 bg-white/10 rounded-lg backdrop-blur-sm">
+                           <Sparkles className="text-purple-300" size={20} />
+                       </div>
+                       <div>
+                           <h3 className="font-bold text-lg">AI Investor Summary</h3>
+                           <p className="text-slate-400 text-xs">Generated by Gemini 3 Pro • Real-time search grounded</p>
+                       </div>
+                   </div>
+                   <button 
+                       onClick={handleImproveWithAI}
+                       disabled={isGenerating}
+                       className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-xs font-bold transition-all backdrop-blur-sm border border-white/10"
+                   >
+                       {isGenerating ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+                       {isGenerating ? 'Improving...' : 'Improve with AI'}
+                   </button>
+               </div>
+
+               {isGenerating ? (
+                   <div className="space-y-3 animate-pulse opacity-50">
+                       <div className="h-4 bg-white/20 rounded w-3/4"></div>
+                       <div className="h-4 bg-white/20 rounded w-full"></div>
+                       <div className="h-4 bg-white/20 rounded w-5/6"></div>
+                   </div>
+               ) : (
+                   <div className="prose prose-invert max-w-none">
+                       {/* Render HTML content safely */}
+                       <div 
+                           className="text-slate-200 leading-relaxed whitespace-pre-line text-sm md:text-base"
+                           dangerouslySetInnerHTML={{ __html: formData.aiSummary || "<p>Summary not generated yet. Click Improve with AI to create one.</p>" }}
+                       />
+                   </div>
+               )}
+           </div>
+       </div>
+
+       {/* 4. Snapshot Panels */}
+       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+           
+           {/* Market & Features */}
+           <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+               <div className="flex items-center gap-2 mb-4 pb-4 border-b border-slate-100">
+                   <Target className="text-indigo-600" size={20} />
+                   <h3 className="font-bold text-slate-900">Market & Product</h3>
+               </div>
+               <InfoRow label="Business Model" value={formData.businessModel} />
+               <InfoRow label="Pricing Model" value={formData.pricingModel} />
+               <div className="mt-4">
+                   <span className="text-slate-500 text-sm block mb-1">Key Features</span>
+                   <TagList tags={formData.keyFeatures} />
+               </div>
+               <div className="mt-4">
+                   <span className="text-slate-500 text-sm block mb-1">Customer Segments</span>
+                   <TagList tags={formData.customerSegments} />
+               </div>
+           </div>
+
+           {/* Team & Context */}
+           <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+               <div className="flex items-center gap-2 mb-4 pb-4 border-b border-slate-100">
+                   <Users className="text-purple-600" size={20} />
+                   <h3 className="font-bold text-slate-900">Team & Context</h3>
+               </div>
+               <div className="space-y-4">
+                   <div className="flex items-center justify-between">
+                       <span className="text-slate-500 text-sm">Founders</span>
+                       <div className="flex -space-x-2">
+                           {formData.founders.map((f, i) => (
+                               <div key={i} className="w-8 h-8 rounded-full bg-slate-200 border-2 border-white flex items-center justify-center text-xs font-bold text-slate-600" title={f.name}>
+                                   {f.name.charAt(0)}
+                               </div>
+                           ))}
+                       </div>
+                   </div>
+                   <InfoRow label="Year Founded" value={formData.yearFounded} />
+                   <InfoRow label="Problem Context" value={formData.problem ? "Defined" : "Missing"} />
+                   <InfoRow label="Solution Context" value={formData.solution ? "Defined" : "Missing"} />
+               </div>
+           </div>
+
+           {/* Traction */}
+           <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+               <div className="flex items-center gap-2 mb-4 pb-4 border-b border-slate-100">
+                   <TrendingUp className="text-emerald-600" size={20} />
+                   <h3 className="font-bold text-slate-900">Traction</h3>
+               </div>
+               <div className="grid grid-cols-2 gap-4 mb-4">
+                   <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                       <div className="text-xs text-slate-500 uppercase font-bold">MRR</div>
+                       <div className="text-xl font-bold text-slate-900">${formData.mrr?.toLocaleString()}</div>
+                   </div>
+                   <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                       <div className="text-xs text-slate-500 uppercase font-bold">Users</div>
+                       <div className="text-xl font-bold text-slate-900">{formData.totalUsers?.toLocaleString()}</div>
+                   </div>
+               </div>
+               <div className="mt-2">
+                   <span className="text-slate-500 text-sm block mb-1">Funding History</span>
+                   {formData.fundingHistory.length > 0 ? (
+                       formData.fundingHistory.map((h, i) => (
+                           <div key={i} className="text-sm text-slate-700 flex justify-between border-b border-slate-50 py-1 last:border-0">
+                               <span>{h.round} ({h.date})</span>
+                               <span className="font-bold">${h.amount.toLocaleString()}</span>
+                           </div>
+                       ))
+                   ) : <span className="text-slate-400 text-sm italic">Bootstrapped / None</span>}
+               </div>
+           </div>
+
+           {/* Fundraising */}
+           <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+               <div className="flex items-center gap-2 mb-4 pb-4 border-b border-slate-100">
+                   <DollarSign className="text-amber-600" size={20} />
+                   <h3 className="font-bold text-slate-900">Fundraising</h3>
+               </div>
+               <div className="flex items-center justify-between mb-4">
+                   <span className="text-sm font-medium text-slate-600">Status</span>
+                   <span className={`px-2 py-1 rounded text-xs font-bold uppercase ${formData.isRaising ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
+                       {formData.isRaising ? 'Active' : 'Inactive'}
+                   </span>
+               </div>
+               {formData.isRaising && (
+                   <>
+                       <div className="p-4 bg-amber-50 rounded-xl border border-amber-100 mb-4 text-center">
+                           <div className="text-xs text-amber-700 uppercase font-bold mb-1">Target Raise</div>
+                           <div className="text-2xl font-bold text-amber-900">${formData.targetRaise?.toLocaleString()}</div>
+                       </div>
+                       <div>
+                           <span className="text-slate-500 text-sm block mb-1">Use of Funds</span>
+                           <TagList tags={formData.useOfFunds} />
+                       </div>
+                   </>
+               )}
+               {!formData.isRaising && (
+                   <div className="text-center py-8 text-slate-400 text-sm">
+                       Not currently fundraising.
+                   </div>
+               )}
+           </div>
        </div>
     </div>
   );

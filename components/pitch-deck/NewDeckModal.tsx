@@ -49,7 +49,7 @@ export const NewDeckModal: React.FC<NewDeckModalProps> = ({ isOpen, onClose, onS
           description: `Generated ${deckData.slides.length} slides using ${selectedTemplate} template.` 
         });
         success("Deck created successfully!");
-        onSuccess(id);
+        onSuccess(id); // Use the returned ID to navigate
         onClose();
       } else {
         error("AI failed to generate deck content.");

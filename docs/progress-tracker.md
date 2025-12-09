@@ -28,6 +28,7 @@
 | **AI Coach** | Automated Recommendations | Live Gemini 3 Pro analysis integrated into Dashboard. |
 | **Profile Score** | Health & Completion Feedback | Logic and UI Widget for profile completeness implemented. |
 | **Authentication** | Login/Signup + Dev Mode | Production auth flow + Dev bypass for quick iteration. |
+| **Review & Summary** | Wizard Step 5 | Profile Strength, Missing Fields, AI Investor Summary generation. |
 
 ---
 
@@ -38,6 +39,7 @@
 | :--- | :--- | :--- |
 | **Pricing** | Plan comparison page | Static layout, plan selection logic ready. |
 | **Features** | Detailed feature list | Placeholder content exists. |
+| **Startup Profile** | Post-Wizard Dashboard | Detailed specs created. Implementation pending. |
 
 ---
 

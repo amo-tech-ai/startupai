@@ -32,7 +32,7 @@ const PitchDecks: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 relative">
-      {selectedDeck ? (
+      {deckId && selectedDeck ? (
         <DeckEditor 
           deck={selectedDeck} 
           onBack={handleBack} 

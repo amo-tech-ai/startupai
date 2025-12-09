@@ -115,7 +115,6 @@ export const useAppActions = ({
         const updated = prev ? { ...prev, ...data } : null;
         
         // Persist to local storage in guest mode
-        // We verify isGuestMode to ensure we don't overwrite local storage if we are actually authenticated but offline
         if (updated && isGuestMode()) {
              localStorage.setItem('guest_user_profile', JSON.stringify(updated));
         }

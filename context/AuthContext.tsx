@@ -46,12 +46,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         // 2. If no mock session, try Supabase if configured
         if (supabase) {
-            const { data } = await supabase.auth.getSession();
+            const { data } = await (supabase.auth as any).getSession();
             setSession(data.session);
             setUser(data.session?.user ?? null);
             
             // Listen for auth changes
-            const { data: authListener } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
+            const { data: authListener } = (supabase.auth as any).onAuthStateChange((_event: any, session: any) => {
                 // Only update if we aren't using a mock session
                 if (!localStorage.getItem('mock_session')) {
                     setSession(session);
@@ -76,7 +76,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signOut = async () => {
     if (supabase) {
-      await supabase.auth.signOut();
+      await (supabase.auth as any).signOut();
     }
     // Clear mock session
     localStorage.removeItem('mock_session');

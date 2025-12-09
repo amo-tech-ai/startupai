@@ -162,7 +162,7 @@ export const useSupabaseData = () => {
           // 2. Try Supabase if available
           if (supabase) {
               // Add race condition to prevent hanging on poor connections
-              const authPromise = supabase.auth.getUser();
+              const authPromise = (supabase.auth as any).getUser();
               const timeoutPromise = new Promise((_, reject) => 
                   setTimeout(() => reject(new Error("Connection timeout")), 5000)
               );
@@ -266,7 +266,7 @@ export const useSupabaseData = () => {
     
     // Only set up auth listener if supabase is initialized
     if (supabase) {
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((event: string) => {
+        const { data: { subscription } } = (supabase.auth as any).onAuthStateChange((event: string) => {
             if (event === 'SIGNED_IN') loadData();
             else if (event === 'SIGNED_OUT') {
                 setProfile(null);

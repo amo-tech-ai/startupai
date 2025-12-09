@@ -33,10 +33,12 @@ export interface DataContextType {
   addDeck: (deck: Omit<Deck, 'id' | 'startupId'>) => Promise<string>;
   updateDeck: (id: string, updates: Partial<Deck>) => void;
   
-  addDeal: (deal: Omit<Deal, 'id' | 'startupId'>) => void;
+  addDeal: (deal: Omit<Deal, 'id' | 'startupId'>) => Promise<void>;
   updateDeal: (id: string, updates: Partial<Deal>) => void;
   
-  addContact: (contact: Omit<Contact, 'id' | 'startupId' | 'createdAt'>) => void;
+  addContact: (contact: Omit<Contact, 'id' | 'startupId' | 'createdAt'>) => Promise<void>;
+  updateContact: (id: string, updates: Partial<Contact>) => Promise<void>;
+  deleteContact: (id: string) => void;
 
   addDoc: (doc: Omit<InvestorDoc, 'id' | 'startupId' | 'updatedAt'>) => Promise<string | null>;
   updateDoc: (id: string, updates: Partial<InvestorDoc>) => void;

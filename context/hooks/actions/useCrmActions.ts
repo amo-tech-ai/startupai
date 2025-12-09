@@ -40,7 +40,7 @@ export const useCrmActions = ({
           try {
               const realId = await CrmService.createDeal(data, profile.id);
               setDeals(prev => prev.map(d => d.id === tempId ? { ...d, id: realId } : d));
-          } catch(e) { console.error(e); }
+          } catch(e) { console.error(e); throw e; }
       }
   };
 
@@ -56,7 +56,7 @@ export const useCrmActions = ({
   };
 
   // --- CONTACTS ---
-  const addContact = (data: Omit<Contact, 'id' | 'startupId' | 'createdAt'>) => {
+  const addContact = async (data: Omit<Contact, 'id' | 'startupId' | 'createdAt'>) => {
       const tempId = generateShortId();
       const newContact = { 
           ...data, 
@@ -71,7 +71,33 @@ export const useCrmActions = ({
           return newState;
       });
       
-      if(profile?.id && !isGuestMode()) CrmService.createContact(data, profile.id);
+      if(profile?.id && !isGuestMode()) {
+          try {
+              await CrmService.createContact(data, profile.id);
+          } catch (e) { console.error(e); throw e; }
+      }
+  };
+
+  const updateContact = async (id: string, updates: Partial<Contact>) => {
+      setContacts(prev => {
+          const newState = prev.map(c => c.id === id ? { ...c, ...updates } : c);
+          persistGuestData('guest_contacts', newState);
+          return newState;
+      });
+      if (profile?.id && !isGuestMode()) {
+          await CrmService.updateContact(id, updates, profile.id);
+      }
+  };
+
+  const deleteContact = async (id: string) => {
+      setContacts(prev => {
+          const newState = prev.filter(c => c.id !== id);
+          persistGuestData('guest_contacts', newState);
+          return newState;
+      });
+      if(profile?.id && !isGuestMode()) {
+          await CrmService.deleteContact(id);
+      }
   };
 
   // --- TASKS ---
@@ -106,5 +132,5 @@ export const useCrmActions = ({
       if(profile?.id && !isGuestMode()) CrmService.deleteTask(id);
   };
 
-  return { addDeal, updateDeal, addContact, addTask, updateTask, deleteTask };
+  return { addDeal, updateDeal, addContact, updateContact, deleteContact, addTask, updateTask, deleteTask };
 };

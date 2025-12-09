@@ -1,12 +1,32 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 import { cleanJson } from "../lib/utils";
+import { supabase } from "../lib/supabaseClient";
 
 export const ContactAI = {
   /**
    * Extracts contact details from a URL using Gemini 3 Pro with Search Grounding.
+   * Prioritizes Supabase Edge Function to keep API Key secure.
    */
   async extractFromUrl(apiKey: string, url: string) {
+    // 1. Try Supabase Edge Function (Preferred)
+    if (supabase) {
+      try {
+        console.log("Invoking Edge Function: extract-contact-info");
+        const { data, error } = await supabase.functions.invoke('extract-contact-info', {
+          body: { url }
+        });
+
+        if (error) throw error;
+        if (data) return data;
+      } catch (err) {
+        console.warn("Edge Function failed, falling back to client-side Gemini.", err);
+      }
+    }
+
+    // 2. Client-Side Fallback (For Dev/Demo without backend or if Edge Function fails)
+    // NOTE: This requires the API_KEY to be available client-side (e.g., VITE_API_KEY)
+    console.log("Using Client-Side Gemini Fallback");
     const ai = new GoogleGenAI({ apiKey });
 
     const prompt = `

@@ -200,6 +200,8 @@ export interface Deal {
 }
 
 // Table: crm_contacts
+export type ContactType = 'Lead' | 'Investor' | 'Customer' | 'Partner' | 'Other';
+
 export interface Contact {
   id: string;
   startupId: string;
@@ -208,6 +210,7 @@ export interface Contact {
   email?: string;
   phone?: string;
   role?: string;
+  type?: ContactType;
   linkedinUrl?: string;
   createdAt: string;
 }
@@ -300,6 +303,14 @@ export interface UserProfile {
   education: UserProfileEducation[];
   skills: string[];
   completionScore: number;
+}
+
+// AI Chat
+export interface ChatMessage {
+  id: string;
+  role: 'user' | 'model';
+  content: string;
+  timestamp: string;
 }
 
 export interface StartupDatabaseSchema {

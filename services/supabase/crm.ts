@@ -54,6 +54,20 @@ export const CrmService = {
     await supabase.from('crm_contacts').insert(payload);
   },
 
+  async updateContact(id: string, updates: Partial<Contact>, startupId: string): Promise<void> {
+    if (!supabase) return;
+    const payload = mapContactToDB(updates, startupId);
+    // Remove undefined fields to avoid overwriting with null/default if not intended
+    Object.keys(payload).forEach(key => (payload as any)[key] === undefined && delete (payload as any)[key]);
+    
+    await supabase.from('crm_contacts').update(payload).eq('id', id);
+  },
+
+  async deleteContact(id: string): Promise<void> {
+    if (!supabase) return;
+    await supabase.from('crm_contacts').delete().eq('id', id);
+  },
+
   /**
    * TASKS
    */

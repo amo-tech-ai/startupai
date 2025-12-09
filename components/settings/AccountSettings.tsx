@@ -28,7 +28,7 @@ export const AccountSettings: React.FC = () => {
     setLoading(true);
     try {
       if (supabase) {
-        const { error: updateError } = await supabase.auth.updateUser({
+        const { error: updateError } = await (supabase.auth as any).updateUser({
           data: { full_name: fullName, avatar_url: avatarUrl }
         });
         if (updateError) throw updateError;

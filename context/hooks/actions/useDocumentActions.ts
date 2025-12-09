@@ -34,7 +34,7 @@ export const useDocumentActions = ({
 
       if (profile?.id && supabase && !isGuestMode()) {
           try {
-              const { data: { user } } = await supabase.auth.getUser();
+              const { data: { user } } = await (supabase.auth as any).getUser();
               if(user) {
                   const realId = await DocumentService.create(data, profile.id, user.id);
                   setDocs(prev => prev.map(d => d.id === tempId ? { ...d, id: realId } : d));

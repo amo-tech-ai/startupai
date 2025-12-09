@@ -36,7 +36,7 @@ export const useProfileActions = ({
     let userId = 'mock';
 
     if (supabase) {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { user } } = await (supabase.auth as any).getUser();
         if (!user) {
             isGuest = true;
             userId = 'guest';

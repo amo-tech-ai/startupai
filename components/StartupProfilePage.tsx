@@ -81,29 +81,41 @@ const StartupProfilePage: React.FC = () => {
       </div>
   );
 
-  const handleSaveContext = async (data: Partial<StartupProfile>) => {
-      // Map back to schema keys
-      const payload: any = {};
-      if (data.name) payload.name = data.name;
-      if (data.tagline) payload.tagline = data.tagline;
-      if (data.websiteUrl) payload.website_url = data.websiteUrl;
-      if (data.industry) payload.industry = data.industry;
-      if (data.yearFounded) payload.year_founded = data.yearFounded;
-      if (data.problemStatement) payload.problem = data.problemStatement;
-      if (data.solutionStatement) payload.solution = data.solutionStatement;
-      if (data.businessModel) payload.business_model = data.businessModel;
-      if (data.pricingModel) payload.pricing_model = data.pricingModel;
-      if (data.fundingGoal) payload.raise_amount = data.fundingGoal;
-      if (data.keyFeatures) payload.unique_value = data.keyFeatures.join(', '); // Simple mapping
+  const handleSaveContext = async (data: Partial<StartupProfile> & { metrics?: any }) => {
+      // 1. Separate special keys that belong to different tables
+      const { metrics, competitors, ...profileContext } = data;
 
-      // Extract competitors to send as separate array
-      const competitorsPayload = data.competitors;
+      // 2. Map Profile Context to DB Columns (Schema Mapping)
+      const contextPayload: any = {};
+      if (profileContext.name) contextPayload.name = profileContext.name;
+      if (profileContext.tagline) contextPayload.tagline = profileContext.tagline;
+      if (profileContext.websiteUrl) contextPayload.website_url = profileContext.websiteUrl;
+      if (profileContext.logoUrl) contextPayload.logo_url = profileContext.logoUrl;
+      if (profileContext.coverImageUrl) contextPayload.cover_image_url = profileContext.coverImageUrl;
+      if (profileContext.industry) contextPayload.industry = profileContext.industry;
+      if (profileContext.yearFounded) contextPayload.year_founded = profileContext.yearFounded;
+      if (profileContext.problemStatement) contextPayload.problem = profileContext.problemStatement;
+      if (profileContext.solutionStatement) contextPayload.solution = profileContext.solutionStatement;
+      
+      // Convert single strings to array for DB text[] columns where applicable
+      if (profileContext.businessModel) contextPayload.business_model = [profileContext.businessModel];
+      if (profileContext.targetMarket) contextPayload.target_customers = [profileContext.targetMarket];
+      
+      if (profileContext.pricingModel) contextPayload.pricing_model = profileContext.pricingModel;
+      if (profileContext.fundingGoal) contextPayload.raise_amount = profileContext.fundingGoal;
+      if (profileContext.isRaising !== undefined) contextPayload.is_raising = profileContext.isRaising;
+      if (profileContext.useOfFunds) contextPayload.use_of_funds = profileContext.useOfFunds;
+      if (profileContext.keyFeatures) contextPayload.unique_value = profileContext.keyFeatures.join(', '); // unique_value is text
 
-      await saveProfile({ 
-          startup_id: displayProfile!.id,
-          context: payload,
-          competitors: competitorsPayload
-      });
+      // 3. Send Payload to Edge Function
+      // Only include keys if they have data
+      const payload: any = { startup_id: displayProfile!.id };
+      
+      if (Object.keys(contextPayload).length > 0) payload.context = contextPayload;
+      if (metrics) payload.metrics = metrics;
+      if (competitors) payload.competitors = competitors;
+
+      await saveProfile(payload);
       reload();
   };
 

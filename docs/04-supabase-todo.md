@@ -1,116 +1,144 @@
 
-# 🗄️ Supabase Roadmap: User Profile Enrichment
+# 🗄️ Supabase Architecture & Roadmap
 
-**Status:** 🟡 Planned
-**Goal:** Upgrade the `profiles` table to support rich LinkedIn-style data (Experience, Education, Skills) and implement AI automation for profile scoring and enrichment.
+**Status:** 🟡 In Progress
+**Version:** 2.0
+**Architect:** System Administrator
 
----
-
-## 1. Schema Additions
-
-### Table: `profiles` (Enhancements)
-*Currently exists but needs additional columns to match the frontend `UserProfile` interface.*
-
-| Column | Type | Description |
-|:---|:---|:---|
-| `headline` | `text` | Professional headline (e.g. "Founder @ StartupAI") |
-| `location` | `text` | City, Country string |
-| `phone` | `text` | Contact number (optional) |
-| `cover_image_url` | `text` | URL to storage bucket image |
-| `social_links` | `jsonb` | Object storing URLs: `{ linkedin, twitter, github, website }` |
-| `skills` | `text[]` | Array of skill strings for easy filtering/search |
-| `completion_score` | `integer` | Calculated 0-100 score for gamification |
-| `last_enriched_at` | `timestamptz` | Timestamp of last external sync (LinkedIn) |
-
-### Table: `profile_experience` (New)
-*Normalized table for work history to enable query capabilities (e.g., "Find founders who worked at Google").*
-
-| Column | Type | Constraints |
-|:---|:---|:---|
-| `id` | `uuid` | PK, default `gen_random_uuid()` |
-| `profile_id` | `uuid` | FK to `profiles.id`, ON DELETE CASCADE |
-| `company` | `text` | Required |
-| `role` | `text` | Required |
-| `start_date` | `date` | |
-| `end_date` | `date` | Nullable (if current) |
-| `is_current` | `boolean` | Default `false` |
-| `description` | `text` | |
-| `logo_url` | `text` | Fetched via Clearbit/Brandfetch |
-
-### Table: `profile_education` (New)
-*Normalized table for academic history.*
-
-| Column | Type | Constraints |
-|:---|:---|:---|
-| `id` | `uuid` | PK, default `gen_random_uuid()` |
-| `profile_id` | `uuid` | FK to `profiles.id`, ON DELETE CASCADE |
-| `school` | `text` | Required |
-| `degree` | `text` | |
-| `field_of_study` | `text` | |
-| `start_year` | `integer` | |
-| `end_year` | `integer` | |
+This document outlines the current database schema, security posture, and the roadmap for **User Profile Enrichment** and **Startup Wizard** data persistence.
 
 ---
 
-## 2. Indexes & Performance
+## 📊 Progress Tracker
 
-*   **Search Vector:** Add a `tsvector` column `search_vector` to `profiles` combining `full_name`, `headline`, `skills`, and `bio` for fast user discovery.
-*   **GIN Index:** On `profiles.skills` for fast array containment queries.
-*   **Foreign Keys:** Index `profile_experience(profile_id)` and `profile_education(profile_id)`.
-
----
-
-## 3. RLS Policies (Row Level Security)
-
-### `profiles`
-*   **Select:** `public` (or authenticated users only, depending on privacy setting).
-*   **Update:** `auth.uid() == id` (Users can only edit their own profile).
-*   **Insert:** `auth.uid() == id` (Created on signup via Trigger).
-
-### `profile_experience` & `profile_education`
-*   **Select:** Public/Authenticated.
-*   **All Actions:** `auth.uid() == profile_id` (via join check or duplicate owner_id column).
+| Area | Status | Progress | Notes |
+| :--- | :--- | :--- | :--- |
+| **Core Schema** | 🟢 Ready | 100% | `profiles`, `startups`, `founders` tables active. |
+| **RLS Policies** | 🟢 Ready | 100% | Row Level Security enabled on all core tables. |
+| **Edge Functions** | 🟡 In Progress | 70% | `update-startup-profile` active; enrichment functions pending. |
+| **Profile Enrichment** | 🔴 Pending | 0% | Normalization of Experience/Education tables needed. |
+| **Data Integrity** | 🟡 In Progress | 80% | Transactional logic moved to Edge Functions. |
+| **Search & Indexing** | 🔴 Pending | 0% | `tsvector` and GIN indexes required for performance. |
 
 ---
 
-## 4. Database Triggers & Functions
+## 1️⃣ Schema Overview
 
-### `calculate_profile_score`
-*   **Trigger:** After UPDATE on `profiles`, `profile_experience`, or `profile_education`.
-*   **Logic:**
-    *   Basic Info (Name, Headline, Avatar) = 30 pts
-    *   Bio > 50 chars = 10 pts
-    *   Experience > 0 = 20 pts
-    *   Education > 0 = 10 pts
-    *   Skills > 3 = 10 pts
-    *   Social Links > 0 = 10 pts
-    *   Location = 10 pts
-*   **Action:** Updates `profiles.completion_score`.
+The database is designed around a **multi-tenant** architecture where a `User` (auth.users) manages one or more `Startups`.
+
+### **Core Domains**
+1.  **Identity:** Users (`profiles`) and their professional history.
+2.  **Startup Core:** The company entity (`startups`), team (`startup_founders`), and competitors.
+3.  **Traction:** Financials (`startup_metrics_snapshots`) and fundraising goals.
+4.  **Workflows:** CRM (`crm_deals`), Tasks (`tasks`), and Documents (`investor_docs`).
 
 ---
 
-## 5. Edge Functions (Deno)
+## 2️⃣ Tables & Relationships
 
-### `enrich-profile`
-*   **Trigger:** Manual button click ("Sync from LinkedIn").
-*   **Inputs:** `linkedin_url`.
-*   **Logic:** Calls external scraper API (e.g., Proxycurl), parses result, and performs upsert on `profiles` and child tables.
+### **Core Tables**
 
-### `generate-bio`
-*   **Trigger:** Manual button click in Edit mode.
-*   **Inputs:** `experience` array, `skills`.
-*   **Logic:** Uses Gemini 3 Pro to write a compelling bio based on work history.
+| Table | Description | Key Relationship |
+| :--- | :--- | :--- |
+| `profiles` | Extended user data (Avatar, Bio). | `id` → `auth.users.id` (1:1) |
+| `startups` | The main company entity. | `user_id` → `auth.users.id` (Owner) |
+| `startup_founders` | Team members linked to a startup. | `startup_id` → `startups.id` (N:1) |
+| `startup_links` | Social & Web links. | `startup_id` → `startups.id` (N:1) |
+| `startup_metrics_snapshots` | Historical MRR/User data. | `startup_id` → `startups.id` (N:1) |
+
+### **Planned Tables (Profile Enrichment)**
+*To be implemented in Phase 3.*
+
+| Table | Description | Key Relationship |
+| :--- | :--- | :--- |
+| `profile_experience` | Work history (normalized). | `profile_id` → `profiles.id` |
+| `profile_education` | Academic history (normalized). | `profile_id` → `profiles.id` |
+| `profile_skills` | Junction table for skills. | `profile_id` → `profiles.id` |
 
 ---
 
-## 6. Storage Buckets
+## 3️⃣ RLS & Security Review
 
-### `avatars`
-*   **Public Access:** True.
-*   **Size Limit:** 2MB.
-*   **Allowed Types:** `image/jpeg`, `image/png`, `image/webp`.
+**Current Status:** ✅ **Safe**
+Row Level Security is enabled. Policies are scoped to `auth.uid()`.
 
-### `profile-covers` (New)
-*   **Public Access:** True.
-*   **Size Limit:** 5MB.
-*   **Dimensions:** Optimized for 1200x300 aspect ratio.
+*   **`profiles`**: Users can only update their own row. Public read (for networking features).
+*   **`startups`**: Users can only select/update startups where `user_id == auth.uid()`.
+*   **`startup_founders`**: Inherits access via `startup_id`.
+
+**⚠️ Risks:**
+*   **Edge Function Bypass:** The `update-startup-profile` function uses `service_role`. Logic *must* manually verify `user.id` against the resource before writing (Currently implemented, but requires vigilance).
+
+---
+
+## 4️⃣ Edge Functions & Data Flow
+
+### **Catalog**
+
+1.  **`update-startup-profile`** (`supabase/functions/update-startup-profile/index.ts`)
+    *   **Purpose:** Atomic updates for the Dashboard/Wizard. Handles Profile, Team, and Metrics in one transaction.
+    *   **Security:** Verifies JWT ownership before writing.
+    *   **Tables:** `startups`, `startup_founders`, `startup_metrics_snapshots`.
+
+2.  **`ai-helper`** (`supabase/functions/ai-helper/index.ts`)
+    *   **Purpose:** Wraps Google Gemini 3 Pro API calls to keep API keys server-side.
+    *   **Features:** `rewrite_field`, `generate_summary`, `analyze_business`.
+
+### **Data Flow: Startup Wizard Save**
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Frontend
+    participant EdgeFunc as Edge: update-startup-profile
+    participant DB as Supabase DB
+
+    User->>Frontend: Clicks "Save" on Dashboard
+    Frontend->>EdgeFunc: POST { context, founders, metrics }
+    EdgeFunc->>DB: Check Ownership (SELECT user_id FROM startups)
+    alt Owner Authorized
+        EdgeFunc->>DB: UPDATE startups
+        EdgeFunc->>DB: UPSERT startup_founders
+        EdgeFunc->>DB: INSERT startup_metrics_snapshots
+        DB-->>EdgeFunc: Success
+        EdgeFunc-->>Frontend: 200 OK
+    else Unauthorized
+        EdgeFunc-->>Frontend: 403 Forbidden
+    end
+```
+
+---
+
+## 5️⃣ Recommended Improvements (Roadmap)
+
+### **Priority 1: Profile Normalization (Enrichment)**
+**Why:** Storing Experience/Education as JSONB in `profiles` limits our ability to query "Founders who worked at Google".
+**Action:**
+*   Create `profile_experience` and `profile_education` tables.
+*   Migrate existing JSONB data to these tables.
+*   Create `calculate_profile_score` Database Trigger to auto-update `completion_score`.
+
+### **Priority 2: Materialized Views for Dashboard**
+**Why:** Calculating "Profile Strength" and aggregating metrics on the fly is expensive.
+**Action:**
+*   Create a view `view_startup_stats` that pre-calculates MRR growth and completion percentages.
+
+### **Priority 3: External Data Sync**
+**Why:** Users hate manual data entry.
+**Action:**
+*   Implement `enrich-profile` Edge Function to scrape LinkedIn/Website data (via Proxycurl or similar) and auto-populate `profile_experience`.
+
+### **Priority 4: Indexes**
+**Why:** Dashboard load times will degrade as data grows.
+**Action:**
+*   Add **GIN Index** on `profiles.skills` (Fast filtering).
+*   Add **B-Tree Index** on `startup_metrics_snapshots(startup_id, snapshot_date DESC)` (Fast chart loading).
+
+---
+
+## 6️⃣ Implementation Steps (Next 48h)
+
+1.  [ ] **Migration:** Create SQL migration for `profile_experience` and `profile_education`.
+2.  [ ] **Backend:** Update `UserService.ts` to read/write from new tables.
+3.  [ ] **Frontend:** Update `ExperienceSection` and `EducationSection` to use new normalized data structure.
+4.  [ ] **AI:** Wire `enrich-profile` Edge Function to the "Sync LinkedIn" button.

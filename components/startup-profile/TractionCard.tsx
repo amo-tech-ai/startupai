@@ -11,7 +11,8 @@ interface TractionCardProps {
   viewMode: 'edit' | 'investor';
   profile: StartupProfile;
   metrics: { monthly_revenue: number; monthly_active_users: number } | null | undefined;
-  onSave: (data: Partial<StartupProfile>) => Promise<void>;
+  // Handler accepts combined data structure that the parent page will split
+  onSave: (data: Partial<StartupProfile> & { metrics?: any }) => Promise<void>;
 }
 
 export const TractionCard: React.FC<TractionCardProps> = ({ viewMode, profile, metrics, onSave }) => {
@@ -22,7 +23,7 @@ export const TractionCard: React.FC<TractionCardProps> = ({ viewMode, profile, m
   const [aiValuation, setAiValuation] = useState<any>(null);
   const [isLoadingValuation, setIsLoadingValuation] = useState(false);
 
-  // Normalize metrics
+  // Normalize metrics from props or default to 0
   const mrr = metrics?.monthly_revenue || 0;
   const activeUsers = metrics?.monthly_active_users || 0;
 
@@ -32,49 +33,30 @@ export const TractionCard: React.FC<TractionCardProps> = ({ viewMode, profile, m
           activeUsers: activeUsers,
           fundingGoal: profile?.fundingGoal,
           isRaising: profile?.isRaising,
-          fundingHistory: profile?.fundingHistory || []
+          fundingHistory: profile?.fundingHistory || [],
+          useOfFunds: profile?.useOfFunds || []
       });
       setIsEditing(true);
   };
 
   const handleSaveClick = async () => {
-      // Note: metrics are technically handled by a separate table/service in a real app,
-      // but for this card's purpose, we package it all. 
-      // The onSave handler in the parent needs to split this.
-      // But wait, the parent `handleSaveContext` expects StartupProfile Partial.
-      // We might need to pass `metrics` separately if the parent handles it separately.
-      // For now, let's assume the parent can handle basic profile fields (fundingGoal, isRaising).
-      // BUT MRR is a metric.
-      // The updated page structure assumes `onSave` handles `StartupProfile`.
-      // We need to update metrics separately or via a unified endpoint.
-      // For simplicity, we'll assume `onSave` can take custom fields or we need to call context update.
-      // ACTUALLY, the hook `useSaveStartupProfile` takes `{ metrics }` too.
-      // So we will pass everything back, but our interface defines `onSave(data: Partial<StartupProfile>)`.
-      // Let's cheat slightly and pass it through, or fix the interface.
-      
-      // Let's just pass what fits in StartupProfile for now, but metrics need to be saved.
-      // We'll rely on the parent wrapper `handleSaveContext` which actually maps to `saveProfile`.
-      
-      // Wait, TractionCard updating MRR/Users is tricky if `onSave` only takes `StartupProfile`.
-      // In the parent `StartupProfilePage`, `handleSaveContext` only maps profile fields.
-      // We should probably rely on `useData` for metrics update since it's global, OR fix the parent handler.
-      
-      // Let's assume the Parent will fix this or we use context for metrics.
-      // Given we are decoupling, let's pass a `onSaveMetrics` prop or include it.
-      
-      await onSave({ 
-          fundingGoal: Number(formData.fundingGoal), 
+      // Split the data: Profile fields vs Metrics fields
+      const profileUpdates = {
+          fundingGoal: Number(formData.fundingGoal),
           isRaising: formData.isRaising,
           fundingHistory: formData.fundingHistory,
-          // Hack: Passing metrics in "context" if backend supports it, otherwise use context
+          useOfFunds: formData.useOfFunds
+      };
+
+      const metricsUpdates = {
+          monthly_revenue: Number(formData.mrr),
+          monthly_active_users: Number(formData.activeUsers)
+      };
+
+      await onSave({ 
+          ...profileUpdates,
+          metrics: metricsUpdates
       });
-      
-      // We also need to save metrics. Since the prop is just `onSave` for profile, 
-      // let's use the global context update for metrics as a fallback or side effect.
-      // Ideally, the parent should provide a comprehensive save handler.
-      // For now, I'll update the profile parts. Metrics update might be missed if we don't use context here.
-      // But wait, the previous implementation used `updateMetrics` from context.
-      // Let's import `useData` just for metrics update to be safe.
       
       setIsEditing(false);
       success("Traction updated");
@@ -91,7 +73,7 @@ export const TractionCard: React.FC<TractionCardProps> = ({ viewMode, profile, m
       }
   };
 
-  // Mock chart data generation
+  // Generate chart data for visualization
   const chartData = useMemo(() => {
       const baseMrr = mrr || 0;
       return Array.from({ length: 6 }, (_, i) => ({

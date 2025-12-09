@@ -16,6 +16,7 @@ import Documents from './components/Documents';
 import Tasks from './components/Tasks';
 import Settings from './components/Settings';
 import Profile from './components/Profile';
+import StartupProfilePage from './components/StartupProfilePage';
 import StartupWizard from './components/StartupWizard';
 import Footer from './components/Footer';
 import { DataProvider, useData } from './context/DataContext';
@@ -105,6 +106,9 @@ const AppContent = () => {
         <Route element={<RequireAuth><AppLayout /></RequireAuth>}>
           <Route path="/dashboard" element={<Dashboard />} />
           
+          {/* Startup Profile Management */}
+          <Route path="/startup-profile" element={<StartupProfilePage />} />
+
           {/* Pitch Decks Deep Linking */}
           <Route path="/pitch-decks" element={<PitchDecks />} />
           <Route path="/pitch-decks/:deckId" element={<PitchDecks />} />
@@ -121,6 +125,7 @@ const AppContent = () => {
           <Route path="/settings" element={<Settings />} />
           <Route path="/settings/:tab" element={<Settings />} />
           
+          {/* User Profile */}
           <Route path="/profile" element={<Profile />} />
         </Route>
 

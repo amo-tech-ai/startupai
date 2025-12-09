@@ -10,7 +10,8 @@ import {
   LogOut,
   Files,
   UserCircle,
-  LogIn
+  LogIn,
+  Building
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
@@ -32,11 +33,12 @@ const Sidebar: React.FC = () => {
 
   const menuItems = [
     { path: '/dashboard', icon: <LayoutDashboard size={20} />, label: 'Dashboard' },
+    { path: '/startup-profile', icon: <Building size={20} />, label: 'Startup Profile' },
     { path: '/pitch-decks', icon: <FileText size={20} />, label: 'Pitch Decks' },
     { path: '/crm', icon: <Users size={20} />, label: 'CRM' },
     { path: '/documents', icon: <Files size={20} />, label: 'Documents' },
     { path: '/tasks', icon: <CheckSquare size={20} />, label: 'Tasks' },
-    { path: '/profile', icon: <UserCircle size={20} />, label: 'My Profile' },
+    { path: '/profile', icon: <UserCircle size={20} />, label: 'My Account' },
     { path: '/settings', icon: <Settings size={20} />, label: 'Settings' },
   ];
 

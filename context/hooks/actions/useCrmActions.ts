@@ -1,12 +1,13 @@
 
 import { generateShortId } from '../../../lib/utils';
-import { Deal, Task, StartupProfile } from '../../../types';
+import { Deal, Task, Contact, StartupProfile } from '../../../types';
 import { CrmService } from '../../../services/supabase/crm';
 
 interface CrmActionsProps {
   profile: StartupProfile | null;
   setDeals: React.Dispatch<React.SetStateAction<Deal[]>>;
   setTasks: React.Dispatch<React.SetStateAction<Task[]>>;
+  setContacts: React.Dispatch<React.SetStateAction<Contact[]>>;
   isGuestMode: () => boolean;
 }
 
@@ -14,6 +15,7 @@ export const useCrmActions = ({
   profile,
   setDeals,
   setTasks,
+  setContacts,
   isGuestMode
 }: CrmActionsProps) => {
 
@@ -53,6 +55,25 @@ export const useCrmActions = ({
       }
   };
 
+  // --- CONTACTS ---
+  const addContact = (data: Omit<Contact, 'id' | 'startupId' | 'createdAt'>) => {
+      const tempId = generateShortId();
+      const newContact = { 
+          ...data, 
+          id: tempId, 
+          startupId: profile?.id || 'temp',
+          createdAt: new Date().toISOString()
+      };
+      
+      setContacts(prev => {
+          const newState = [...prev, newContact];
+          persistGuestData('guest_contacts', newState);
+          return newState;
+      });
+      
+      if(profile?.id && !isGuestMode()) CrmService.createContact(data, profile.id);
+  };
+
   // --- TASKS ---
   const addTask = (data: Omit<Task, 'id' | 'startupId'>) => {
       const tempId = generateShortId();
@@ -85,5 +106,5 @@ export const useCrmActions = ({
       if(profile?.id && !isGuestMode()) CrmService.deleteTask(id);
   };
 
-  return { addDeal, updateDeal, addTask, updateTask, deleteTask };
+  return { addDeal, updateDeal, addContact, addTask, updateTask, deleteTask };
 };

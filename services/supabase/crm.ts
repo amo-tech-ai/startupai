@@ -1,7 +1,7 @@
 
 import { supabase } from '../../lib/supabaseClient';
-import { Deal, Task } from '../../types';
-import { mapDealFromDB, mapDealToDB, mapTaskFromDB, mapTaskToDB } from '../../lib/mappers';
+import { Deal, Task, Contact } from '../../types';
+import { mapDealFromDB, mapDealToDB, mapTaskFromDB, mapTaskToDB, mapContactFromDB, mapContactToDB } from '../../lib/mappers';
 
 export const CrmService = {
   /**
@@ -37,6 +37,21 @@ export const CrmService = {
     if (!supabase) return;
     const payload = mapDealToDB(updates);
     await supabase.from('crm_deals').update(payload).eq('id', id);
+  },
+
+  /**
+   * CONTACTS
+   */
+  async getContacts(startupId: string): Promise<Contact[]> {
+    if (!supabase) return [];
+    const { data } = await supabase.from('crm_contacts').select('*').eq('startup_id', startupId);
+    return data ? data.map(mapContactFromDB) : [];
+  },
+
+  async createContact(contact: Partial<Contact>, startupId: string): Promise<void> {
+    if (!supabase) return;
+    const payload = mapContactToDB(contact, startupId);
+    await supabase.from('crm_contacts').insert(payload);
   },
 
   /**

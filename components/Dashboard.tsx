@@ -18,11 +18,13 @@ import { SmartAlerts } from './dashboard/v2/SmartAlerts';
 import { SetupChecklist } from './dashboard/v2/SetupChecklist';
 import { ActivityFeed } from './dashboard/ActivityFeed';
 import { WelcomeHeader } from './dashboard/WelcomeHeader';
+import { AddContactSidebar } from './dashboard/AddContactSidebar'; // Imported sidebar
 
 const Dashboard: React.FC = () => {
   const { profile, metrics, insights, activities, deals, decks, setInsights, addActivity } = useData();
   const { toast, error, success } = useToast();
   const [isGeneratingInsights, setIsGeneratingInsights] = useState(false);
+  const [isContactSidebarOpen, setIsContactSidebarOpen] = useState(false); // State for sidebar
   const navigate = useNavigate();
 
   const isGuest = profile?.userId === 'guest' || profile?.userId === 'mock';
@@ -41,7 +43,6 @@ const Dashboard: React.FC = () => {
       // 3. Operations (25%)
       if (runway > 6) score += 25; else if (runway > 3) score += 10; else missing.push("Runway");
       // 4. Profile (25%)
-      // Assuming a simplistic check for profile completeness here, real logic is in ProfileStrength component
       if (profile?.websiteUrl) score += 10;
       if (profile?.coverImageUrl) score += 15;
 
@@ -131,7 +132,7 @@ const Dashboard: React.FC = () => {
       <WelcomeHeader 
         profile={profile} 
         onNewDeck={() => navigate('/pitch-decks')}
-        onAddContact={() => navigate('/crm')}
+        onAddContact={() => setIsContactSidebarOpen(true)} // Open Sidebar
         onCreateDoc={() => navigate('/documents')}
       />
 
@@ -181,6 +182,12 @@ const Dashboard: React.FC = () => {
       </div>
 
       <div className="h-12"></div>
+
+      {/* Render the Sidebar */}
+      <AddContactSidebar 
+        isOpen={isContactSidebarOpen} 
+        onClose={() => setIsContactSidebarOpen(false)} 
+      />
     </div>
   );
 };

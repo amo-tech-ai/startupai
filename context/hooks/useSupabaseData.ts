@@ -12,7 +12,8 @@ import {
   Task, 
   Deck, 
   Deal, 
-  InvestorDoc 
+  InvestorDoc,
+  Contact
 } from '../../types';
 import { ProfileService } from '../../services/supabase/profile';
 import { UserService } from '../../services/supabase/user';
@@ -34,6 +35,7 @@ export const useSupabaseData = () => {
   const [tasks, setTasks] = useState<Task[]>(initialDatabaseState.tasks);
   const [decks, setDecks] = useState<Deck[]>(initialDatabaseState.decks);
   const [deals, setDeals] = useState<Deal[]>(initialDatabaseState.deals); 
+  const [contacts, setContacts] = useState<Contact[]>(initialDatabaseState.contacts);
   const [docs, setDocs] = useState<InvestorDoc[]>(initialDatabaseState.docs);
   const [isLoading, setIsLoading] = useState(true);
   
@@ -55,6 +57,7 @@ export const useSupabaseData = () => {
               const t = localStorage.getItem('guest_tasks'); if(t) setTasks(JSON.parse(t));
               const d = localStorage.getItem('guest_decks'); if(d) setDecks(JSON.parse(d));
               const dl = localStorage.getItem('guest_deals'); if(dl) setDeals(JSON.parse(dl));
+              const c = localStorage.getItem('guest_contacts'); if(c) setContacts(JSON.parse(c));
               const do_ = localStorage.getItem('guest_docs'); if(do_) setDocs(JSON.parse(do_));
               const up = localStorage.getItem('guest_user_profile'); if(up) setUserProfile(JSON.parse(up));
           } catch(e) {
@@ -98,6 +101,13 @@ export const useSupabaseData = () => {
               for (const deal of deals) await CrmService.createDeal(deal, startupId);
           }
 
+          // Contacts
+          const lContacts = localStorage.getItem('guest_contacts');
+          if (lContacts) {
+              const contacts: Contact[] = JSON.parse(lContacts);
+              for (const contact of contacts) await CrmService.createContact(contact, startupId);
+          }
+
           // Tasks
           const lTasks = localStorage.getItem('guest_tasks');
           if (lTasks) {
@@ -125,6 +135,7 @@ export const useSupabaseData = () => {
           localStorage.removeItem('guest_founders');
           localStorage.removeItem('guest_decks');
           localStorage.removeItem('guest_deals');
+          localStorage.removeItem('guest_contacts');
           localStorage.removeItem('guest_tasks');
           localStorage.removeItem('guest_docs');
           localStorage.removeItem('guest_metrics');
@@ -181,7 +192,8 @@ export const useSupabaseData = () => {
                           CrmService.getTasks(p.id),
                           DashboardService.getMetricsHistory(p.id),
                           DashboardService.getInsights(p.id),
-                          DashboardService.getActivities(p.id)
+                          DashboardService.getActivities(p.id),
+                          CrmService.getContacts(p.id)
                       ]);
 
                       const unwrap = <T,>(result: PromiseSettledResult<T>, fallback: T): T => 
@@ -194,6 +206,7 @@ export const useSupabaseData = () => {
                       setMetrics(unwrap(results[4], []));
                       setInsights(unwrap(results[5], []));
                       setActivities(unwrap(results[6], []));
+                      setContacts(unwrap(results[7], []));
 
                       // Realtime Setup
                       if (realtimeChannelRef.current) supabase.removeChannel(realtimeChannelRef.current);
@@ -229,6 +242,7 @@ export const useSupabaseData = () => {
                           setTasks([]);
                           setDecks([]);
                           setDeals([]);
+                          setContacts([]);
                           setDocs([]);
                       }
                   }
@@ -276,6 +290,7 @@ export const useSupabaseData = () => {
     tasks, setTasks,
     decks, setDecks,
     deals, setDeals,
+    contacts, setContacts,
     docs, setDocs,
     isLoading
   };

@@ -199,6 +199,19 @@ export interface Deal {
   ownerColor: string;
 }
 
+// Table: crm_contacts
+export interface Contact {
+  id: string;
+  startupId: string;
+  firstName: string;
+  lastName: string;
+  email?: string;
+  phone?: string;
+  role?: string;
+  linkedinUrl?: string;
+  createdAt: string;
+}
+
 // Table: investor_docs
 export interface DocSection {
   id: string;
@@ -298,6 +311,7 @@ export interface StartupDatabaseSchema {
   insights: AICoachInsight[];
   tasks: Task[];
   deals: Deal[];
+  contacts: Contact[];
   docs: InvestorDoc[]; 
   activities: Activity[];
   decks: Deck[];

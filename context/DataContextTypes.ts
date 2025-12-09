@@ -1,5 +1,5 @@
 
-import { StartupProfile, MetricsSnapshot, AICoachInsight, Founder, Activity, Task, Deck, Deal, InvestorDoc, UserProfile } from '../types';
+import { StartupProfile, MetricsSnapshot, AICoachInsight, Founder, Activity, Task, Deck, Deal, InvestorDoc, UserProfile, Contact } from '../types';
 
 export interface DataContextType {
   profile: StartupProfile | null;
@@ -11,6 +11,7 @@ export interface DataContextType {
   tasks: Task[];
   decks: Deck[];
   deals: Deal[];
+  contacts: Contact[];
   docs: InvestorDoc[];
   
   createStartup: (data: Partial<StartupProfile>) => Promise<string | null>;
@@ -35,6 +36,8 @@ export interface DataContextType {
   addDeal: (deal: Omit<Deal, 'id' | 'startupId'>) => void;
   updateDeal: (id: string, updates: Partial<Deal>) => void;
   
+  addContact: (contact: Omit<Contact, 'id' | 'startupId' | 'createdAt'>) => void;
+
   addDoc: (doc: Omit<InvestorDoc, 'id' | 'startupId' | 'updatedAt'>) => Promise<string | null>;
   updateDoc: (id: string, updates: Partial<InvestorDoc>) => void;
   deleteDoc: (id: string) => void;

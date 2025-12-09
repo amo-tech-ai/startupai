@@ -1,7 +1,7 @@
 
 import { 
   StartupProfile, UserProfile, Founder, MetricsSnapshot, 
-  AICoachInsight, Activity, Task, Deck, Deal, InvestorDoc 
+  AICoachInsight, Activity, Task, Deck, Deal, InvestorDoc, Contact
 } from '../../types';
 
 // Domain Hooks
@@ -25,6 +25,7 @@ interface AppActionsProps {
   setTasks: React.Dispatch<React.SetStateAction<Task[]>>;
   setDecks: React.Dispatch<React.SetStateAction<Deck[]>>;
   setDeals: React.Dispatch<React.SetStateAction<Deal[]>>;
+  setContacts: React.Dispatch<React.SetStateAction<Contact[]>>;
   setDocs: React.Dispatch<React.SetStateAction<InvestorDoc[]>>;
 }
 
@@ -32,7 +33,7 @@ export const useAppActions = ({
   profile, userProfile, founders,
   setProfile, setUserProfile, setFounders,
   setMetrics, setInsights, setActivities,
-  setTasks, setDecks, setDeals, setDocs
+  setTasks, setDecks, setDeals, setContacts, setDocs
 }: AppActionsProps) => {
 
   // 1. Profile Actions (Core)
@@ -58,7 +59,7 @@ export const useAppActions = ({
 
   // 5. CRM Actions
   const crmActions = useCrmActions({
-    profile, setDeals, setTasks, 
+    profile, setDeals, setTasks, setContacts,
     isGuestMode: profileActions.isGuestMode
   });
 

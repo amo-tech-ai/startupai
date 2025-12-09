@@ -18,6 +18,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     tasks, setTasks,
     decks, setDecks,
     deals, setDeals,
+    contacts, setContacts,
     docs, setDocs,
     isLoading
   } = useSupabaseData();
@@ -27,12 +28,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     profile, userProfile, founders,
     setProfile, setUserProfile, setFounders,
     setMetrics, setInsights, setActivities,
-    setTasks, setDecks, setDeals, setDocs
+    setTasks, setDecks, setDeals, setContacts, setDocs
   });
 
   return (
     <DataContext.Provider value={{ 
-      profile, userProfile, founders, metrics, insights, activities, tasks, decks, deals, docs,
+      profile, userProfile, founders, metrics, insights, activities, tasks, decks, deals, contacts, docs,
       isLoading,
       ...actions
     }}>

@@ -250,6 +250,7 @@ export const initialDatabaseState: StartupDatabaseSchema = {
   activities: mockActivities,
   decks: mockDecks,
   deals: mockDeals,
+  contacts: [],
   docs: mockDocs
 };
 

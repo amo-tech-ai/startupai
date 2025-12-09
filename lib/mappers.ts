@@ -1,5 +1,5 @@
 
-import { StartupProfile, Founder, Deck, Slide, Deal, InvestorDoc, MetricsSnapshot, AICoachInsight, Activity, Task, UserProfile } from '../types';
+import { StartupProfile, Founder, Deck, Slide, Deal, InvestorDoc, MetricsSnapshot, AICoachInsight, Activity, Task, UserProfile, Contact } from '../types';
 
 /**
  * STARTUP PROFILE MAPPERS
@@ -196,6 +196,31 @@ export const mapDealToDB = (d: Partial<Deal>, startupId?: string) => {
     if (startupId) payload.startup_id = startupId;
     return payload;
 };
+
+/**
+ * CONTACT MAPPERS
+ */
+export const mapContactFromDB = (c: any): Contact => ({
+  id: c.id,
+  startupId: c.startup_id,
+  firstName: c.first_name,
+  lastName: c.last_name || '',
+  email: c.email,
+  phone: c.phone,
+  role: c.role || c.title,
+  linkedinUrl: c.linkedin_url,
+  createdAt: c.created_at
+});
+
+export const mapContactToDB = (c: Partial<Contact>, startupId: string) => ({
+  startup_id: startupId,
+  first_name: c.firstName,
+  last_name: c.lastName,
+  email: c.email,
+  phone: c.phone,
+  role: c.role,
+  linkedin_url: c.linkedinUrl
+});
 
 /**
  * TASK MAPPERS

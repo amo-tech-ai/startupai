@@ -1,21 +1,35 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Eye, Edit3, Presentation, CheckCircle2 } from 'lucide-react';
-import { useData } from '../context/DataContext';
+import { useData } from '../context/DataContext'; // Keep for global fallback or auth state
 import { OverviewCard } from './startup-profile/OverviewCard';
 import { TeamCard } from './startup-profile/TeamCard';
 import { BusinessCard } from './startup-profile/BusinessCard';
 import { TractionCard } from './startup-profile/TractionCard';
 import { SummaryCard } from './startup-profile/SummaryCard';
 import { useNavigate } from 'react-router-dom';
+import { useSaveStartupProfile } from '../hooks/useSaveStartupProfile';
 
 const StartupProfilePage: React.FC = () => {
-  const { profile, isLoading } = useData();
+  const { profile, isLoading: isGlobalLoading } = useData();
+  const { saveProfile, isSaving } = useSaveStartupProfile();
   const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<'edit' | 'investor'>('edit');
 
-  if (isLoading) return <div className="p-12 text-center">Loading profile...</div>;
-  if (!profile) return <div className="p-12 text-center">Profile not found.</div>;
+  // We primarily use the global profile context for now to maintain compatibility 
+  // with the existing optimistic UI system in `useSupabaseData`.
+  // The `useSaveStartupProfile` hook is introduced for the atomic save actions.
+
+  if (isGlobalLoading) return <div className="p-12 text-center text-slate-500">Loading profile...</div>;
+  if (!profile) return <div className="p-12 text-center text-slate-500">Profile not found. Please complete onboarding.</div>;
+
+  const handleGlobalSave = async () => {
+      // Example of triggering a full save if needed
+      await saveProfile({ 
+          startup_id: profile.id,
+          context: { name: profile.name } 
+      });
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 pb-20 font-sans text-slate-900">
@@ -27,8 +41,8 @@ const StartupProfilePage: React.FC = () => {
                 <div className="flex items-center gap-3 mb-1">
                     <h1 className="text-3xl font-bold text-slate-900">{profile.name}</h1>
                     <div className="flex gap-2">
-                        <span className="px-2 py-0.5 bg-slate-100 text-slate-600 text-xs font-bold rounded uppercase border border-slate-200">{profile.industry}</span>
-                        <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 text-xs font-bold rounded uppercase border border-indigo-100">{profile.stage}</span>
+                        <span className="px-2 py-0.5 bg-slate-100 text-slate-600 text-xs font-bold rounded uppercase border border-slate-200">{profile.industry || 'Tech'}</span>
+                        <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 text-xs font-bold rounded uppercase border border-indigo-100">{profile.stage || 'Seed'}</span>
                     </div>
                 </div>
                 <p className="text-slate-500">Manage your company profile and investor data.</p>
@@ -79,7 +93,10 @@ const StartupProfilePage: React.FC = () => {
                     <div className="space-y-3">
                         <div className="flex items-center justify-between text-sm">
                             <span className="text-slate-500">Last Updated</span>
-                            <span className="font-medium">{new Date(profile.updatedAt).toLocaleDateString()}</span>
+                            <span className="font-medium flex items-center gap-2">
+                                {new Date(profile.updatedAt).toLocaleDateString()}
+                                {isSaving && <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" />}
+                            </span>
                         </div>
                         <div className="flex items-center justify-between text-sm">
                             <span className="text-slate-500">Visibility</span>

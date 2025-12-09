@@ -109,6 +109,29 @@ export interface MetricsSnapshot {
   recordedAt: string;
 }
 
+// DTO for Full Profile Fetch (RPC)
+export interface StartupProfileDTO {
+  startup_id: string;
+  context: Partial<StartupProfile> & {
+    problem_statement?: string;
+    solution_statement?: string;
+    pricing_model?: string;
+    business_model?: string;
+    website_url?: string;
+    cover_image_url?: string;
+    year_founded?: number;
+    use_of_funds?: string[];
+    is_raising?: boolean;
+    funding_goal?: number;
+  };
+  founders: Founder[];
+  metrics: Partial<MetricsSnapshot> | null;
+  links: any[]; 
+  ai_summary?: string;
+  profile_strength?: number;
+  missing_fields?: string[];
+}
+
 // Table: ai_coach_insights
 export interface AICoachInsight {
   id: string;

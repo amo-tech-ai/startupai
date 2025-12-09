@@ -1,6 +1,18 @@
 
 # Changelog
 
+## [v2.1.0] - Startup Profile Dashboard
+### Features
+- **Profile Dashboard**: Launched `/startup-profile` as the central hub for managing company data.
+- **Dual View Mode**: Implemented "Edit" vs "Investor View" toggle for previewing the profile.
+- **AI Tools**: Added granular AI actions for every section:
+  - "Refine Tagline" (Overview)
+  - "Suggest Competitors" (Market)
+  - "Estimate Valuation" (Traction)
+  - "Rewrite Bio" (Team)
+- **Deep Integration**: Fully wired to `Supabase` backend and `WizardService` for AI operations.
+- **Visuals**: Implemented 5 specialized cards (Overview, Team, Business, Traction, Summary) with responsive layouts.
+
 ## [v2.0.0] - User Profile System
 ### Features
 - **My Profile Screen**: Full LinkedIn-style profile management.

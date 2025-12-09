@@ -1,5 +1,4 @@
-
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { TrendingUp, Edit2, DollarSign, Users, Loader2 } from 'lucide-react';
 import { AreaChart, Area, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
 import { WizardService } from '../../services/wizardAI';
@@ -27,17 +26,18 @@ export const TractionCard: React.FC<TractionCardProps> = ({ viewMode, profile, m
   const mrr = metrics?.monthly_revenue || 0;
   const activeUsers = metrics?.monthly_active_users || 0;
 
-  const startEdit = () => {
-      setFormData({
-          mrr: mrr,
-          activeUsers: activeUsers,
-          fundingGoal: profile?.fundingGoal,
-          isRaising: profile?.isRaising,
-          fundingHistory: profile?.fundingHistory || [],
-          useOfFunds: profile?.useOfFunds || []
-      });
-      setIsEditing(true);
-  };
+  useEffect(() => {
+    if (profile) {
+        setFormData({
+            mrr: mrr,
+            activeUsers: activeUsers,
+            fundingGoal: profile.fundingGoal,
+            isRaising: profile.isRaising,
+            fundingHistory: profile.fundingHistory || [],
+            useOfFunds: profile.useOfFunds || []
+        });
+    }
+  }, [profile, mrr, activeUsers]);
 
   const handleSaveClick = async () => {
       // Split the data: Profile fields vs Metrics fields
@@ -91,7 +91,7 @@ export const TractionCard: React.FC<TractionCardProps> = ({ viewMode, profile, m
                 <TrendingUp size={20} className="text-emerald-600"/> Traction & Finance
             </h2>
             {viewMode === 'edit' && !isEditing && (
-                <button onClick={startEdit} className="text-slate-400 hover:text-indigo-600 transition-colors">
+                <button onClick={() => setIsEditing(true)} className="text-slate-400 hover:text-indigo-600 transition-colors">
                     <Edit2 size={18} />
                 </button>
             )}

@@ -11,78 +11,31 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@400;600;700&display=swap" as="style">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet">
-
-    <!-- 2. Tailwind CSS CDN (Runtime) -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ['Inter', 'sans-serif'],
-              serif: ['Playfair Display', 'serif'],
-            },
-            colors: {
-              primary: {
-                50: '#eef2ff',
-                100: '#e0e7ff',
-                500: '#6366f1',
-                600: '#4f46e5',
-                700: '#4338ca',
-                900: '#312e81',
-              }
-            }
-          }
-        }
-      }
-    </script>
-
-    <!-- 3. Clean Import Map (Runtime Dependencies Only) -->
-    <script type="importmap">
+  <script type="importmap">
 {
   "imports": {
-    "react": "https://esm.sh/react@18.2.0",
-    "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
-    "react-router-dom": "https://esm.sh/react-router-dom@6.22.3",
-    "framer-motion": "https://esm.sh/framer-motion@10.18.0",
-    "lucide-react": "https://esm.sh/lucide-react@0.344.0",
-    "recharts": "https://esm.sh/recharts@2.12.0",
-    "@google/genai": "https://esm.sh/@google/genai@0.1.1",
-    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.39.7",
-    "clsx": "https://esm.sh/clsx@2.1.0",
-    "tailwind-merge": "https://esm.sh/tailwind-merge@2.2.1",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.1/",
-    "react/": "https://aistudiocdn.com/react@^19.2.1/",
-    "vite": "https://aistudiocdn.com/vite@^7.2.7",
-    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.1.2",
-    "url": "https://aistudiocdn.com/url@^0.11.4",
-    "path": "https://aistudiocdn.com/path@^0.12.7"
+    "react/": "https://esm.sh/react@^19.2.1/",
+    "react": "https://esm.sh/react@^19.2.1",
+    "react-router-dom": "https://esm.sh/react-router-dom@^7.10.1",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.1/",
+    "recharts": "https://esm.sh/recharts@^3.5.1",
+    "framer-motion": "https://esm.sh/framer-motion@^12.23.26",
+    "lucide-react": "https://esm.sh/lucide-react@^0.559.0",
+    "@google/genai": "https://esm.sh/@google/genai@^1.32.0",
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.87.1",
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2",
+    "path": "https://esm.sh/path@^0.12.7",
+    "clsx": "https://esm.sh/clsx@^2.1.1",
+    "vite": "https://esm.sh/vite@^7.2.7",
+    "tailwind-merge": "https://esm.sh/tailwind-merge@^3.4.0",
+    "url": "https://esm.sh/url@^0.11.4"
   }
 }
 </script>
-  </head>
+</head>
   <body>
     <div id="root"></div>
-    
-    <!-- 4. Inline Entry Script -->
-    <script type="module">
-      import React from 'react';
-      import ReactDOM from 'react-dom/client';
-      import { HashRouter } from 'react-router-dom';
-      import App from './App.tsx';
-      import './index.css';
-
-      const rootElement = document.getElementById('root');
-      if (rootElement) {
-        const root = ReactDOM.createRoot(rootElement);
-        root.render(
-          React.createElement(React.StrictMode, null,
-            React.createElement(HashRouter, null,
-              React.createElement(App, null)
-            )
-          )
-        );
-      }
-    </script>
+    <!-- Correct Vite Entry Point -->
+    <script type="module" src="/index.tsx"></script>
   </body>
 </html>

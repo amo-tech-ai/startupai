@@ -32,29 +32,31 @@ export const HealthScorecard: React.FC<HealthScorecardProps> = ({ score, metrics
       </div>
 
       {/* Radial Progress Chart */}
-      <div className="relative h-40 min-w-0 flex items-center justify-center mb-8">
-         <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-                <Pie
-                    data={data}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={55}
-                    outerRadius={70}
-                    startAngle={90}
-                    endAngle={-270}
-                    dataKey="value"
-                    stroke="none"
-                >
-                    <Cell fill={color} />
-                    <Cell fill="#F7F7F5" />
-                </Pie>
-            </PieChart>
-         </ResponsiveContainer>
-         <div className="absolute inset-0 flex flex-col items-center justify-center">
-             <span className="text-3xl font-serif font-bold text-[#1A1A1A]">{score}%</span>
-             <span className="text-xs text-[#6B7280] font-medium uppercase tracking-wide">Score</span>
-         </div>
+      <div className="w-full min-w-0">
+        <div className="relative h-40 w-full min-w-0 flex items-center justify-center mb-8">
+           <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                  <Pie
+                      data={data}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={55}
+                      outerRadius={70}
+                      startAngle={90}
+                      endAngle={-270}
+                      dataKey="value"
+                      stroke="none"
+                  >
+                      <Cell fill={color} />
+                      <Cell fill="#F7F7F5" />
+                  </Pie>
+              </PieChart>
+           </ResponsiveContainer>
+           <div className="absolute inset-0 flex flex-col items-center justify-center">
+               <span className="text-3xl font-serif font-bold text-[#1A1A1A]">{score}%</span>
+               <span className="text-xs text-[#6B7280] font-medium uppercase tracking-wide">Score</span>
+           </div>
+        </div>
       </div>
 
       <div className="space-y-4">

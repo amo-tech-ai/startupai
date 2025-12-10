@@ -91,23 +91,25 @@ export const FounderCommandCenter: React.FC<FounderCommandCenterProps> = ({ metr
       </div>
 
       {/* Mini Chart */}
-      <div className="h-32 w-full min-w-0 bg-[#F7F7F5] rounded-xl overflow-hidden border border-[#E5E5E5] relative p-4">
-         <div className="absolute top-4 left-4 text-[10px] font-bold text-[#6B7280] uppercase tracking-wider">12-Month Projection</div>
-         <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={projectionData}>
-              <defs>
-                <linearGradient id="colorArr" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#1A1A1A" stopOpacity={0.1}/>
-                  <stop offset="95%" stopColor="#1A1A1A" stopOpacity={0}/>
-                </linearGradient>
-              </defs>
-              <Tooltip 
-                contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', fontSize: '12px', backgroundColor: '#FFFFFF', color: '#1A1A1A' }}
-                formatter={(value: number) => [`$${value.toLocaleString()}`, 'ARR']}
-              />
-              <Area type="monotone" dataKey="value" stroke="#1A1A1A" strokeWidth={1.5} fillOpacity={1} fill="url(#colorArr)" />
-            </AreaChart>
-         </ResponsiveContainer>
+      <div className="w-full min-w-0">
+        <div className="h-32 w-full min-w-0 bg-[#F7F7F5] rounded-xl overflow-hidden border border-[#E5E5E5] relative p-4">
+           <div className="absolute top-4 left-4 text-[10px] font-bold text-[#6B7280] uppercase tracking-wider">12-Month Projection</div>
+           <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={projectionData}>
+                <defs>
+                  <linearGradient id="colorArr" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#1A1A1A" stopOpacity={0.1}/>
+                    <stop offset="95%" stopColor="#1A1A1A" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <Tooltip 
+                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', fontSize: '12px', backgroundColor: '#FFFFFF', color: '#1A1A1A' }}
+                  formatter={(value: number) => [`$${value.toLocaleString()}`, 'ARR']}
+                />
+                <Area type="monotone" dataKey="value" stroke="#1A1A1A" strokeWidth={1.5} fillOpacity={1} fill="url(#colorArr)" />
+              </AreaChart>
+           </ResponsiveContainer>
+        </div>
       </div>
     </div>
   );

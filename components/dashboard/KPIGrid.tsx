@@ -35,10 +35,9 @@ export const KPIGrid: React.FC<KPIGridProps> = ({ metrics, profile }) => {
   const fundingProgress = Math.min((raisedAmount / fundingGoal) * 100, 100);
 
   // Prepare Chart Data
-  // If we have history, use it. Otherwise, fallback to empty or single point.
   const chartData = metrics.length > 1 
     ? metrics.map(m => ({ v: m.mrr || 0, users: m.activeUsers || 0 }))
-    : Array(7).fill(0).map(() => ({ v: mrr, users: activeUsers })); // Fallback if no history
+    : Array(7).fill(0).map(() => ({ v: mrr, users: activeUsers })); 
 
   return (
     <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -56,12 +55,14 @@ export const KPIGrid: React.FC<KPIGridProps> = ({ metrics, profile }) => {
              <div className="text-slate-500 text-sm font-medium mb-1">Monthly Revenue</div>
              <div className="text-3xl font-bold text-slate-900">${mrr.toLocaleString()}</div>
           </div>
-          <div className="h-10 w-full min-w-0 opacity-50">
-             <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={chartData}>
-                   <Area type="monotone" dataKey="v" stroke="#4f46e5" fill="#e0e7ff" strokeWidth={2} />
-                </AreaChart>
-             </ResponsiveContainer>
+          <div className="w-full min-w-0">
+            <div className="h-10 w-full min-w-0 opacity-50">
+               <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={chartData}>
+                     <Area type="monotone" dataKey="v" stroke="#4f46e5" fill="#e0e7ff" strokeWidth={2} />
+                  </AreaChart>
+               </ResponsiveContainer>
+            </div>
           </div>
        </div>
 
@@ -99,12 +100,14 @@ export const KPIGrid: React.FC<KPIGridProps> = ({ metrics, profile }) => {
              <div className="text-slate-500 text-sm font-medium mb-1">Active Users</div>
              <div className="text-3xl font-bold text-slate-900">{activeUsers.toLocaleString()}</div>
           </div>
-          <div className="h-10 w-full min-w-0 opacity-50">
-             <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData}>
-                   <Bar dataKey="users" fill="#2dd4bf" radius={[2, 2, 0, 0]} />
-                </BarChart>
-             </ResponsiveContainer>
+          <div className="w-full min-w-0">
+            <div className="h-10 w-full min-w-0 opacity-50">
+               <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={chartData}>
+                     <Bar dataKey="users" fill="#2dd4bf" radius={[2, 2, 0, 0]} />
+                  </BarChart>
+               </ResponsiveContainer>
+            </div>
           </div>
        </div>
 
@@ -122,12 +125,14 @@ export const KPIGrid: React.FC<KPIGridProps> = ({ metrics, profile }) => {
              <div className="text-slate-500 text-sm font-medium mb-1">Docs Generated</div>
              <div className="text-3xl font-bold text-slate-900">12</div>
           </div>
-          <div className="h-10 w-full min-w-0 opacity-50">
-             <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData}>
-                   <Bar dataKey="v" fill="#fb7185" radius={[2, 2, 0, 0]} />
-                </BarChart>
-             </ResponsiveContainer>
+          <div className="w-full min-w-0">
+            <div className="h-10 w-full min-w-0 opacity-50">
+               <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={chartData}>
+                     <Bar dataKey="v" fill="#fb7185" radius={[2, 2, 0, 0]} />
+                  </BarChart>
+               </ResponsiveContainer>
+            </div>
           </div>
        </div>
     </section>

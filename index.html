@@ -30,6 +30,12 @@
                 600: '#4f46e5',
                 700: '#4338ca',
                 900: '#312e81',
+              },
+              luxury: {
+                canvas: '#F7F7F5',
+                border: '#E5E5E5',
+                text: '#1A1A1A',
+                secondary: '#6B7280',
               }
             }
           }
@@ -37,17 +43,18 @@
       }
     </script>
 
-    <!-- 3. Clean Import Map (Runtime Dependencies Only) -->
+    <!-- 3. Clean Import Map (Strict React 18.2.0) -->
     <script type="importmap">
 {
   "imports": {
     "react": "https://esm.sh/react@18.2.0",
     "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
-    "react-router-dom": "https://esm.sh/react-router-dom@6.22.3",
-    "framer-motion": "https://esm.sh/framer-motion@10.18.0",
-    "lucide-react": "https://esm.sh/lucide-react@0.344.0",
-    "recharts": "https://esm.sh/recharts@2.12.0",
-    "@google/genai": "https://esm.sh/@google/genai@0.1.2",
+    "react/jsx-runtime": "https://esm.sh/react@18.2.0/jsx-runtime",
+    "react-router-dom": "https://esm.sh/react-router-dom@6.22.3?deps=react@18.2.0,react-dom@18.2.0",
+    "framer-motion": "https://esm.sh/framer-motion@10.18.0?deps=react@18.2.0,react-dom@18.2.0",
+    "lucide-react": "https://esm.sh/lucide-react@0.344.0?deps=react@18.2.0",
+    "recharts": "https://esm.sh/recharts@2.12.0?deps=react@18.2.0,react-dom@18.2.0",
+    "@google/genai": "https://esm.sh/@google/genai",
     "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.39.7",
     "clsx": "https://esm.sh/clsx@2.1.0",
     "tailwind-merge": "https://esm.sh/tailwind-merge@2.2.1",
@@ -55,8 +62,8 @@
     "react/": "https://esm.sh/react@^19.2.1/",
     "vite": "https://esm.sh/vite@^7.2.7",
     "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2",
-    "path": "https://esm.sh/path@^0.12.7",
-    "url": "https://esm.sh/url@^0.11.4"
+    "url": "https://esm.sh/url@^0.11.4",
+    "path": "https://esm.sh/path@^0.12.7"
   }
 }
 </script>
@@ -64,7 +71,7 @@
   <body>
     <div id="root"></div>
     
-    <!-- 4. Inline Entry Script to resolve CORS -->
+    <!-- 4. Inline Entry Script -->
     <script type="module">
       import React from 'react';
       import ReactDOM from 'react-dom/client';

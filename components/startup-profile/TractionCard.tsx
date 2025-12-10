@@ -202,21 +202,23 @@ export const TractionCard: React.FC<TractionCardProps> = ({ viewMode, profile, m
                 </div>
 
                 {/* Growth Chart */}
-                <div className="h-40 w-full min-w-0">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={chartData}>
-                            <defs>
-                                <linearGradient id="colorGrowth" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.2}/>
-                                    <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-                                </linearGradient>
-                            </defs>
-                            <XAxis dataKey="month" hide />
-                            <YAxis hide />
-                            <Tooltip />
-                            <Area type="monotone" dataKey="value" stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#colorGrowth)" />
-                        </AreaChart>
-                    </ResponsiveContainer>
+                <div className="w-full min-w-0">
+                    <div className="h-40 w-full min-w-0">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={chartData}>
+                                <defs>
+                                    <linearGradient id="colorGrowth" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.2}/>
+                                        <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                                    </linearGradient>
+                                </defs>
+                                <XAxis dataKey="month" hide />
+                                <YAxis hide />
+                                <Tooltip />
+                                <Area type="monotone" dataKey="value" stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#colorGrowth)" />
+                            </AreaChart>
+                        </ResponsiveContainer>
+                    </div>
                 </div>
 
                 {/* Valuation Panel */}

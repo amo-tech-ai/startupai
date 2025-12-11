@@ -1,6 +1,7 @@
-import { GoogleGenAI } from "@google/genai";
+
+import { GoogleGenAI, Type } from "@google/genai";
 import { Task } from "../types";
-import { generateUUID, cleanJson } from "../lib/utils";
+import { generateUUID } from "../lib/utils";
 
 export const TaskAI = {
   /**
@@ -19,32 +20,38 @@ export const TaskAI = {
         Goal: ${profileContext.goal}
 
         Task: Generate 5 specific, high-priority tasks this startup should focus on RIGHT NOW to move to the next stage.
-        
-        Return a JSON array of objects with:
-        - title (string, max 10 words)
-        - description (string, max 20 words)
-        - priority (High/Medium/Low)
     `;
 
     try {
         const response = await ai.models.generateContent({
             model: 'gemini-3-pro-preview',
             contents: prompt,
-            config: { responseMimeType: 'application/json' }
+            config: { 
+                responseMimeType: 'application/json',
+                responseSchema: {
+                    type: Type.ARRAY,
+                    items: {
+                        type: Type.OBJECT,
+                        properties: {
+                            title: { type: Type.STRING, description: "Max 10 words" },
+                            description: { type: Type.STRING, description: "Max 20 words" },
+                            priority: { type: Type.STRING, enum: ["High", "Medium", "Low"] }
+                        },
+                        required: ["title", "description", "priority"]
+                    }
+                },
+                thinkingConfig: { thinkingBudget: 1024 }
+            }
         });
 
-        const text = cleanJson(response.text);
-        if (text) {
-            const rawTasks = JSON.parse(text);
-            return rawTasks.map((t: any) => ({
-                title: t.title,
-                description: t.description,
-                status: 'Backlog', // Default to backlog
-                priority: t.priority,
-                aiGenerated: true
-            }));
-        }
-        return null;
+        const rawTasks = JSON.parse(response.text || '[]');
+        return rawTasks.map((t: any) => ({
+            title: t.title,
+            description: t.description,
+            status: 'Backlog', // Default to backlog
+            priority: t.priority,
+            aiGenerated: true
+        }));
     } catch (error) {
         console.error("AI Task Roadmap Error:", error);
         throw error;

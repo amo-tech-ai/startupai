@@ -1,5 +1,5 @@
 
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, Type, Schema } from "@google/genai";
 import { Deck, Slide, StartupProfile } from '../types';
 import { supabase } from '../lib/supabaseClient';
 import { generateUUID, cleanJson } from "../lib/utils";
@@ -38,11 +38,11 @@ export async function generateDeckEdge(
 
   let templateInstructions = "";
   if (template === 'Y Combinator') {
-      templateInstructions = "Strictly follow the Y Combinator Seed Deck structure (approx 10 slides): Title, Problem, Solution, Traction, Unique Insight, Business Model, Market, Competition, Team, Ask.";
+      templateInstructions = "Structure: approx 10 slides (Problem, Solution, Traction, etc).";
   } else if (template === 'Sequoia') {
-      templateInstructions = "Strictly follow the Sequoia Capital structure (approx 12 slides): Company Purpose, Problem, Solution, Why Now, Market Potential, Competition, Product, Business Model, Team, Financials, Vision, Ask.";
+      templateInstructions = "Structure: approx 12 slides (Purpose, Problem, Solution, Why Now, etc).";
   } else {
-      templateInstructions = "Analyze the startup's specific context (Stage: " + profile.stage + ") to generate a custom, optimal slide flow (10-15 slides).";
+      templateInstructions = "Structure: Custom flow (10-15 slides) optimized for stage: " + profile.stage;
   }
 
   // Enrich context with all available profile data
@@ -76,44 +76,53 @@ export async function generateDeckEdge(
     Template Request: ${template}
     Instructions: ${templateInstructions}
 
-    STRICT BEST PRACTICES & GENERATION RULES:
-    1. Title Slide: Title must be ONLY the company name "${profile.name}". No other text in title.
-    2. Problem Slide: Must have EXACTLY 3 bullet points describing the core pain points based on the problem statement.
-    3. Competition Slide: explicitly mention how ${profile.name} is different from ${competitorsList}.
-    4. Business Model Slide: Explain how the ${profile.businessModel} model works.
-    5. Chart Suggestions: Assign a 'chartType' field for data-heavy slides:
-       - Traction/Growth -> 'line'
-       - Financials -> 'bar'
-       - Market Size -> 'pie' (TAM/SAM/SOM)
-       - Competition -> 'matrix' or 'circles'
-       - Otherwise -> null
-
-    Task: Generate a JSON object representing the pitch deck.
-    The JSON should be an array of "slides".
-    Each slide object must have:
-    - "title": string (e.g. "The Problem")
-    - "bullets": string[] (3-4 concise, high-impact bullet points)
-    - "visualDescription": string (detailed description of what image/chart should be on the slide)
-    - "chartType": string | null (one of: 'line', 'bar', 'pie', 'matrix', 'circles' or null)
-    - "chartData": { label: string, value: number }[] | null (If chartType is present, provide 4-6 realistic data points)
-
-    Output format:
-    [
-        { "title": "...", "bullets": ["..."], "visualDescription": "...", "chartType": "line", "chartData": [{"label": "Q1", "value": 10}] }
-    ]
+    STRICT RULES:
+    1. Title Slide: Title must be ONLY the company name.
+    2. Problem Slide: EXACTLY 3 high-impact bullet points.
+    3. Competition: Explicitly mention differentiation.
+    4. Charts: Assign 'chartType' (line, bar, pie, matrix) for data-heavy slides.
   `;
+
+  // Schema Definition
+  const chartDataSchema: Schema = {
+    type: Type.OBJECT,
+    properties: {
+      label: { type: Type.STRING },
+      value: { type: Type.NUMBER },
+    }
+  };
+
+  const slideSchema: Schema = {
+    type: Type.OBJECT,
+    properties: {
+      title: { type: Type.STRING },
+      bullets: { type: Type.ARRAY, items: { type: Type.STRING } },
+      visualDescription: { type: Type.STRING },
+      chartType: { type: Type.STRING, enum: ['line', 'bar', 'pie', 'matrix', 'circles'], nullable: true },
+      chartData: { type: Type.ARRAY, items: chartDataSchema, nullable: true }
+    },
+    required: ["title", "bullets", "visualDescription"]
+  };
 
   try {
     const response = await ai.models.generateContent({
         model: 'gemini-3-pro-preview',
         contents: prompt,
-        config: { responseMimeType: 'application/json' }
+        config: { 
+            responseMimeType: 'application/json',
+            responseSchema: {
+                type: Type.ARRAY,
+                items: slideSchema
+            },
+            // Enable Thinking for complex strategic reasoning
+            thinkingConfig: { thinkingBudget: 2048 } 
+        }
     });
 
-    const text = cleanJson(response.text);
-    if (!text) return null;
+    // With responseSchema, response.text is guaranteed to be valid JSON string
+    const rawSlides = JSON.parse(response.text || '[]');
 
-    const slides: Slide[] = JSON.parse(text).map((s: any) => ({
+    const slides: Slide[] = rawSlides.map((s: any) => ({
         id: generateUUID(),
         title: s.title,
         bullets: s.bullets,
@@ -154,25 +163,28 @@ export async function slideAIEdge(
 
     const ai = new GoogleGenAI({ apiKey });
     
-    let instructions = "Rewrite these bullet points to be more punchy, investor-focused, and quantifiable. Keep the same meaning.";
+    let instructions = "Rewrite these bullet points to be more punchy, investor-focused, and quantifiable.";
     if (action === 'shorten') instructions = "Make these bullet points extremely concise (max 5 words each).";
     if (action === 'expand') instructions = "Expand these points with more detail and potential implications.";
 
     const prompt = `${instructions}
-    
     Current bullets:
-    ${bullets.join('\n')}
-    
-    Return ONLY a JSON array of strings. ["bullet 1", "bullet 2"]`;
+    ${bullets.join('\n')}`;
 
     try {
         const response = await ai.models.generateContent({
             model: 'gemini-3-pro-preview',
             contents: prompt,
-            config: { responseMimeType: 'application/json' }
+            config: { 
+                responseMimeType: 'application/json',
+                responseSchema: {
+                    type: Type.ARRAY,
+                    items: { type: Type.STRING }
+                }
+            }
         });
-        const text = cleanJson(response.text);
-        return text ? JSON.parse(text) : null;
+        
+        return JSON.parse(response.text || '[]');
     } catch (e) {
         console.error("Edge Function Error (slide-ai):", e);
         throw e;

@@ -1,6 +1,6 @@
-import { GoogleGenAI } from "@google/genai";
+
+import { GoogleGenAI, Type } from "@google/genai";
 import { DocSection } from '../types';
-import { cleanJson } from "../lib/utils";
 
 export const DocumentAI = {
   /**
@@ -25,50 +25,56 @@ export const DocumentAI = {
 
     const isFinancial = docType.toLowerCase().includes('financial') || docType.toLowerCase().includes('model');
     const tableInstruction = isFinancial 
-        ? "6. IMPORTANT: For financial projections, revenue models, or data tables, you MUST use HTML <table> structures with proper <thead> and <tbody> tags. Do not use bullet lists for numerical data." 
+        ? "For financials, content MUST contain HTML tables." 
         : "";
 
     const prompt = `
-      You are a professional venture capital analyst and startup writer.
+      You are a professional venture capital analyst.
       Task: Write a full ${docType} for the startup described below.
       
       Context:
       ${context}
 
       Requirements:
-      1. Create 4-6 distinct sections appropriate for a ${docType}.
-      2. For "Pitch Deck", use sections like: Problem, Solution, Market, Business Model, Team.
-      3. For "One-Pager", use sections like: Executive Summary, Market Opportunity, Traction, Ask.
-      4. Return the content as a valid JSON object containing an array of sections.
-      5. Each section object must have: "title" (string) and "content" (string, HTML formatted paragraphs/lists).
-      6. Use <h3> for subtitles, <p> for text, <ul>/<li> for lists.
+      1. Create 4-6 distinct sections.
+      2. Use HTML tags (<h3>, <p>, <ul>, <li>, <table>) for content.
       ${tableInstruction}
-
-      Output format:
-      {
-          "sections": [
-              { "title": "Section Name", "content": "<p>Content...</p>" }
-          ]
-      }
     `;
 
     try {
       const response = await ai.models.generateContent({
         model: 'gemini-3-pro-preview',
         contents: prompt,
-        config: { responseMimeType: 'application/json' }
+        config: { 
+            responseMimeType: 'application/json',
+            responseSchema: {
+                type: Type.OBJECT,
+                properties: {
+                    sections: {
+                        type: Type.ARRAY,
+                        items: {
+                            type: Type.OBJECT,
+                            properties: {
+                                title: { type: Type.STRING },
+                                content: { type: Type.STRING, description: "HTML content string" }
+                            },
+                            required: ["title", "content"]
+                        }
+                    }
+                },
+                required: ["sections"]
+            },
+            thinkingConfig: { thinkingBudget: 2048 }
+        }
       });
 
-      const text = cleanJson(response.text);
-      if (text) {
-        const data = JSON.parse(text);
-        if (data.sections && Array.isArray(data.sections)) {
-            return data.sections.map((s: any, idx: number) => ({
-                id: String(idx + 1),
-                title: s.title,
-                content: s.content
-            }));
-        }
+      const data = JSON.parse(response.text || '{}');
+      if (data.sections && Array.isArray(data.sections)) {
+          return data.sections.map((s: any, idx: number) => ({
+              id: String(idx + 1),
+              title: s.title,
+              content: s.content
+          }));
       }
       return null;
     } catch (error) {
@@ -79,6 +85,7 @@ export const DocumentAI = {
 
   /**
    * Refines a specific section of text based on an instruction.
+   * Text-to-text operation, no schema needed.
    */
   async refineSection(
     apiKey: string,
@@ -89,19 +96,16 @@ export const DocumentAI = {
 
     let promptInstruction = "";
     switch (instruction) {
-        case 'clearer': promptInstruction = "Rewrite this text to be more professional, clear, and concise. Use active voice."; break;
-        case 'expand': promptInstruction = "Expand on these points with more detail, examples, and persuasive context. Keep the HTML structure."; break;
-        case 'shorten': promptInstruction = "Summarize this content into a punchy, high-impact version. Remove fluff."; break;
-        case 'grammar': promptInstruction = "Fix all grammar, spelling, and punctuation errors. Maintain the tone."; break;
+        case 'clearer': promptInstruction = "Rewrite this text to be more professional, clear, and concise."; break;
+        case 'expand': promptInstruction = "Expand on these points with more detail, examples, and context."; break;
+        case 'shorten': promptInstruction = "Summarize this content into a punchy version."; break;
+        case 'grammar': promptInstruction = "Fix all grammar, spelling, and punctuation errors."; break;
     }
 
     const prompt = `
       Task: ${promptInstruction}
-      
-      Input Text (HTML):
-      ${content}
-      
-      Return ONLY the rewritten HTML content. Do not add markdown code blocks.
+      Input (HTML): ${content}
+      Return ONLY the rewritten HTML content.
     `;
 
     try {

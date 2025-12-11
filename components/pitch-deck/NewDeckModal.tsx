@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { LayoutTemplate, Loader2, Sparkles, X } from 'lucide-react';
+import { LayoutTemplate, Loader2, Sparkles, X, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useData } from '../../context/DataContext';
 import { generateDeckEdge } from '../../services/edgeFunctions';
@@ -61,6 +61,8 @@ export const NewDeckModal: React.FC<NewDeckModalProps> = ({ isOpen, onClose, onS
     }
   };
 
+  const hasRichData = profile && (profile.competitors?.length || 0) > 0 && (profile.keyFeatures?.length || 0) > 0;
+
   if (!isOpen) return null;
 
   return (
@@ -89,7 +91,7 @@ export const NewDeckModal: React.FC<NewDeckModalProps> = ({ isOpen, onClose, onS
             </button>
           </div>
 
-          <div className="grid gap-4 mb-8">
+          <div className="grid gap-4 mb-6">
             {templates.map(t => (
               <div 
                 key={t.id}
@@ -108,6 +110,23 @@ export const NewDeckModal: React.FC<NewDeckModalProps> = ({ isOpen, onClose, onS
                 </div>
               </div>
             ))}
+          </div>
+
+          {/* Context Signal */}
+          <div className={`p-4 rounded-xl border mb-8 flex items-start gap-3 ${hasRichData ? 'bg-green-50 border-green-100' : 'bg-amber-50 border-amber-100'}`}>
+             <div className={`mt-0.5 ${hasRichData ? 'text-green-600' : 'text-amber-500'}`}>
+                {hasRichData ? <CheckCircle2 size={18} /> : <AlertTriangle size={18} />}
+             </div>
+             <div>
+                <h4 className={`text-sm font-bold ${hasRichData ? 'text-green-800' : 'text-amber-800'}`}>
+                    {hasRichData ? 'Rich Context Available' : 'Limited Profile Data'}
+                </h4>
+                <p className={`text-xs mt-1 ${hasRichData ? 'text-green-700' : 'text-amber-700'}`}>
+                    {hasRichData 
+                        ? `Gemini will use your ${profile?.competitors?.length} competitors, financials, and business model to generate specific slides.`
+                        : "Your profile is missing competitors or features. The deck may contain generic placeholders."}
+                </p>
+             </div>
           </div>
 
           <div className="flex justify-end gap-3">

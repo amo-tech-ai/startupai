@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Tag, Globe, Linkedin, Twitter, Github, FileText, Sparkles, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { WizardService } from '../../../services/wizardAI';
 import { API_KEY } from '../../../lib/env';
+import { useToast } from '../../../context/ToastContext';
 
 // Helper for tag inputs
 const TagInput = ({ label, values, onChange }: any) => (
@@ -40,10 +41,12 @@ interface StepBusinessProps {
 
 export const StepBusiness: React.FC<StepBusinessProps> = ({ formData, setFormData }) => {
   const [isGenerating, setIsGenerating] = useState(false);
+  const { success, error, toast } = useToast();
 
   const handleAiSuggest = async () => {
     if (!API_KEY) return;
     setIsGenerating(true);
+    toast("AI is researching competitors...", "info");
     try {
       const suggestions = await WizardService.analyzeBusiness(formData, API_KEY);
       if (suggestions) {
@@ -53,7 +56,10 @@ export const StepBusiness: React.FC<StepBusinessProps> = ({ formData, setFormDat
           coreDifferentiator: suggestions.coreDifferentiator || prev.coreDifferentiator,
           keyFeatures: suggestions.keyFeatures || prev.keyFeatures
         }));
+        success("Found competitors & features!");
       }
+    } catch (e) {
+        error("Could not fetch suggestions.");
     } finally {
       setIsGenerating(false);
     }

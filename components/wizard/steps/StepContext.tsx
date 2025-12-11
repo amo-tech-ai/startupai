@@ -4,6 +4,7 @@ import { Globe, Wand2, Loader2, Calendar, Target, Tag, AlertCircle, Image as Ima
 import { WizardService } from '../../../services/wizardAI';
 import { API_KEY } from '../../../lib/env';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useToast } from '../../../context/ToastContext';
 
 // Workaround for framer-motion types
 const MotionDiv = motion.div as any;
@@ -18,6 +19,7 @@ export const StepContext: React.FC<StepContextProps> = ({ formData, setFormData,
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isRefiningTagline, setIsRefiningTagline] = useState(false);
   const [newUrl, setNewUrl] = useState('');
+  const { toast, success, error } = useToast();
   
   // AI Signals State
   const [detectedSignals, setDetectedSignals] = useState<{ 
@@ -31,11 +33,16 @@ export const StepContext: React.FC<StepContextProps> = ({ formData, setFormData,
   const handleAutofill = async () => {
     // Basic validation
     const hasInput = formData.name || formData.website || formData.socialLinks?.linkedin || formData.searchTerms;
-    if (!hasInput) return;
+    if (!hasInput) {
+        error("Please enter a Name, Website, or Search Term first.");
+        return;
+    }
     
-    if (!API_KEY) { alert("API Key missing"); return; }
+    if (!API_KEY) { error("API Key missing"); return; }
 
     setIsAnalyzing(true);
+    toast("AI is analyzing your startup context...", "info");
+
     try {
       const inputs = {
           name: formData.name,
@@ -73,9 +80,13 @@ export const StepContext: React.FC<StepContextProps> = ({ formData, setFormData,
           competitors: result.competitors,
           trends: result.trends
         });
+        success("Smart Intake Complete! Review the signals.");
+      } else {
+        error("Could not analyze context. Please try manually.");
       }
     } catch (e) {
         console.error("Auto-fill failed", e);
+        error("Analysis failed. Please check your inputs.");
     } finally {
       setIsAnalyzing(false);
     }
@@ -88,7 +99,10 @@ export const StepContext: React.FC<StepContextProps> = ({ formData, setFormData,
     setIsRefiningTagline(true);
     try {
       const refined = await WizardService.refineText(formData.tagline, 'one-liner / tagline', API_KEY);
-      if (refined) update('tagline', refined);
+      if (refined) {
+          update('tagline', refined);
+          success("Tagline refined");
+      }
     } finally {
       setIsRefiningTagline(false);
     }

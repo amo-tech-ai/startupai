@@ -1,3 +1,4 @@
+
 import { GoogleGenAI } from "@google/genai";
 import { Deck, Slide, StartupProfile } from '../types';
 import { supabase } from '../lib/supabaseClient';
@@ -44,26 +45,47 @@ export async function generateDeckEdge(
       templateInstructions = "Analyze the startup's specific context (Stage: " + profile.stage + ") to generate a custom, optimal slide flow (10-15 slides).";
   }
 
+  // Enrich context with all available profile data
+  const competitorsList = profile.competitors && profile.competitors.length > 0 
+    ? profile.competitors.join(', ') 
+    : "Direct and indirect competitors in the space";
+    
+  const featuresList = profile.keyFeatures && profile.keyFeatures.length > 0
+    ? profile.keyFeatures.join(', ')
+    : "Key product capabilities";
+
+  const fundingContext = profile.isRaising && profile.fundingGoal 
+    ? `Target Raise: $${profile.fundingGoal.toLocaleString()} for ${profile.useOfFunds?.join(', ') || 'growth'}`
+    : "Not currently explicitly raising, focus on growth story.";
+
   const prompt = `
     Act as a venture capital expert. Create a pitch deck outline for a startup.
     
     Startup Context:
     Name: ${profile.name}
+    Tagline: ${profile.tagline}
     Problem: ${profile.problemStatement}
     Solution: ${profile.solutionStatement}
     Market: ${profile.targetMarket}
-    Stage: ${profile.stage}
+    Business Model: ${profile.businessModel} (${profile.pricingModel || 'Standard pricing'})
+    Key Features: ${featuresList}
+    Competitors: ${competitorsList}
+    Traction / Stage: ${profile.stage}
+    Fundraising Status: ${fundingContext}
     
     Template Request: ${template}
     Instructions: ${templateInstructions}
 
     STRICT BEST PRACTICES & GENERATION RULES:
     1. Title Slide: Title must be ONLY the company name "${profile.name}". No other text in title.
-    2. Problem Slide: Must have EXACTLY 3 bullet points describing the core pain points.
-    3. Chart Suggestions: Assign a 'chartType' field for data-heavy slides:
+    2. Problem Slide: Must have EXACTLY 3 bullet points describing the core pain points based on the problem statement.
+    3. Competition Slide: explicitly mention how ${profile.name} is different from ${competitorsList}.
+    4. Business Model Slide: Explain how the ${profile.businessModel} model works.
+    5. Chart Suggestions: Assign a 'chartType' field for data-heavy slides:
        - Traction/Growth -> 'line'
        - Financials -> 'bar'
        - Market Size -> 'pie' (TAM/SAM/SOM)
+       - Competition -> 'matrix' or 'circles'
        - Otherwise -> null
 
     Task: Generate a JSON object representing the pitch deck.

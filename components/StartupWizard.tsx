@@ -198,6 +198,7 @@ const StartupWizard: React.FC = () => {
               bio: f.bio,
               linkedinProfile: f.linkedin,
               email: f.email,
+              avatarUrl: (f as any).avatarUrl, // Ensure image URL is passed
               isPrimaryContact: idx === 0 
             }));
           setFounders(foundersPayload);

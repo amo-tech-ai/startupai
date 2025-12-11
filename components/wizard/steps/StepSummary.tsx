@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { 
   Trophy, AlertTriangle, Sparkles, Loader2, Check, 
   Building2, Users, TrendingUp, Target, DollarSign, Globe,
-  RefreshCw, ArrowRight
+  RefreshCw, ArrowRight, Edit2
 } from 'lucide-react';
 import { WizardService } from '../../../services/wizardAI';
 import { API_KEY } from '../../../lib/env';
@@ -19,10 +19,10 @@ interface StepSummaryProps {
 // Helper to map missing items to steps
 const getStepForMissingItem = (item: string): number => {
     const map: Record<string, number> = {
-        "Company Name": 1, "Website": 1, "Tagline": 1, "Industry": 1,
-        "Founders": 2, "Founder Bios": 2,
-        "Business Model": 3, "Problem Statement": 3, "Solution Statement": 3,
-        "Traction Metrics": 4, "Fundraising Target": 4
+        "Company Name": 1, "Website": 1, "Tagline": 1, "Industry": 1, "Cover Image": 1,
+        "Founders": 3, "Founder Bios": 3,
+        "Business Model": 4, "Problem Statement": 4, "Solution Statement": 4, "Competitors": 4,
+        "Traction Metrics": 5, "Fundraising Target": 5, "Use of Funds": 5
     };
     return map[item] || 1;
 };
@@ -40,10 +40,10 @@ export const StepSummary: React.FC<StepSummaryProps> = ({ formData, setFormData,
     // Context (30%)
     if (formData.name) score += 5;
     if (formData.website) score += 5;
+    if (formData.coverImage) score += 5; else missing.push("Cover Image");
     if (formData.tagline) score += 5; else missing.push("Tagline");
-    if (formData.industry) score += 5;
+    if (formData.industry) score += 5; else missing.push("Industry");
     if (formData.yearFounded) score += 5;
-    if (formData.stage) score += 5;
 
     // Team (20%)
     if (formData.founders.length > 0) {
@@ -60,9 +60,13 @@ export const StepSummary: React.FC<StepSummaryProps> = ({ formData, setFormData,
 
     // Traction (25%)
     if (formData.mrr > 0 || formData.totalUsers > 0) score += 15; else missing.push("Traction Metrics");
-    if (formData.isRaising && formData.targetRaise > 0) score += 10; 
-    else if (!formData.isRaising) score += 10; // Bonus for explicit "not raising"
-    else missing.push("Fundraising Target");
+    
+    if (formData.isRaising) {
+        if (formData.targetRaise > 0) score += 5; else missing.push("Fundraising Target");
+        if (formData.useOfFunds && formData.useOfFunds.length > 0) score += 5; else missing.push("Use of Funds");
+    } else {
+        score += 10; // Bonus for explicit "not raising" status completeness
+    }
     
     setProfileScore(Math.min(100, score));
     setMissingItems(missing);
@@ -84,6 +88,10 @@ export const StepSummary: React.FC<StepSummaryProps> = ({ formData, setFormData,
       } finally {
         setIsGenerating(false);
       }
+  };
+
+  const handleJump = (step: number) => {
+      if (goToStep) goToStep(step);
   };
 
   const InfoRow = ({ label, value }: { label: string, value: string | number | undefined }) => (
@@ -147,14 +155,14 @@ export const StepSummary: React.FC<StepSummaryProps> = ({ formData, setFormData,
                        {missingItems.map((item, idx) => (
                            <button 
                                 key={idx} 
-                                onClick={() => goToStep && goToStep(getStepForMissingItem(item))}
-                                className="w-full flex items-center justify-between text-xs text-slate-600 bg-rose-50 px-2 py-1.5 rounded border border-rose-100 hover:bg-rose-100 transition-colors group"
+                                onClick={() => handleJump(getStepForMissingItem(item))}
+                                className="w-full flex items-center justify-between text-xs text-slate-600 bg-rose-50 px-2 py-1.5 rounded border border-rose-100 hover:bg-rose-100 transition-colors group text-left"
                            >
                                <div className="flex items-center gap-2">
                                    <div className="w-1.5 h-1.5 rounded-full bg-rose-400"></div>
                                    <span>{item}</span>
                                </div>
-                               <ArrowRight size={10} className="text-rose-400 opacity-0 group-hover:opacity-100" />
+                               <ArrowRight size={10} className="text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                            </button>
                        ))}
                    </div>
@@ -168,7 +176,15 @@ export const StepSummary: React.FC<StepSummaryProps> = ({ formData, setFormData,
        </div>
 
        {/* 2. Startup Header Card */}
-       <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 flex flex-col md:flex-row items-center md:items-start gap-6">
+       <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 flex flex-col md:flex-row items-center md:items-start gap-6 relative group">
+           <button 
+                onClick={() => handleJump(1)}
+                className="absolute top-4 right-4 p-2 text-slate-400 hover:text-indigo-600 hover:bg-slate-50 rounded-full transition-colors opacity-0 group-hover:opacity-100"
+                title="Edit Details"
+           >
+               <Edit2 size={16} />
+           </button>
+           
            <div className="w-24 h-24 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center shrink-0 overflow-hidden">
                {formData.coverImage ? (
                    <img src={formData.coverImage} alt="Logo" className="w-full h-full object-cover" />
@@ -246,7 +262,13 @@ export const StepSummary: React.FC<StepSummaryProps> = ({ formData, setFormData,
        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
            
            {/* Market & Features */}
-           <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+           <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 relative group">
+               <button 
+                    onClick={() => handleJump(4)}
+                    className="absolute top-4 right-4 p-2 text-slate-400 hover:text-indigo-600 hover:bg-slate-50 rounded-full transition-colors opacity-0 group-hover:opacity-100"
+               >
+                   <Edit2 size={16} />
+               </button>
                <div className="flex items-center gap-2 mb-4 pb-4 border-b border-slate-100">
                    <Target className="text-indigo-600" size={20} />
                    <h3 className="font-bold text-slate-900">Market & Product</h3>
@@ -264,7 +286,13 @@ export const StepSummary: React.FC<StepSummaryProps> = ({ formData, setFormData,
            </div>
 
            {/* Team & Context */}
-           <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+           <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 relative group">
+               <button 
+                    onClick={() => handleJump(3)}
+                    className="absolute top-4 right-4 p-2 text-slate-400 hover:text-indigo-600 hover:bg-slate-50 rounded-full transition-colors opacity-0 group-hover:opacity-100"
+               >
+                   <Edit2 size={16} />
+               </button>
                <div className="flex items-center gap-2 mb-4 pb-4 border-b border-slate-100">
                    <Users className="text-purple-600" size={20} />
                    <h3 className="font-bold text-slate-900">Team & Context</h3>
@@ -287,7 +315,13 @@ export const StepSummary: React.FC<StepSummaryProps> = ({ formData, setFormData,
            </div>
 
            {/* Traction */}
-           <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+           <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 relative group">
+               <button 
+                    onClick={() => handleJump(5)}
+                    className="absolute top-4 right-4 p-2 text-slate-400 hover:text-indigo-600 hover:bg-slate-50 rounded-full transition-colors opacity-0 group-hover:opacity-100"
+               >
+                   <Edit2 size={16} />
+               </button>
                <div className="flex items-center gap-2 mb-4 pb-4 border-b border-slate-100">
                    <TrendingUp className="text-emerald-600" size={20} />
                    <h3 className="font-bold text-slate-900">Traction</h3>
@@ -316,7 +350,13 @@ export const StepSummary: React.FC<StepSummaryProps> = ({ formData, setFormData,
            </div>
 
            {/* Fundraising */}
-           <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+           <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 relative group">
+               <button 
+                    onClick={() => handleJump(5)}
+                    className="absolute top-4 right-4 p-2 text-slate-400 hover:text-indigo-600 hover:bg-slate-50 rounded-full transition-colors opacity-0 group-hover:opacity-100"
+               >
+                   <Edit2 size={16} />
+               </button>
                <div className="flex items-center gap-2 mb-4 pb-4 border-b border-slate-100">
                    <DollarSign className="text-amber-600" size={20} />
                    <h3 className="font-bold text-slate-900">Fundraising</h3>

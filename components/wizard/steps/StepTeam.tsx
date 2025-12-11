@@ -1,8 +1,10 @@
 
-import React, { useState } from 'react';
-import { Users, Linkedin, Mail, Globe, Sparkles, Loader2, Plus, Trash2 } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Users, Linkedin, Mail, Globe, Sparkles, Loader2, Plus, Trash2, Camera } from 'lucide-react';
 import { WizardService } from '../../../services/wizardAI';
 import { API_KEY } from '../../../lib/env';
+import { useData } from '../../../context/DataContext';
+import { useToast } from '../../../context/ToastContext';
 
 interface StepTeamProps {
   formData: any;
@@ -10,7 +12,14 @@ interface StepTeamProps {
 }
 
 export const StepTeam: React.FC<StepTeamProps> = ({ formData, setFormData }) => {
+  const { uploadFile } = useData();
+  const { toast, success, error } = useToast();
   const [rewritingId, setRewritingId] = useState<string | null>(null);
+  const [uploadingId, setUploadingId] = useState<string | null>(null);
+  
+  // Ref for file input to trigger programmatically
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [activeFounderIdForUpload, setActiveFounderIdForUpload] = useState<string | null>(null);
 
   const handleRewriteBio = async (idx: number) => {
     if (!API_KEY) return;
@@ -23,6 +32,9 @@ export const StepTeam: React.FC<StepTeamProps> = ({ formData, setFormData }) => 
       const updated = [...formData.founders];
       updated[idx].bio = newBio;
       setFormData((prev: any) => ({ ...prev, founders: updated }));
+      success("Bio refined by AI");
+    } catch (e) {
+      error("Failed to rewrite bio");
     } finally {
       setRewritingId(null);
     }
@@ -45,6 +57,38 @@ export const StepTeam: React.FC<StepTeamProps> = ({ formData, setFormData }) => 
     if (formData.founders.length <= 1) return;
     const updated = formData.founders.filter((_: any, i: number) => i !== idx);
     setFormData((prev: any) => ({ ...prev, founders: updated }));
+  };
+
+  const triggerUpload = (founderId: string) => {
+      setActiveFounderIdForUpload(founderId);
+      if (fileInputRef.current) {
+          fileInputRef.current.value = ''; // Reset
+          fileInputRef.current.click();
+      }
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (e.target.files && e.target.files[0] && activeFounderIdForUpload) {
+          const file = e.target.files[0];
+          setUploadingId(activeFounderIdForUpload);
+          toast("Uploading photo...", "info");
+
+          try {
+              const url = await uploadFile(file, 'avatars');
+              if (url) {
+                  const updated = formData.founders.map((f: any) => 
+                      f.id === activeFounderIdForUpload ? { ...f, avatarUrl: url } : f
+                  );
+                  setFormData((prev: any) => ({ ...prev, founders: updated }));
+                  success("Photo uploaded");
+              }
+          } catch (err) {
+              error("Upload failed");
+          } finally {
+              setUploadingId(null);
+              setActiveFounderIdForUpload(null);
+          }
+      }
   };
 
   return (
@@ -75,10 +119,29 @@ export const StepTeam: React.FC<StepTeamProps> = ({ formData, setFormData }) => 
                   <div className="grid md:grid-cols-12 gap-6">
                      {/* Avatar Col */}
                      <div className="md:col-span-2 flex flex-col items-center gap-3">
-                        <div className="w-20 h-20 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 border-2 border-white shadow-sm">
-                           <Users size={32} />
+                        <div 
+                            onClick={() => triggerUpload(founder.id)}
+                            className="w-20 h-20 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 border-2 border-white shadow-sm overflow-hidden cursor-pointer hover:opacity-90 transition-opacity relative group/avatar"
+                        >
+                           {uploadingId === founder.id ? (
+                               <Loader2 size={24} className="animate-spin" />
+                           ) : founder.avatarUrl ? (
+                               <img src={founder.avatarUrl} alt={founder.name} className="w-full h-full object-cover" />
+                           ) : (
+                               <Users size={32} />
+                           )}
+                           
+                           {/* Hover Overlay */}
+                           <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover/avatar:opacity-100 transition-opacity">
+                               <Camera size={20} className="text-white" />
+                           </div>
                         </div>
-                        <button className="text-xs text-purple-600 font-bold hover:underline">Upload Photo</button>
+                        <button 
+                            onClick={() => triggerUpload(founder.id)}
+                            className="text-xs text-purple-600 font-bold hover:underline"
+                        >
+                            Upload Photo
+                        </button>
                      </div>
 
                      {/* Details Col */}
@@ -154,6 +217,15 @@ export const StepTeam: React.FC<StepTeamProps> = ({ formData, setFormData }) => 
                </div>
             ))}
          </div>
+         
+         {/* Hidden File Input for Avatar Uploads */}
+         <input 
+            type="file" 
+            ref={fileInputRef} 
+            className="hidden" 
+            accept="image/*"
+            onChange={handleFileChange}
+         />
       </div>
 
       <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 flex gap-4 items-start">

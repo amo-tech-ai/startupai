@@ -52,30 +52,52 @@ async function runAI(action: string, payload: any, apiKey: string) {
             const urlList = [inputs.website, inputs.linkedin, ...(inputs.additionalUrls || [])].filter(Boolean).join(', ');
             const prompt = `
               You are an expert venture capital analyst.
-              TASK: Analyze the following startup context to extract strategic signals.
+              TASK: Analyze the following startup inputs to generate a "Smart Context" profile.
               
               INPUTS:
               - Name: ${inputs.name}
+              - Description: ${inputs.description || 'None'}
+              - Target Market Hint: ${inputs.targetMarket || 'None'}
               - URLs: ${urlList}
+              - Search Terms: ${inputs.searchTerms || 'None'}
               - Industry Hint: ${inputs.industry || 'Unknown'}
-              - Search Terms: ${inputs.searchTerms || 'None provided'}
               
               INSTRUCTIONS:
-              1. Use Google Search to research the company.
-              2. Return a valid JSON object wrapped in a markdown code block.
+              1. Use Google Search to research the company and market.
+              2. Return a valid JSON object wrapped in a markdown code block following the EXACT structure provided.
               
-              JSON FORMAT:
+              OUTPUT FORMAT:
               \`\`\`json
               {
-                "tagline": "string",
-                "industry": "string",
-                "target_audience": "string",
-                "core_problem": "string",
-                "solution_statement": "string",
-                "pricing_model_hint": "string",
-                "social_links": { "linkedin": "string", "twitter": "string", "github": "string" },
-                "competitors": ["string"],
-                "trends": ["string"]
+                "summary_screen": {
+                  "title": "string",
+                  "summary": "string",
+                  "industry_detected": "string",
+                  "urls_used": ["string"],
+                  "search_queries": ["string"],
+                  "detected_signals": [
+                    { "label": "string", "value": "string" }
+                  ]
+                },
+                "wizard_autofill": {
+                  "product_summary": "string",
+                  "key_features": ["string"],
+                  "target_customers": ["string"],
+                  "use_cases": ["string"],
+                  "pricing_model": "string",
+                  "problem": "string",
+                  "solution": "string",
+                  "uvp": "string",
+                  "core_differentiator": "string",
+                  "competitors": [{ "name": "string", "url": "string", "positioning": "string" }],
+                  "market_trends": ["string"]
+                },
+                "workflows": {
+                  "url_context_ran": true,
+                  "search_grounding_ran": true,
+                  "missing_inputs": ["string"],
+                  "next_actions": ["string"]
+                }
               }
               \`\`\`
             `;
@@ -84,7 +106,8 @@ async function runAI(action: string, payload: any, apiKey: string) {
                 model: 'gemini-3-pro-preview',
                 contents: prompt,
                 config: { 
-                    tools: [{ googleSearch: {} }] 
+                    tools: [{ googleSearch: {} }],
+                    thinkingConfig: { thinkingBudget: 4096 }
                 }
             });
             return JSON.parse(cleanJson(response.text));

@@ -1,6 +1,7 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 import { DocSection } from '../types';
+import { supabase } from "../lib/supabaseClient";
 
 export const DocumentAI = {
   /**
@@ -11,6 +12,26 @@ export const DocumentAI = {
     docType: string, 
     profileContext: any
   ): Promise<DocSection[] | null> {
+    
+    // 1. Try Supabase Edge Function
+    if (supabase) {
+        try {
+            const { data, error } = await supabase.functions.invoke('ai-helper', {
+                body: { action: 'generate_document_draft', payload: { docType, profileContext } }
+            });
+            if (!error && data && data.sections) {
+                return data.sections.map((s: any, idx: number) => ({
+                    id: String(idx + 1),
+                    title: s.title,
+                    content: s.content
+                }));
+            }
+        } catch (err) {
+            console.warn("Document AI Edge Function failed, fallback active.", err);
+        }
+    }
+
+    // 2. Client Fallback
     const ai = new GoogleGenAI({ apiKey });
     
     const context = `
@@ -85,13 +106,26 @@ export const DocumentAI = {
 
   /**
    * Refines a specific section of text based on an instruction.
-   * Text-to-text operation, no schema needed.
    */
   async refineSection(
     apiKey: string,
     content: string,
     instruction: 'clearer' | 'expand' | 'shorten' | 'grammar'
   ): Promise<string | null> {
+    
+    // 1. Try Supabase Edge Function
+    if (supabase) {
+        try {
+            const { data, error } = await supabase.functions.invoke('ai-helper', {
+                body: { action: 'refine_document_section', payload: { content, instruction } }
+            });
+            if (!error && data) return data.content;
+        } catch (err) {
+            console.warn("Document Refine Edge Function failed, fallback active.", err);
+        }
+    }
+
+    // 2. Client Fallback
     const ai = new GoogleGenAI({ apiKey });
 
     let promptInstruction = "";

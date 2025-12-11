@@ -1,19 +1,45 @@
 
 export interface WizardFormData {
-  // Context
+  // --- Step 1: Context Inputs ---
   name: string;
   website: string;
   industry: string;
   yearFounded: number;
-  tagline: string;
+  tagline: string;          // Short description
+  description: string;      // Long description (User input)
+  targetMarket: string;     // User input
   coverImage: string;
-  stage: string;
   
-  // Advanced Context (New in V2)
+  // Advanced Context
   additionalUrls: string[];
   searchTerms: string;
+  socialLinks: {
+    linkedin: string;
+    twitter: string;
+    github: string;
+    pitchDeck: string;
+  };
+
+  // --- AI Analysis Data (Step 2 Storage) ---
+  aiAnalysisResult?: {
+    summary_screen: {
+      title: string;
+      summary: string;
+      industry_detected: string;
+      urls_used: string[];
+      search_queries: string[];
+      detected_signals: Array<{ label: string; value: string }>;
+    };
+    workflows: {
+      url_context_ran: boolean;
+      search_grounding_ran: boolean;
+      missing_inputs: string[];
+      next_actions: string[];
+    };
+  };
   
-  // Team
+  // --- Step 3-5: Detailed Fields ---
+  stage: string;
   founders: Array<{
     id: string;
     name: string;
@@ -24,7 +50,6 @@ export interface WizardFormData {
     website: string;
   }>;
   
-  // Business
   problem: string;
   solution: string;
   businessModel: string;
@@ -33,14 +58,7 @@ export interface WizardFormData {
   keyFeatures: string[];
   competitors: string[];
   coreDifferentiator: string;
-  socialLinks: {
-    linkedin: string;
-    twitter: string;
-    github: string;
-    pitchDeck: string;
-  };
   
-  // Traction
   mrr: number;
   totalUsers: number;
   fundingHistory: Array<{
@@ -54,8 +72,7 @@ export interface WizardFormData {
   targetRaise: number;
   useOfFunds: string[];
   
-  // Summary
-  aiSummary: string;
+  aiSummary: string; // Final generated summary
 }
 
 export const INITIAL_WIZARD_STATE: WizardFormData = {
@@ -64,11 +81,17 @@ export const INITIAL_WIZARD_STATE: WizardFormData = {
   industry: '',
   yearFounded: new Date().getFullYear(),
   tagline: '',
+  description: '',
+  targetMarket: '',
   coverImage: '',
-  stage: 'Idea',
+  stage: 'Seed',
+  
   additionalUrls: [],
   searchTerms: '',
+  socialLinks: { linkedin: '', twitter: '', github: '', pitchDeck: '' },
+
   founders: [{ id: '1', name: '', title: '', bio: '', linkedin: '', email: '', website: '' }],
+  
   problem: '',
   solution: '',
   businessModel: '',
@@ -77,7 +100,7 @@ export const INITIAL_WIZARD_STATE: WizardFormData = {
   keyFeatures: [],
   competitors: [],
   coreDifferentiator: '',
-  socialLinks: { linkedin: '', twitter: '', github: '', pitchDeck: '' },
+  
   mrr: 0,
   totalUsers: 0,
   fundingHistory: [],
@@ -88,9 +111,10 @@ export const INITIAL_WIZARD_STATE: WizardFormData = {
 };
 
 export const WIZARD_STEPS = [
-  { id: 1, title: 'Context', description: 'Company Basics' },
-  { id: 2, title: 'Team', description: 'Founders' },
-  { id: 3, title: 'Business', description: 'Model & Market' },
-  { id: 4, title: 'Traction', description: 'Metrics & Funding' },
-  { id: 5, title: 'Summary', description: 'Review & Launch' },
+  { id: 1, title: 'Context', description: 'Smart Intake' },
+  { id: 2, title: 'Analysis', description: 'AI Insights' },
+  { id: 3, title: 'Team', description: 'Founders' },
+  { id: 4, title: 'Business', description: 'Model & Market' },
+  { id: 5, title: 'Traction', description: 'Metrics' },
+  { id: 6, title: 'Summary', description: 'Review' },
 ];

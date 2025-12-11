@@ -11,10 +11,11 @@ import { WizardFooter } from './wizard/WizardFooter';
 
 // Steps
 import { StepContext } from './wizard/steps/StepContext';
+import { StepAISummary } from './wizard/steps/StepAISummary'; // New Step 2
 import { StepTeam } from './wizard/steps/StepTeam';
 import { StepBusiness } from './wizard/steps/StepBusiness';
 import { StepTraction } from './wizard/steps/StepTraction';
-import { StepSummary } from './wizard/steps/StepSummary';
+import { StepSummary } from './wizard/steps/StepSummary'; // Final Review
 
 // Types & Data
 import { INITIAL_WIZARD_STATE, WIZARD_STEPS, WizardFormData } from './wizard/types';
@@ -57,14 +58,17 @@ const StartupWizard: React.FC = () => {
 
   const validateStep = (step: number): boolean => {
     switch (step) {
-      case 1: // Context
+      case 1: // Context (Intake)
         if (!formData.name.trim()) {
           error("Startup Name is required.");
           return false;
         }
         return true;
       
-      case 2: // Team
+      case 2: // Analysis (Read Only Review)
+        return true; 
+
+      case 3: // Team
         const hasValidFounder = formData.founders.some(f => f.name.trim().length > 0);
         if (!hasValidFounder) {
           error("Please add at least one founder with a name.");
@@ -72,14 +76,14 @@ const StartupWizard: React.FC = () => {
         }
         return true;
 
-      case 3: // Business
+      case 4: // Business
         if (!formData.problem.trim() && !formData.solution.trim()) {
           error("Please provide either a Problem or Solution statement.");
           return false;
         }
         return true;
 
-      case 4: // Traction
+      case 5: // Traction
         if (formData.isRaising) {
            if (!formData.targetRaise || formData.targetRaise <= 0) {
              error("Please specify a valid Target Raise amount.");
@@ -231,11 +235,12 @@ const StartupWizard: React.FC = () => {
 
   const renderStepContent = () => {
     switch (currentStep) {
-      case 1: return <StepContext formData={formData} setFormData={setFormData} onCoverUpload={handleCoverUpload} />;
-      case 2: return <StepTeam formData={formData} setFormData={setFormData} />;
-      case 3: return <StepBusiness formData={formData} setFormData={setFormData} />;
-      case 4: return <StepTraction formData={formData} setFormData={setFormData} />;
-      case 5: return <StepSummary formData={formData} setFormData={setFormData} goToStep={handleGoToStep} />;
+      case 1: return <StepContext formData={formData} setFormData={setFormData} onCoverUpload={handleCoverUpload} onNext={handleNext} />;
+      case 2: return <StepAISummary formData={formData} onNext={handleNext} onBack={handleBack} />;
+      case 3: return <StepTeam formData={formData} setFormData={setFormData} />;
+      case 4: return <StepBusiness formData={formData} setFormData={setFormData} />;
+      case 5: return <StepTraction formData={formData} setFormData={setFormData} />;
+      case 6: return <StepSummary formData={formData} setFormData={setFormData} goToStep={handleGoToStep} />;
       default: return null;
     }
   };
@@ -250,20 +255,22 @@ const StartupWizard: React.FC = () => {
 
       <WizardProgress 
         currentStep={currentStep} 
-        totalSteps={WIZARD_STEPS.length} 
-        stepTitle={WIZARD_STEPS[currentStep-1].title} 
+        steps={WIZARD_STEPS}
       />
 
-      <main className="flex-1 w-full max-w-5xl mx-auto px-4 py-8 md:py-12">
+      <main className="flex-1 w-full max-w-7xl mx-auto px-4 py-8 md:py-12">
         {renderStepContent()}
       </main>
 
-      <WizardFooter 
-        currentStep={currentStep}
-        totalSteps={WIZARD_STEPS.length}
-        onBack={handleBack}
-        onNext={handleNext}
-      />
+      {/* Render footer only for steps that are NOT Context (Step 1 handles its own submit) or Analysis (Step 2 has its own CTA) */}
+      {currentStep > 2 && (
+        <WizardFooter 
+            currentStep={currentStep}
+            totalSteps={WIZARD_STEPS.length}
+            onBack={handleBack}
+            onNext={handleNext}
+        />
+      )}
     </div>
   );
 };

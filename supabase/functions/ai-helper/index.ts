@@ -42,14 +42,12 @@ serve(async (req) => {
   try {
     let result;
 
-    // --- Action: Rewrite Field (Text Processing) ---
+    // --- Action: Rewrite Field ---
     if (action === 'rewrite_field') {
        const { field, text, context } = payload;
-       // Explicitly ask for JSON result
        const prompt = `Rewrite this ${field} for a startup investor profile. 
        Context: ${JSON.stringify(context)}. 
        Original: "${text}". 
-       
        Return a JSON object wrapped in a markdown code block: 
        \`\`\`json
        { "result": "..." }
@@ -63,37 +61,70 @@ serve(async (req) => {
        result = JSON.parse(response.text || '{}');
     } 
     
-    // --- Action: Analyze Context (Step 1 - Search Grounded) ---
+    // --- Action: Analyze Context (Step 1 -> Step 2 Smart Intake) ---
     else if (action === 'analyze_context') {
         const { inputs } = payload;
         const urlList = [inputs.website, inputs.linkedin, ...(inputs.additionalUrls || [])].filter(Boolean).join(', ');
         
         const prompt = `
-          You are an expert venture capital analyst.
-          TASK: Analyze the following startup context to extract strategic signals.
+          You are an expert venture capital analyst and startup scout.
           
-          INPUTS:
-          - Name: ${inputs.name}
+          TASK: Run a deep analysis on the following startup inputs to generate a "Smart Context" profile.
+          
+          USER INPUTS:
+          - Startup Name: ${inputs.name}
+          - Description: ${inputs.description || 'None'}
+          - Target Market Hint: ${inputs.targetMarket || 'None'}
           - URLs: ${urlList}
+          - Search Terms: ${inputs.searchTerms || 'None'}
           - Industry Hint: ${inputs.industry || 'Unknown'}
-          - Search Terms: ${inputs.searchTerms || 'None provided'}
           
-          INSTRUCTIONS:
-          1. Use Google Search to research the company.
-          2. Return a valid JSON object wrapped in a markdown code block.
-          
-          JSON FORMAT:
+          WORKFLOWS TO RUN:
+          1. **URL Context**: Extract value prop, features, audience from provided URLs.
+          2. **Search Grounding**: Use Google Search to find real competitors, trends, and market validation based on the name/urls/terms.
+          3. **Synthesis**: Combine signals into a cohesive summary.
+
+          OUTPUT FORMAT:
+          Return a valid JSON object wrapped in a markdown code block with the following EXACT structure:
+
           \`\`\`json
           {
-            "tagline": "string",
-            "industry": "string",
-            "target_audience": "string",
-            "core_problem": "string",
-            "solution_statement": "string",
-            "pricing_model_hint": "string",
-            "social_links": { "linkedin": "string", "twitter": "string", "github": "string" },
-            "competitors": ["string"],
-            "trends": ["string"]
+            "summary_screen": {
+              "title": "Startup Summary",
+              "summary": "2-4 sentence combined summary using URL context + search grounding + user description.",
+              "industry_detected": "string",
+              "urls_used": ["string"],
+              "search_queries": ["string"],
+              "detected_signals": [
+                { "label": "Target Audience", "value": "string" },
+                { "label": "Core Problem", "value": "string" },
+                { "label": "Solution Theme", "value": "string" },
+                { "label": "Pricing Model", "value": "string" },
+                { "label": "Competitor Insight", "value": "string" },
+                { "label": "Trend Insight", "value": "string" }
+              ]
+            },
+            "wizard_autofill": {
+              "product_summary": "string",
+              "key_features": ["string"],
+              "target_customers": ["string"],
+              "use_cases": ["string"],
+              "pricing_model": "string",
+              "problem": "string",
+              "solution": "string",
+              "uvp": "string",
+              "core_differentiator": "string",
+              "competitors": [
+                { "name": "string", "url": "string", "positioning": "string" }
+              ],
+              "market_trends": ["string"]
+            },
+            "workflows": {
+              "url_context_ran": true,
+              "search_grounding_ran": true,
+              "missing_inputs": ["string"],
+              "next_actions": ["string"]
+            }
           }
           \`\`\`
         `;
@@ -102,59 +133,78 @@ serve(async (req) => {
             model: 'gemini-3-pro-preview',
             contents: prompt,
             config: { 
-                tools: [{ googleSearch: {} }] 
+                tools: [{ googleSearch: {} }],
+                thinkingConfig: { thinkingBudget: 4096 }
             }
         });
         const cleaned = cleanJson(response.text);
         result = JSON.parse(cleaned);
     }
 
-    // --- Action: Generate Summary (Step 5 - Search Grounded) ---
+    // --- Action: Generate Summary ---
     else if (action === 'generate_summary') {
        const { profile } = payload;
-       const prompt = `Act as a VC analyst. Research the startup described below using Google Search to validate market claims, then write a 3-paragraph executive summary.
-       
+       const prompt = `Act as a VC analyst. Write a 3-paragraph executive summary for this startup.
        Startup Profile: ${JSON.stringify(profile)}
-       
-       Return a JSON object wrapped in markdown: 
-       \`\`\`json
-       { "summary": "HTML string..." }
-       \`\`\``;
+       Return JSON: { "summary": "HTML string..." }`;
        
        const response = await ai.models.generateContent({
          model: 'gemini-3-pro-preview',
          contents: prompt,
-         config: { 
-            tools: [{ googleSearch: {} }]
-         }
+         config: { responseMimeType: 'application/json' }
        });
-       const cleaned = cleanJson(response.text);
-       result = JSON.parse(cleaned);
+       result = JSON.parse(response.text || '{}');
     }
 
-    // --- Action: Analyze Business (Step 3 - Search Grounded) ---
+    // --- Action: Analyze Business ---
     else if (action === 'analyze_business') {
         const prompt = `Context: ${payload.name} (${payload.industry}) - ${payload.tagline}.
-        Use Google Search to find real, active competitors and market trends.
-        
-        Return a JSON object wrapped in markdown:
-        \`\`\`json
-        {
-            "competitors": ["string"],
-            "coreDifferentiator": "string",
-            "keyFeatures": ["string"]
-        }
-        \`\`\``;
+        Use Google Search to find real competitors.
+        Return JSON: { "competitors": ["string"], "coreDifferentiator": "string", "keyFeatures": ["string"] }`;
 
         const response = await ai.models.generateContent({
             model: 'gemini-3-pro-preview',
             contents: prompt,
-            config: { 
-                tools: [{ googleSearch: {} }]
-            }
+            config: { tools: [{ googleSearch: {} }] }
         });
         const cleaned = cleanJson(response.text);
         result = JSON.parse(cleaned);
+    }
+
+    // --- Action: Generate Roadmap ---
+    else if (action === 'generate_roadmap') {
+       const { profileContext } = payload;
+       const prompt = `Context: ${JSON.stringify(profileContext)}. Generate 5 tasks. Return JSON: { "tasks": [{ "title": "", "description": "", "priority": "High" }] }`;
+       const response = await ai.models.generateContent({
+            model: 'gemini-3-pro-preview',
+            contents: prompt,
+            config: { responseMimeType: 'application/json' }
+       });
+       result = JSON.parse(response.text || '{}');
+    }
+
+    // --- Action: Generate Doc Draft ---
+    else if (action === 'generate_document_draft') {
+        const { docType, profileContext } = payload;
+        const prompt = `Write ${docType} for ${profileContext.name}. Return JSON: { "sections": [{ "title": "", "content": "html" }] }`;
+        const response = await ai.models.generateContent({
+            model: 'gemini-3-pro-preview',
+            contents: prompt,
+            config: { responseMimeType: 'application/json', thinkingConfig: { thinkingBudget: 2048 } }
+       });
+       result = JSON.parse(response.text || '{}');
+    }
+
+    // --- Action: Refine Doc ---
+    else if (action === 'refine_document_section') {
+        const { content, instruction } = payload;
+        const prompt = `Task: ${instruction}\nInput: ${content}\nReturn JSON: { "content": "..." }`;
+        const response = await ai.models.generateContent({
+            model: 'gemini-3-pro-preview',
+            contents: prompt,
+            config: { responseMimeType: 'application/json' }
+        });
+        result = JSON.parse(response.text || '{}');
     }
 
     return new Response(JSON.stringify(result), {

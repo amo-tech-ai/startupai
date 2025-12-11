@@ -1,12 +1,28 @@
 
 import { GoogleGenAI } from "@google/genai";
 import { cleanJson } from "../lib/utils";
+import { supabase } from "../lib/supabaseClient";
 
 export const ContactAI = {
   /**
    * Extracts contact details from a URL using Gemini 3 Pro with Search Grounding.
    */
   async extractFromUrl(apiKey: string, url: string) {
+    
+    // 1. Try Supabase Edge Function
+    if (supabase) {
+        try {
+            const { data, error } = await supabase.functions.invoke('extract-contact-info', {
+                body: { url }
+            });
+            if (!error && data) return data;
+            console.warn("Contact Extraction Edge Function failed, falling back to client...", error);
+        } catch (err) {
+            console.warn("Edge function connection error", err);
+        }
+    }
+
+    // 2. Client-Side Fallback
     const ai = new GoogleGenAI({ apiKey });
 
     const prompt = `
@@ -17,14 +33,18 @@ export const ContactAI = {
       
       If you cannot access the URL directly, use Google Search to find the latest public information about the person or company represented by this URL.
 
-      Return a JSON object with the following fields:
-      - full_name (string): The person's full name.
-      - role (string): Current job title or role.
-      - company (string): Current company name.
-      - email (string | null): Publicly available email address (or null).
-      - tags (string[]): 3-5 tags describing their industry, expertise, or seniority (e.g. "Fintech", "Investor", "VP").
-      - summary (string): A 1-sentence summary of who they are.
-      - sector (string): The primary industry sector.
+      Return a JSON object wrapped in a markdown code block:
+      \`\`\`json
+      {
+        "full_name": "string",
+        "role": "string",
+        "company": "string",
+        "email": "string | null",
+        "tags": ["string"],
+        "summary": "string",
+        "sector": "string"
+      }
+      \`\`\`
     `;
 
     try {

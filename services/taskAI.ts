@@ -1,7 +1,7 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 import { Task } from "../types";
-import { generateUUID } from "../lib/utils";
+import { supabase } from "../lib/supabaseClient";
 
 export const TaskAI = {
   /**
@@ -12,6 +12,28 @@ export const TaskAI = {
     profileContext: { name: string; stage: string; targetMarket: string; goal: string }
   ): Promise<Omit<Task, 'id' | 'startupId'>[] | null> {
     
+    // 1. Try Supabase Edge Function
+    if (supabase) {
+        try {
+            const { data, error } = await supabase.functions.invoke('ai-helper', {
+                body: { action: 'generate_roadmap', payload: { profileContext } }
+            });
+            if (!error && data) {
+                // Ensure shape matches
+                return (data.tasks || []).map((t: any) => ({
+                    title: t.title,
+                    description: t.description,
+                    status: 'Backlog',
+                    priority: t.priority,
+                    aiGenerated: true
+                }));
+            }
+        } catch (err) {
+            console.warn("Task AI Edge Function failed, fallback active.", err);
+        }
+    }
+
+    // 2. Client Fallback
     const ai = new GoogleGenAI({ apiKey });
     
     const prompt = `

@@ -9,14 +9,25 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Helper for JSON cleaning (simple version)
+// Robust JSON Cleaner
 function cleanJson(text: string | undefined): string {
   if (!text) return "{}";
-  let cleaned = text.trim();
-  if (cleaned.startsWith('```')) {
-    cleaned = cleaned.replace(/^```(json)?\n?/, '').replace(/\n?```$/, '');
+  
+  // 1. Try to extract from markdown code block
+  const codeBlockRegex = /```(?:json)?\s*([\s\S]*?)\s*```/;
+  const match = text.match(codeBlockRegex);
+  if (match) {
+    return match[1].trim();
   }
-  return cleaned;
+
+  // 2. Fallback: bracket matching
+  const firstBrace = text.indexOf('{');
+  const lastBrace = text.lastIndexOf('}');
+  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+      return text.substring(firstBrace, lastBrace + 1);
+  }
+
+  return text.trim();
 }
 
 serve(async (req) => {
@@ -45,14 +56,18 @@ serve(async (req) => {
       
       If you cannot access the URL directly, use Google Search to find the latest public information about the person or company represented by this URL.
 
-      Return a JSON object with the following fields:
-      - full_name (string): The person's full name.
-      - role (string): Current job title or role.
-      - company (string): Current company name.
-      - email (string | null): Publicly available email address (or null).
-      - tags (string[]): 3-5 tags describing their industry, expertise, or seniority (e.g. "Fintech", "Investor", "VP").
-      - summary (string): A 1-sentence summary of who they are.
-      - sector (string): The primary industry sector.
+      Return a JSON object wrapped in a markdown code block:
+      \`\`\`json
+      {
+        "full_name": "string",
+        "role": "string",
+        "company": "string",
+        "email": "string | null",
+        "tags": ["string"],
+        "summary": "string",
+        "sector": "string"
+      }
+      \`\`\`
     `;
 
     // Using googleSearch tool implies we cannot enforce responseSchema via config.

@@ -62,9 +62,10 @@ async function runAI(action: string, payload: any, apiKey: string) {
               
               INSTRUCTIONS:
               1. Use Google Search to research the company.
-              2. Return a valid JSON object.
+              2. Return a valid JSON object wrapped in a markdown code block.
               
               JSON FORMAT:
+              \`\`\`json
               {
                 "tagline": "string",
                 "industry": "string",
@@ -76,6 +77,7 @@ async function runAI(action: string, payload: any, apiKey: string) {
                 "competitors": ["string"],
                 "trends": ["string"]
               }
+              \`\`\`
             `;
 
             const response = await ai.models.generateContent({
@@ -93,7 +95,10 @@ async function runAI(action: string, payload: any, apiKey: string) {
             const prompt = `Act as a VC. Research this company using Google Search and write a 3-paragraph executive summary.
             Startup: ${JSON.stringify(profile)}. 
             
-            Return a JSON object: { "summary": "HTML string..." }`;
+            Return a JSON object wrapped in a markdown code block: 
+            \`\`\`json
+            { "summary": "HTML string..." }
+            \`\`\``;
             
             const response = await ai.models.generateContent({
                 model: 'gemini-3-pro-preview',
@@ -110,11 +115,14 @@ async function runAI(action: string, payload: any, apiKey: string) {
             const prompt = `Context: ${payload.name} (${payload.industry}) - ${payload.tagline}. 
             Use Google Search to find real competitors and trends.
             
-            Return JSON: {
+            Return a JSON object wrapped in a markdown code block:
+            \`\`\`json
+            {
                 "competitors": ["string"],
                 "coreDifferentiator": "string",
                 "keyFeatures": ["string"]
-            }`;
+            }
+            \`\`\``;
             
             const response = await ai.models.generateContent({
                 model: 'gemini-3-pro-preview',

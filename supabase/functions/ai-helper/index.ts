@@ -9,14 +9,25 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Helper to clean JSON from markdown code blocks
+// Robust JSON Cleaner
 function cleanJson(text: string | undefined): string {
   if (!text) return "{}";
-  let cleaned = text.trim();
-  if (cleaned.startsWith('```')) {
-    cleaned = cleaned.replace(/^```(json)?\n?/, '').replace(/\n?```$/, '');
+  
+  // 1. Try to extract from markdown code block
+  const codeBlockRegex = /```(?:json)?\s*([\s\S]*?)\s*```/;
+  const match = text.match(codeBlockRegex);
+  if (match) {
+    return match[1].trim();
   }
-  return cleaned;
+
+  // 2. Fallback: bracket matching
+  const firstBrace = text.indexOf('{');
+  const lastBrace = text.lastIndexOf('}');
+  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+      return text.substring(firstBrace, lastBrace + 1);
+  }
+
+  return text.trim();
 }
 
 serve(async (req) => {
@@ -34,7 +45,15 @@ serve(async (req) => {
     // --- Action: Rewrite Field (Text Processing) ---
     if (action === 'rewrite_field') {
        const { field, text, context } = payload;
-       const prompt = `Rewrite this ${field} for a startup investor profile. Context: ${JSON.stringify(context)}. Original: "${text}". Return JSON: { "result": "..." }`;
+       // Explicitly ask for JSON result
+       const prompt = `Rewrite this ${field} for a startup investor profile. 
+       Context: ${JSON.stringify(context)}. 
+       Original: "${text}". 
+       
+       Return a JSON object wrapped in a markdown code block: 
+       \`\`\`json
+       { "result": "..." }
+       \`\`\``;
        
        const response = await ai.models.generateContent({
          model: 'gemini-3-pro-preview',
@@ -61,9 +80,10 @@ serve(async (req) => {
           
           INSTRUCTIONS:
           1. Use Google Search to research the company.
-          2. Return a valid JSON object.
+          2. Return a valid JSON object wrapped in a markdown code block.
           
           JSON FORMAT:
+          \`\`\`json
           {
             "tagline": "string",
             "industry": "string",
@@ -75,6 +95,7 @@ serve(async (req) => {
             "competitors": ["string"],
             "trends": ["string"]
           }
+          \`\`\`
         `;
 
         const response = await ai.models.generateContent({
@@ -95,7 +116,10 @@ serve(async (req) => {
        
        Startup Profile: ${JSON.stringify(profile)}
        
-       Return a JSON object: { "summary": "HTML string..." }`;
+       Return a JSON object wrapped in markdown: 
+       \`\`\`json
+       { "summary": "HTML string..." }
+       \`\`\``;
        
        const response = await ai.models.generateContent({
          model: 'gemini-3-pro-preview',
@@ -113,10 +137,14 @@ serve(async (req) => {
         const prompt = `Context: ${payload.name} (${payload.industry}) - ${payload.tagline}.
         Use Google Search to find real, active competitors and market trends.
         
-        Return a JSON object with:
-        - competitors: string[] (Real company names)
-        - coreDifferentiator: string (How this startup wins)
-        - keyFeatures: string[] (Standard features for this vertical)`;
+        Return a JSON object wrapped in markdown:
+        \`\`\`json
+        {
+            "competitors": ["string"],
+            "coreDifferentiator": "string",
+            "keyFeatures": ["string"]
+        }
+        \`\`\``;
 
         const response = await ai.models.generateContent({
             model: 'gemini-3-pro-preview',

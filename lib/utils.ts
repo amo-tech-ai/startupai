@@ -1,3 +1,4 @@
+
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -33,15 +34,26 @@ export function generateShortId(): string {
 }
 
 /**
- * Cleans markdown code blocks from JSON strings to prevent parsing errors.
- * Handles ```json, ```, and standard JSON strings.
+ * Robustly cleans and extracts JSON from model responses.
+ * Handles Markdown code blocks, conversational prefixes, and raw JSON.
  */
 export function cleanJson(text: string | undefined): string {
   if (!text) return "{}";
-  let cleaned = text.trim();
-  // Remove markdown code blocks
-  if (cleaned.startsWith('```')) {
-    cleaned = cleaned.replace(/^```(json)?\n?/, '').replace(/\n?```$/, '');
+  
+  // 1. Try to extract from markdown code block (```json ... ```)
+  const codeBlockRegex = /```(?:json)?\s*([\s\S]*?)\s*```/;
+  const match = text.match(codeBlockRegex);
+  if (match) {
+    return match[1].trim();
   }
-  return cleaned;
+
+  // 2. If no code block, try to find the first '{' and last '}' (simple heuristic)
+  const firstBrace = text.indexOf('{');
+  const lastBrace = text.lastIndexOf('}');
+  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+      return text.substring(firstBrace, lastBrace + 1);
+  }
+
+  // 3. Fallback: return raw text (likely to fail parse if dirty, but better than nothing)
+  return text.trim();
 }

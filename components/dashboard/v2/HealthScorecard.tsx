@@ -1,7 +1,8 @@
 
 import React from 'react';
-import { HeartPulse, CheckCircle2, XCircle, ArrowUpRight, AlertCircle } from 'lucide-react';
+import { HeartPulse, CheckCircle2, XCircle, ArrowUpRight, AlertCircle, ArrowRight } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
+import { useNavigate } from 'react-router-dom';
 
 interface HealthScorecardProps {
   score: number;
@@ -15,6 +16,7 @@ interface HealthScorecardProps {
 }
 
 export const HealthScorecard: React.FC<HealthScorecardProps> = ({ score, metrics, missing }) => {
+  const navigate = useNavigate();
   const getColor = (s: number) => s >= 80 ? '#166534' : s >= 60 ? '#92400E' : '#991B1B';
   const color = getColor(score);
 
@@ -22,6 +24,15 @@ export const HealthScorecard: React.FC<HealthScorecardProps> = ({ score, metrics
     { value: score },
     { value: 100 - score }
   ];
+
+  // Map missing items to routes
+  const resolveAction = (item: string) => {
+      const lower = item.toLowerCase();
+      if (lower.includes('revenue') || lower.includes('runway')) return '/startup-profile';
+      if (lower.includes('deck')) return '/pitch-decks';
+      if (lower.includes('website') || lower.includes('cover')) return '/startup-profile';
+      return '/dashboard';
+  };
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-[#E5E5E5] p-6">
@@ -91,8 +102,18 @@ export const HealthScorecard: React.FC<HealthScorecardProps> = ({ score, metrics
       </div>
 
       {missing.length > 0 && (
-        <div className="mt-6 p-4 bg-[#FEF3C7] border border-[#FDE68A] rounded-xl text-xs text-[#92400E]">
-            <strong>Needs Attention:</strong> {missing.join(', ')}
+        <div className="mt-6 space-y-2">
+            <div className="text-xs font-bold text-[#92400E] uppercase tracking-wide mb-1">Needs Attention</div>
+            {missing.map((item, idx) => (
+                <button 
+                    key={idx}
+                    onClick={() => navigate(resolveAction(item))}
+                    className="w-full flex items-center justify-between p-3 bg-[#FEF3C7] border border-[#FDE68A] rounded-xl text-xs text-[#92400E] hover:bg-[#FDE68A] transition-colors group text-left"
+                >
+                    <span className="font-medium">Fix {item}</span>
+                    <ArrowRight size={12} className="opacity-50 group-hover:opacity-100 transition-opacity" />
+                </button>
+            ))}
         </div>
       )}
     </div>

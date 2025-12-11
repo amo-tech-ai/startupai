@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Eye, Edit3, Presentation, CheckCircle2, Share2, Copy } from 'lucide-react';
+import { Eye, Edit3, Presentation, CheckCircle2, Share2, Copy, Lock, Globe } from 'lucide-react';
 import { useData } from '../context/DataContext';
 import { OverviewCard } from './startup-profile/OverviewCard';
 import { TeamCard } from './startup-profile/TeamCard';
@@ -54,6 +54,7 @@ const StartupProfilePage: React.FC = () => {
           pricingModel: profileDTO.context.pricing_model,
           fundingGoal: profileDTO.context.funding_goal || 0,
           isRaising: profileDTO.context.is_raising,
+          isPublic: profileDTO.context.is_public,
           targetMarket: profileDTO.context.target_market || '',
           // Use competitors from DTO root if available (mapped from RPC), fallback to context
           competitors: profileDTO.competitors || profileDTO.context.competitors || [],
@@ -106,6 +107,7 @@ const StartupProfilePage: React.FC = () => {
       if (profileContext.pricingModel) contextPayload.pricing_model = profileContext.pricingModel;
       if (profileContext.fundingGoal) contextPayload.raise_amount = profileContext.fundingGoal;
       if (profileContext.isRaising !== undefined) contextPayload.is_raising = profileContext.isRaising;
+      if (profileContext.isPublic !== undefined) contextPayload.is_public = profileContext.isPublic;
       if (profileContext.useOfFunds) contextPayload.use_of_funds = profileContext.useOfFunds;
       if (profileContext.keyFeatures) contextPayload.unique_value = profileContext.keyFeatures.join(', '); // unique_value is text
 
@@ -131,6 +133,12 @@ const StartupProfilePage: React.FC = () => {
         console.warn("Clipboard access denied", err);
         toastError("Could not copy link to clipboard.");
       }
+  };
+
+  const toggleVisibility = async () => {
+      const newValue = !displayProfile!.isPublic;
+      await handleSaveContext({ isPublic: newValue });
+      success(newValue ? "Profile is now public!" : "Profile is now private.");
   };
 
   return (
@@ -208,7 +216,7 @@ const StartupProfilePage: React.FC = () => {
                 
                 <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
                     <h3 className="font-bold text-slate-900 mb-3">Profile Status</h3>
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                         <div className="flex items-center justify-between text-sm">
                             <span className="text-slate-500">Last Synced</span>
                             <span className="font-medium flex items-center gap-2">
@@ -216,27 +224,45 @@ const StartupProfilePage: React.FC = () => {
                                 {isSaving ? <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" /> : <div className="w-2 h-2 bg-green-500 rounded-full" />}
                             </span>
                         </div>
-                        <div className="flex items-center justify-between text-sm">
-                            <span className="text-slate-500">Visibility</span>
-                            <span className="inline-flex items-center gap-1.5 text-green-600 bg-green-50 px-2 py-0.5 rounded-full font-bold text-xs">
-                                <CheckCircle2 size={12} /> Public Ready
-                            </span>
+                        
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                                {displayProfile.isPublic ? (
+                                    <Globe size={16} className="text-green-500" />
+                                ) : (
+                                    <Lock size={16} className="text-slate-400" />
+                                )}
+                                <span>Public Access</span>
+                            </div>
+                            <button 
+                                onClick={toggleVisibility}
+                                className={`relative w-10 h-6 rounded-full transition-colors ${displayProfile.isPublic ? 'bg-green-500' : 'bg-slate-200'}`}
+                            >
+                                <div className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform shadow-sm ${displayProfile.isPublic ? 'translate-x-4' : ''}`} />
+                            </button>
                         </div>
                         
-                        <div className="grid grid-cols-2 gap-2 mt-4">
+                        <div className="grid grid-cols-2 gap-2 mt-4 pt-4 border-t border-slate-100">
                             <button 
                                 onClick={copyPublicLink}
-                                className="py-2 border border-slate-200 text-slate-600 text-xs font-bold rounded-lg hover:bg-slate-50 flex items-center justify-center gap-2 transition-colors"
+                                disabled={!displayProfile.isPublic}
+                                className="py-2 border border-slate-200 text-slate-600 text-xs font-bold rounded-lg hover:bg-slate-50 flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 <Copy size={14} /> Copy Link
                             </button>
                             <button 
                                 onClick={() => window.open(`/#/s/${displayProfile!.id}`, '_blank')}
-                                className="py-2 border border-slate-200 text-indigo-600 text-xs font-bold rounded-lg hover:bg-indigo-50 flex items-center justify-center gap-2 transition-colors"
+                                disabled={!displayProfile.isPublic}
+                                className="py-2 border border-slate-200 text-indigo-600 text-xs font-bold rounded-lg hover:bg-indigo-50 flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 <Share2 size={14} /> View Public
                             </button>
                         </div>
+                        {!displayProfile.isPublic && (
+                            <p className="text-[10px] text-slate-400 text-center">
+                                Turn on Public Access to share your profile.
+                            </p>
+                        )}
                     </div>
                 </div>
             </div>

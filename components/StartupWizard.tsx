@@ -117,6 +117,11 @@ const StartupWizard: React.FC = () => {
     }
   };
 
+  const handleGoToStep = (stepId: number) => {
+      setCurrentStep(stepId);
+      window.scrollTo(0,0);
+  };
+
   // Image Upload Wrapper passed to StepContext
   const handleCoverUpload = async (file: File) => {
       toast("Uploading cover image...", "info");
@@ -230,7 +235,7 @@ const StartupWizard: React.FC = () => {
       case 2: return <StepTeam formData={formData} setFormData={setFormData} />;
       case 3: return <StepBusiness formData={formData} setFormData={setFormData} />;
       case 4: return <StepTraction formData={formData} setFormData={setFormData} />;
-      case 5: return <StepSummary formData={formData} setFormData={setFormData} />;
+      case 5: return <StepSummary formData={formData} setFormData={setFormData} goToStep={handleGoToStep} />;
       default: return null;
     }
   };

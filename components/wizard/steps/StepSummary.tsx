@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { 
   Trophy, AlertTriangle, Sparkles, Loader2, Check, 
   Building2, Users, TrendingUp, Target, DollarSign, Globe,
-  RefreshCw
+  RefreshCw, ArrowRight
 } from 'lucide-react';
 import { WizardService } from '../../../services/wizardAI';
 import { API_KEY } from '../../../lib/env';
@@ -12,9 +12,22 @@ import { WizardFormData } from '../types';
 interface StepSummaryProps {
   formData: WizardFormData;
   setFormData: (data: any) => void;
+  // New props for navigation
+  goToStep?: (stepId: number) => void;
 }
 
-export const StepSummary: React.FC<StepSummaryProps> = ({ formData, setFormData }) => {
+// Helper to map missing items to steps
+const getStepForMissingItem = (item: string): number => {
+    const map: Record<string, number> = {
+        "Company Name": 1, "Website": 1, "Tagline": 1, "Industry": 1,
+        "Founders": 2, "Founder Bios": 2,
+        "Business Model": 3, "Problem Statement": 3, "Solution Statement": 3,
+        "Traction Metrics": 4, "Fundraising Target": 4
+    };
+    return map[item] || 1;
+};
+
+export const StepSummary: React.FC<StepSummaryProps> = ({ formData, setFormData, goToStep }) => {
   const [profileScore, setProfileScore] = useState(0);
   const [missingItems, setMissingItems] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -27,7 +40,7 @@ export const StepSummary: React.FC<StepSummaryProps> = ({ formData, setFormData 
     // Context (30%)
     if (formData.name) score += 5;
     if (formData.website) score += 5;
-    if (formData.tagline) score += 5;
+    if (formData.tagline) score += 5; else missing.push("Tagline");
     if (formData.industry) score += 5;
     if (formData.yearFounded) score += 5;
     if (formData.stage) score += 5;
@@ -58,7 +71,7 @@ export const StepSummary: React.FC<StepSummaryProps> = ({ formData, setFormData 
     if (!formData.aiSummary && API_KEY && !isGenerating) {
         handleImproveWithAI();
     }
-  }, []); // Only run on mount (and missing items calc)
+  }, []);
 
   const handleImproveWithAI = async () => {
       if (!API_KEY) return;
@@ -132,10 +145,17 @@ export const StepSummary: React.FC<StepSummaryProps> = ({ formData, setFormData 
                {missingItems.length > 0 ? (
                    <div className="space-y-2">
                        {missingItems.map((item, idx) => (
-                           <div key={idx} className="flex items-center gap-2 text-xs text-slate-600 bg-rose-50 px-2 py-1.5 rounded border border-rose-100">
-                               <div className="w-1.5 h-1.5 rounded-full bg-rose-400"></div>
-                               <span>{item}</span>
-                           </div>
+                           <button 
+                                key={idx} 
+                                onClick={() => goToStep && goToStep(getStepForMissingItem(item))}
+                                className="w-full flex items-center justify-between text-xs text-slate-600 bg-rose-50 px-2 py-1.5 rounded border border-rose-100 hover:bg-rose-100 transition-colors group"
+                           >
+                               <div className="flex items-center gap-2">
+                                   <div className="w-1.5 h-1.5 rounded-full bg-rose-400"></div>
+                                   <span>{item}</span>
+                               </div>
+                               <ArrowRight size={10} className="text-rose-400 opacity-0 group-hover:opacity-100" />
+                           </button>
                        ))}
                    </div>
                ) : (

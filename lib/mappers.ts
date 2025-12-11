@@ -32,6 +32,7 @@ export const mapProfileFromDB = (data: any): StartupProfile => ({
   socialLinks: data.social_links,
   fundingHistory: data.funding_history,
   isRaising: data.is_raising,
+  isPublic: data.is_public,
   useOfFunds: data.use_of_funds,
   createdAt: data.created_at,
   updatedAt: data.updated_at,
@@ -64,6 +65,7 @@ export const mapProfileToDB = (data: Partial<StartupProfile>) => {
   if (data.socialLinks !== undefined) payload.social_links = data.socialLinks;
   if (data.fundingHistory !== undefined) payload.funding_history = data.fundingHistory;
   if (data.isRaising !== undefined) payload.is_raising = data.isRaising;
+  if (data.isPublic !== undefined) payload.is_public = data.isPublic;
   if (data.useOfFunds !== undefined) payload.use_of_funds = data.useOfFunds;
   
   if (Object.keys(payload).length > 0) {

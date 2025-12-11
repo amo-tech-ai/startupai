@@ -62,6 +62,7 @@ export interface StartupProfile {
     investors: string;
   }[];
   isRaising?: boolean;
+  isPublic?: boolean; // Added field
   useOfFunds?: string[];
   createdAt: string;
   updatedAt: string;
@@ -101,6 +102,7 @@ export interface StartupProfileDTO {
     target_market?: string;
     funding_goal?: number;
     is_raising?: boolean;
+    is_public?: boolean; // Added field
     use_of_funds?: string[];
     year_founded?: number;
     competitors?: string[];

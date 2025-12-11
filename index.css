@@ -28,3 +28,42 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8; 
 }
+
+/* Print Styles for PDF Export */
+@media print {
+  /* Hide all UI elements */
+  body * {
+    visibility: hidden;
+  }
+  
+  /* Show only the slide containers */
+  .min-h-screen.bg-white.text-black.p-0,
+  .min-h-screen.bg-white.text-black.p-0 * {
+    visibility: visible;
+  }
+
+  .min-h-screen.bg-white.text-black.p-0 {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Ensure background colors print */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Page Break Logic */
+  .page-break {
+    break-after: page;
+    page-break-after: always;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}

@@ -9,7 +9,7 @@ import { OverviewCard } from './startup-profile/OverviewCard';
 import { BusinessCard } from './startup-profile/BusinessCard';
 import { TeamCard } from './startup-profile/TeamCard';
 import { SummaryCard } from './startup-profile/SummaryCard';
-import { ArrowRight, Lock, Loader2 } from 'lucide-react';
+import { ArrowRight, Lock, Loader2, Mail } from 'lucide-react';
 
 const PublicStartupProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -42,6 +42,17 @@ const PublicStartupProfile: React.FC = () => {
 
   const noOpSave = async () => {};
 
+  const handleRequestIntro = () => {
+      if (!founders || founders.length === 0) return;
+      // Try to find primary contact
+      const contact = founders.find(f => f.isPrimaryContact) || founders[0];
+      if (contact.email) {
+          window.location.href = `mailto:${contact.email}?subject=Intro Request: ${profile?.name}&body=Hi ${contact.name}, I found your startup on StartupAI and would love to connect.`;
+      } else {
+          alert("This startup hasn't listed a public contact email.");
+      }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
@@ -53,7 +64,8 @@ const PublicStartupProfile: React.FC = () => {
     );
   }
 
-  if (error || !profile) {
+  // Check for public flag explicitly
+  if (error || !profile || !profile.isPublic) {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col">
         <Navbar type="public" />
@@ -63,7 +75,11 @@ const PublicStartupProfile: React.FC = () => {
                     <Lock className="text-slate-400" size={24} />
                 </div>
                 <h1 className="text-xl font-bold text-slate-900 mb-2">Profile Unavailable</h1>
-                <p className="text-slate-500 mb-6">This profile may be private or does not exist.</p>
+                <p className="text-slate-500 mb-6">
+                    {profile && !profile.isPublic 
+                        ? "This profile is currently set to private." 
+                        : "This profile does not exist or has been removed."}
+                </p>
                 <Link to="/" className="inline-flex items-center gap-2 px-6 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors">
                     Back to Home
                 </Link>
@@ -106,9 +122,11 @@ const PublicStartupProfile: React.FC = () => {
                     <p className="text-xl text-slate-600 font-medium">{profile.tagline}</p>
                 </div>
                 <div className="hidden md:block pb-4">
-                    <a href={profile.websiteUrl || '#'} target="_blank" rel="noopener noreferrer" className="px-6 py-3 bg-indigo-600 text-white font-bold rounded-xl shadow-lg shadow-indigo-600/20 hover:bg-indigo-700 transition-transform hover:-translate-y-0.5 flex items-center gap-2">
-                        Visit Website <ArrowRight size={18} />
-                    </a>
+                    {profile.websiteUrl && (
+                        <a href={profile.websiteUrl} target="_blank" rel="noopener noreferrer" className="px-6 py-3 bg-indigo-600 text-white font-bold rounded-xl shadow-lg shadow-indigo-600/20 hover:bg-indigo-700 transition-transform hover:-translate-y-0.5 flex items-center gap-2">
+                            Visit Website <ArrowRight size={18} />
+                        </a>
+                    )}
                 </div>
             </div>
 
@@ -152,8 +170,11 @@ const PublicStartupProfile: React.FC = () => {
                     <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm sticky top-24">
                         <h3 className="font-bold text-slate-900 mb-2">Interested in {profile.name}?</h3>
                         <p className="text-sm text-slate-500 mb-6">Connect with the founders to learn more about their journey and vision.</p>
-                        <button className="w-full py-3 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 transition-colors">
-                            Request Intro
+                        <button 
+                            onClick={handleRequestIntro}
+                            className="w-full py-3 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 transition-colors flex items-center justify-center gap-2"
+                        >
+                            <Mail size={18} /> Request Intro
                         </button>
                     </div>
                 </div>

@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { ChevronLeft, Loader2, Play, Download } from 'lucide-react';
+
+import React, { useState, useEffect, useRef } from 'react';
+import { ChevronLeft, Loader2, Play, Download, Printer } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { Deck, Slide } from '../../types';
 import { SlideSidebar } from './editor/SlideSidebar';
@@ -16,12 +17,12 @@ interface DeckEditorProps {
 
 export const DeckEditor: React.FC<DeckEditorProps> = ({ deck, onBack }) => {
   const { updateDeck } = useData();
-  const { success } = useToast();
+  const { success, toast } = useToast();
   const [slides, setSlides] = useState<Slide[]>(deck.slides);
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving'>('saved');
   const [isPresenting, setIsPresenting] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
+  const [isPrintMode, setIsPrintMode] = useState(false);
 
   // Auto-save effect
   useEffect(() => {
@@ -43,6 +44,19 @@ export const DeckEditor: React.FC<DeckEditorProps> = ({ deck, onBack }) => {
     }
   }, [slides.length, currentSlideIndex]);
 
+  // Print Effect
+  useEffect(() => {
+    if (isPrintMode) {
+      // Small delay to ensure DOM is rendered before printing
+      const timer = setTimeout(() => {
+        window.print();
+        // Optional: Exit print mode automatically after print dialog closes? 
+        // No, let user exit manually to avoid UI jumping.
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isPrintMode]);
+
   const handleUpdateSlide = (updatedSlide: Slide) => {
     const newSlides = [...slides];
     newSlides[currentSlideIndex] = updatedSlide;
@@ -61,6 +75,22 @@ export const DeckEditor: React.FC<DeckEditorProps> = ({ deck, onBack }) => {
     newSlides.splice(currentSlideIndex + 1, 0, newSlide);
     setSlides(newSlides);
     setCurrentSlideIndex(currentSlideIndex + 1);
+  };
+
+  const handleDuplicateSlide = (index: number) => {
+      const sourceSlide = slides[index];
+      const newId = generateUUID();
+      const newSlide: Slide = {
+          ...sourceSlide,
+          id: newId,
+          title: `${sourceSlide.title} (Copy)`
+      };
+      
+      const newSlides = [...slides];
+      newSlides.splice(index + 1, 0, newSlide);
+      setSlides(newSlides);
+      setCurrentSlideIndex(index + 1);
+      success("Slide duplicated");
   };
 
   const handleDeleteSlide = () => {
@@ -92,14 +122,66 @@ export const DeckEditor: React.FC<DeckEditorProps> = ({ deck, onBack }) => {
     }
   };
 
-  const handleExport = () => {
-    setIsExporting(true);
-    setTimeout(() => {
-      setIsExporting(false);
-      success("Export complete! PDF downloaded.");
-    }, 2000);
+  const togglePrintMode = () => {
+    if (!isPrintMode) {
+      toast("Preparing PDF view... Use 'Save as PDF' in the print dialog.", "info");
+    }
+    setIsPrintMode(!isPrintMode);
   };
 
+  // --- PRINT MODE RENDER ---
+  if (isPrintMode) {
+    return (
+      <div className="min-h-screen bg-white text-black p-0">
+        <div className="fixed top-4 right-4 z-50 print:hidden flex gap-3">
+           <div className="bg-indigo-50 border border-indigo-200 text-indigo-800 px-4 py-2 rounded-lg text-sm font-bold shadow-lg">
+              🖨️ Printing Mode Enabled
+           </div>
+           <button 
+             onClick={() => setIsPrintMode(false)}
+             className="bg-slate-900 text-white px-6 py-2 rounded-lg font-bold shadow-lg hover:bg-slate-800"
+           >
+             Exit Print Mode
+           </button>
+        </div>
+
+        {slides.map((slide, idx) => (
+          <div key={slide.id} className="w-full h-screen break-after-page flex items-center justify-center p-8 page-break">
+             {/* Re-using SlideCanvas logic but simplified for print/read-only */}
+             <div className="aspect-video w-full max-w-6xl border border-slate-200 shadow-none p-16 flex flex-col bg-white rounded-none">
+                <h1 className="text-5xl font-bold mb-8 text-slate-900">{slide.title}</h1>
+                <div className="flex-1 grid grid-cols-2 gap-12">
+                   <div className="space-y-6">
+                      {slide.bullets.map((b, i) => (
+                        <div key={i} className="flex gap-4 items-start">
+                           <div className="w-2.5 h-2.5 rounded-full bg-indigo-600 mt-2.5 shrink-0"></div>
+                           <p className="text-2xl text-slate-700 leading-snug">{b}</p>
+                        </div>
+                      ))}
+                   </div>
+                   <div className="flex items-center justify-center bg-slate-50 rounded-xl overflow-hidden">
+                      {slide.imageUrl ? (
+                        <img src={slide.imageUrl} className="w-full h-full object-cover" alt="visual" />
+                      ) : (
+                        <div className="text-slate-300 text-xl font-bold flex flex-col items-center">
+                           <span>Visual Placeholder</span>
+                           <span className="text-sm font-normal mt-2">({slide.chartType || 'Image'})</span>
+                        </div>
+                      )}
+                   </div>
+                </div>
+                <div className="mt-auto pt-8 flex justify-between text-slate-400 text-sm border-t border-slate-100">
+                   <span>{deck.title}</span>
+                   <span>Slide {idx + 1} / {slides.length}</span>
+                </div>
+             </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  // --- EDITOR MODE RENDER ---
   return (
     <div className="h-screen flex flex-col bg-slate-900 text-white relative">
       {/* Toolbar */}
@@ -125,12 +207,10 @@ export const DeckEditor: React.FC<DeckEditorProps> = ({ deck, onBack }) => {
             <Play size={16} fill="currentColor" /> Present
           </button>
           <button 
-            onClick={handleExport}
-            disabled={isExporting}
+            onClick={togglePrintMode}
             className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg font-bold text-sm transition-colors border border-slate-700"
           >
-            {isExporting ? <Loader2 size={16} className="animate-spin"/> : <Download size={16} />}
-            Export PDF
+            <Printer size={16} /> Export PDF
           </button>
         </div>
       </div>
@@ -142,6 +222,7 @@ export const DeckEditor: React.FC<DeckEditorProps> = ({ deck, onBack }) => {
           onSelectSlide={setCurrentSlideIndex}
           onAddSlide={handleAddSlide}
           onMoveSlide={handleMoveSlide}
+          onDuplicateSlide={handleDuplicateSlide}
         />
         
         <SlideCanvas 

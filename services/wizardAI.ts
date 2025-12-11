@@ -50,34 +50,82 @@ async function runAI(action: string, payload: any, apiKey: string) {
         if (action === 'analyze_context') {
             const { inputs } = payload;
             const urlList = [inputs.website, inputs.linkedin, ...(inputs.additionalUrls || [])].filter(Boolean).join(', ');
+            
             const prompt = `
-              You are an expert venture capital analyst.
-              TASK: Analyze the following startup inputs to generate a "Smart Context" profile.
+              You are an expert venture capital scout and forensic data analyst.
+              
+              TASK: Perform a deep analysis of the following startup inputs to build a comprehensive intelligence profile.
               
               INPUTS:
               - Name: ${inputs.name}
-              - Description: ${inputs.description || 'None'}
-              - Target Market Hint: ${inputs.targetMarket || 'None'}
               - URLs: ${urlList}
+              - Description: ${inputs.description || 'None'}
               - Search Terms: ${inputs.searchTerms || 'None'}
               - Industry Hint: ${inputs.industry || 'Unknown'}
               
-              INSTRUCTIONS:
-              1. Use Google Search to research the company and market.
-              2. Return a valid JSON object wrapped in a markdown code block following the EXACT structure provided.
-              
-              OUTPUT FORMAT:
+              WORKFLOW:
+              1. **Founder Forensics**: Use Google Search to find public LinkedIn details, bios, and backgrounds of ALL founders associated with this startup/URL.
+              2. **Website Extraction**: Analyze the company website content via Search Grounding (meta tags, value prop, features).
+              3. **Market Intelligence**: Identify real competitors, market trends, and pricing models.
+              4. **Synthesis**: Combine all signals into the structured JSON below.
+
+              OUTPUT FORMAT (Strict JSON):
               \`\`\`json
               {
                 "summary_screen": {
-                  "title": "string",
-                  "summary": "string",
+                  "title": "Startup Intelligence Profile",
+                  "summary": "3-4 sentence comprehensive summary combining user input, website findings, and market context.",
                   "industry_detected": "string",
-                  "urls_used": ["string"],
-                  "search_queries": ["string"],
-                  "detected_signals": [
-                    { "label": "string", "value": "string" }
+                  "product_category": "string",
+                  "badges": ["Search Grounded", "string", "string"]
+                },
+                "founder_intelligence": {
+                  "founders": [
+                    {
+                      "name": "string",
+                      "title": "string",
+                      "bio": "2-3 sentences inferred from LinkedIn/Web",
+                      "headline": "string",
+                      "experience_bullets": ["Previous Company - Role", "Domain Expertise"],
+                      "skills": ["string"],
+                      "education": ["University - Degree"],
+                      "linkedin": "string"
+                    }
                   ]
+                },
+                "website_analysis": {
+                  "value_prop": "string",
+                  "key_features": ["string"],
+                  "pricing_hints": "string",
+                  "target_audience": "string",
+                  "proof_points": ["Customer logos", "Testimonials mentioned"]
+                },
+                "research_data": {
+                  "queries_used": ["{name} competitors", "{industry} trends"],
+                  "sources_count": 5
+                },
+                "detected_signals": {
+                  "general": [
+                    { "label": "Business Model", "value": "string" },
+                    { "label": "Stage Inference", "value": "string" }
+                  ],
+                  "product": [
+                    { "label": "Core Problem", "value": "string" },
+                    { "label": "Solution Theme", "value": "string" }
+                  ],
+                  "market": [
+                    { "label": "Market Segment", "value": "string" },
+                    { "label": "Trend", "value": "string" }
+                  ],
+                  "founder": [
+                    { "label": "Founder-Market Fit", "value": "High/Med/Low" },
+                    { "label": "Team Completeness", "value": "string" }
+                  ]
+                },
+                "workflows": {
+                  "url_context_ran": true,
+                  "search_grounding_ran": true,
+                  "next_actions": ["Verify Founder Bio", "Review Competitors"]
                 },
                 "wizard_autofill": {
                   "product_summary": "string",
@@ -89,14 +137,10 @@ async function runAI(action: string, payload: any, apiKey: string) {
                   "solution": "string",
                   "uvp": "string",
                   "core_differentiator": "string",
-                  "competitors": [{ "name": "string", "url": "string", "positioning": "string" }],
+                  "competitors": [
+                    { "name": "string", "url": "string", "positioning": "string" }
+                  ],
                   "market_trends": ["string"]
-                },
-                "workflows": {
-                  "url_context_ran": true,
-                  "search_grounding_ran": true,
-                  "missing_inputs": ["string"],
-                  "next_actions": ["string"]
                 }
               }
               \`\`\`

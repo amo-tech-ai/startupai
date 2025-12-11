@@ -26,15 +26,56 @@ export interface WizardFormData {
       title: string;
       summary: string;
       industry_detected: string;
-      urls_used: string[];
-      search_queries: string[];
-      detected_signals: Array<{ label: string; value: string }>;
+      product_category: string;
+      badges: string[];
+    };
+    founder_intelligence: {
+      founders: Array<{
+        name: string;
+        title: string;
+        bio: string;
+        headline: string;
+        experience_bullets: string[];
+        skills: string[];
+        education: string[];
+        linkedin: string;
+      }>;
+    };
+    website_analysis: {
+      value_prop: string;
+      key_features: string[];
+      pricing_hints: string;
+      target_audience: string;
+      proof_points: string[];
+    };
+    research_data: {
+      queries_used: string[];
+      sources_count: number;
+    };
+    detected_signals: {
+      general: Array<{ label: string; value: string }>;
+      product: Array<{ label: string; value: string }>;
+      market: Array<{ label: string; value: string }>;
+      founder: Array<{ label: string; value: string }>;
     };
     workflows: {
       url_context_ran: boolean;
       search_grounding_ran: boolean;
-      missing_inputs: string[];
       next_actions: string[];
+    };
+    // Legacy autofill for downstream steps
+    wizard_autofill: {
+      product_summary: string;
+      key_features: string[];
+      target_customers: string[];
+      use_cases: string[];
+      pricing_model: string;
+      problem: string;
+      solution: string;
+      uvp: string;
+      core_differentiator: string;
+      competitors: Array<{ name: string; url: string; positioning: string }>;
+      market_trends: string[];
     };
   };
   

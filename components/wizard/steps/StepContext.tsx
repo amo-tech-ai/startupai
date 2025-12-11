@@ -46,6 +46,21 @@ export const StepContext: React.FC<StepContextProps> = ({ formData, setFormData,
       const result = await WizardService.analyzeContext(inputs, API_KEY);
       
       if (result && result.summary_screen) {
+        
+        // Map detected founders if available
+        let mappedFounders = formData.founders;
+        if (result.founder_intelligence?.founders && result.founder_intelligence.founders.length > 0) {
+            mappedFounders = result.founder_intelligence.founders.map((f: any, idx: number) => ({
+                id: Date.now().toString() + idx,
+                name: f.name || '',
+                title: f.title || '',
+                bio: f.bio || '',
+                linkedin: f.linkedin || '',
+                email: '', // AI usually can't get email reliably
+                website: ''
+            }));
+        }
+
         // 1. Save AI Analysis Result for Step 2
         const updatedData = {
             ...formData,
@@ -56,6 +71,8 @@ export const StepContext: React.FC<StepContextProps> = ({ formData, setFormData,
             tagline: result.wizard_autofill.product_summary || formData.tagline,
             targetMarket: result.wizard_autofill.target_customers ? result.wizard_autofill.target_customers.join(', ') : formData.targetMarket,
             
+            founders: mappedFounders,
+
             problem: result.wizard_autofill.problem || formData.problem,
             solution: result.wizard_autofill.solution || formData.solution,
             businessModel: formData.businessModel || (result.wizard_autofill.pricing_model?.includes('SaaS') ? 'SaaS' : 'Transactional'), 

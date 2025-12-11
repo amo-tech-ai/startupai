@@ -76,19 +76,75 @@ async function runAI(action: string, payload: any, apiKey: string) {
 }
 
 export const WizardService = {
-  async analyzeContext(name: string, website: string, apiKey: string) {
-    // Context analysis usually needs Google Search grounding which works best on backend
-    // but for now keeping client side if edge function doesn't support specific grounding config dynamically
+  /**
+   * Smart Context Intake (Step 1)
+   * Uses Google Search Grounding to analyze multiple URLs and search terms.
+   */
+  async analyzeContext(
+    inputs: { 
+        name: string, 
+        website?: string, 
+        linkedin?: string, 
+        additionalUrls?: string[], 
+        searchTerms?: string,
+        industry?: string 
+    }, 
+    apiKey: string
+  ) {
     const ai = new GoogleGenAI({ apiKey });
-    const prompt = `Analyze startup "${name}" ${website ? `(${website})` : ''}. Return JSON: { tagline, industry, target_audience, core_problem, solution_statement, pricing_model_hint }`;
+    
+    // Construct a rich context prompt
+    const urlList = [inputs.website, inputs.linkedin, ...(inputs.additionalUrls || [])].filter(Boolean).join(', ');
+    
+    const prompt = `
+      You are an expert venture capital analyst.
+      
+      TASK: Analyze the following startup context to extract strategic signals and autofill their profile.
+      
+      INPUTS:
+      - Name: ${inputs.name}
+      - Primary URLs: ${urlList}
+      - Industry Hint: ${inputs.industry || 'Unknown'}
+      - User Search Terms: ${inputs.searchTerms || 'None provided'}
+      
+      INSTRUCTIONS:
+      1. Use Google Search to research the company, the URLs provided, and the search terms.
+      2. If the company is new/stealth, analyze the *sector* and *search terms* to suggest what they likely do.
+      3. Extract or infer the following fields.
+      
+      RETURN JSON:
+      {
+        "tagline": "Punchy 1-sentence value prop",
+        "industry": "Standardized Industry Category",
+        "target_audience": "Specific ICP (e.g. Enterprise CTOs)",
+        "core_problem": "The burning pain point they solve",
+        "solution_statement": "How they solve it uniquely",
+        "pricing_model_hint": "e.g. SaaS Subscription, Transactional",
+        "social_links": {
+            "linkedin": "Found URL or null",
+            "twitter": "Found URL or null",
+            "github": "Found URL or null"
+        },
+        "competitors": ["Comp1", "Comp2", "Comp3"],
+        "trends": ["Trend 1", "Trend 2"]
+      }
+    `;
+
     try {
         const response = await ai.models.generateContent({
             model: 'gemini-3-pro-preview',
             contents: prompt,
-            config: { tools: [{ googleSearch: {} }] }
+            config: { 
+                tools: [{ googleSearch: {} }] 
+                // Note: responseMimeType JSON is sometimes incompatible with googleSearch tool depending on API version.
+                // We will rely on the prompt to request JSON and clean it.
+            }
         });
         return JSON.parse(cleanJson(response.text));
-    } catch (e) { return null; }
+    } catch (e) { 
+        console.error("Analyze Context Error:", e);
+        return null; 
+    }
   },
 
   async refineText(text: string, context: string, apiKey: string) {
@@ -108,7 +164,6 @@ export const WizardService = {
   },
 
   async suggestUseOfFunds(amount: number, stage: string, industry: string, apiKey: string) {
-    // Simple logic usually fine client side or via generic gen text
     const ai = new GoogleGenAI({ apiKey });
     const prompt = `Suggest use of funds for $${amount} raise for ${stage} ${industry} startup. JSON array strings.`;
     try {

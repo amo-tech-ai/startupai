@@ -1,6 +1,13 @@
 
 # Changelog
 
+## [v2.1.1] - Stability & Performance Patch
+### Critical Fixes
+- **React Version Conflict**: Resolved `Minified React error #31` by enforcing a singleton React 18.2.0 instance across the application and all dependencies via strict Import Map configuration.
+- **Visual Regression**: Fixed chart layout collapse in Dashboard and Hero sections by wrapping `Recharts` components in strict `min-w-0` containers.
+- **Preview Environment**: Optimized `index.html` bootstrapping to work seamlessly in cloud IDEs and preview environments without CORS errors.
+- **Dependency Clean**: Removed Node.js build tools (`vite`, `path`) from the runtime import map to prevent browser console pollution.
+
 ## [v2.1.0] - Startup Profile Dashboard
 ### Features
 - **Profile Dashboard**: Launched `/startup-profile` as the central hub for managing company data.

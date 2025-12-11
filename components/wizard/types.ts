@@ -9,6 +9,10 @@ export interface WizardFormData {
   coverImage: string;
   stage: string;
   
+  // Advanced Context (New in V2)
+  additionalUrls: string[];
+  searchTerms: string;
+  
   // Team
   founders: Array<{
     id: string;
@@ -62,6 +66,8 @@ export const INITIAL_WIZARD_STATE: WizardFormData = {
   tagline: '',
   coverImage: '',
   stage: 'Idea',
+  additionalUrls: [],
+  searchTerms: '',
   founders: [{ id: '1', name: '', title: '', bio: '', linkedin: '', email: '', website: '' }],
   problem: '',
   solution: '',

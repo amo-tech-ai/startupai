@@ -1,4 +1,5 @@
 
+import React from 'react';
 import { generateShortId } from '../../../lib/utils';
 import { MetricsSnapshot, AICoachInsight, Activity, StartupProfile } from '../../../types';
 import { DashboardService } from '../../../services/supabase/dashboard';

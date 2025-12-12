@@ -58,7 +58,7 @@ const AppLayout = () => (
 );
 
 // Auth Guard
-const RequireAuth = ({ children }: { children: React.ReactNode }) => {
+const RequireAuth = ({ children }: { children?: React.ReactNode }) => {
   const { user, loading: authLoading } = useAuth();
   const { profile, isLoading: dataLoading } = useData();
   const location = useLocation();

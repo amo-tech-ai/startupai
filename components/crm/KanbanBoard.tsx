@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { MoreHorizontal, Plus } from 'lucide-react';
 import { Deal, DealStage } from '../../types';
@@ -8,9 +9,10 @@ interface KanbanBoardProps {
   deals: Deal[];
   onAddDeal: (stage: DealStage) => void;
   onDealMove: (dealId: string, newStage: DealStage) => void;
+  onDealClick: (deal: Deal) => void;
 }
 
-export const KanbanBoard: React.FC<KanbanBoardProps> = ({ deals, onAddDeal, onDealMove }) => {
+export const KanbanBoard: React.FC<KanbanBoardProps> = ({ deals, onAddDeal, onDealMove, onDealClick }) => {
   
   const handleMove = (dealId: string, currentStage: DealStage, direction: 'prev' | 'next') => {
     const currentIndex = CRM_COLUMNS.findIndex(col => col.id === currentStage);
@@ -58,6 +60,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ deals, onAddDeal, onDe
                     deal={deal} 
                     layout="board" 
                     onMove={(dir) => handleMove(deal.id, deal.stage, dir)}
+                    onClick={() => onDealClick(deal)}
                   />
                 ))
               )}

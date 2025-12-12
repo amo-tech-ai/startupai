@@ -5,9 +5,10 @@ import { DealCard } from './DealCard';
 
 interface DealListViewProps {
   deals: Deal[];
+  onDealClick: (deal: Deal) => void;
 }
 
-export const DealListView: React.FC<DealListViewProps> = ({ deals }) => {
+export const DealListView: React.FC<DealListViewProps> = ({ deals, onDealClick }) => {
   return (
     <div className="h-full overflow-y-auto custom-scrollbar">
       <div className="min-w-[1000px]">
@@ -28,7 +29,12 @@ export const DealListView: React.FC<DealListViewProps> = ({ deals }) => {
             <div className="text-center py-12 text-slate-400">No deals found matching your search.</div>
           ) : (
             deals.map(deal => (
-              <DealCard key={deal.id} deal={deal} layout="list" />
+              <DealCard 
+                key={deal.id} 
+                deal={deal} 
+                layout="list" 
+                onClick={() => onDealClick(deal)}
+              />
             ))
           )}
         </div>

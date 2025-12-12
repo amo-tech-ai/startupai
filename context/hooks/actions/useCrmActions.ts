@@ -1,4 +1,5 @@
 
+import React from 'react';
 import { generateShortId } from '../../../lib/utils';
 import { Deal, Task, Contact, StartupProfile } from '../../../types';
 import { CrmService } from '../../../services/supabase/crm';

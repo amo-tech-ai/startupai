@@ -1,4 +1,5 @@
 
+import React from 'react';
 import { generateShortId } from '../../../lib/utils';
 import { Deck, StartupProfile } from '../../../types';
 import { DeckService } from '../../../services/supabase/decks';

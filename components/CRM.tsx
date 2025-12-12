@@ -18,6 +18,7 @@ import { KanbanBoard } from './crm/KanbanBoard';
 import { DealListView } from './crm/DealListView';
 import { ContactListView } from './crm/ContactListView';
 import { NewDealModal } from './crm/NewDealModal';
+import { DealDetailDrawer } from './crm/DealDetailDrawer';
 import { AddContactSidebar } from './dashboard/AddContactSidebar';
 
 const CRM: React.FC = () => {
@@ -25,10 +26,15 @@ const CRM: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'pipeline' | 'contacts'>('pipeline');
   const [viewMode, setViewMode] = useState<'board' | 'list'>('board');
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // Modals & Drawers
   const [isDealModalOpen, setIsDealModalOpen] = useState(false);
   const [isContactSidebarOpen, setIsContactSidebarOpen] = useState(false);
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [initialStage, setInitialStage] = useState<DealStage>('Lead');
+  
+  // Detail View State
+  const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null);
 
   // Stats Calculation
   const totalValue = deals.reduce((acc, deal) => acc + deal.value, 0);
@@ -169,11 +175,13 @@ const CRM: React.FC = () => {
                 <KanbanBoard 
                   deals={filteredDeals} 
                   onAddDeal={handleOpenDealModal}
-                  onDealMove={handleDealMove} 
+                  onDealMove={handleDealMove}
+                  onDealClick={setSelectedDeal}
                 />
             ) : (
                 <DealListView 
                   deals={filteredDeals} 
+                  onDealClick={setSelectedDeal}
                 />
             )
         ) : (
@@ -209,7 +217,7 @@ const CRM: React.FC = () => {
         )}
       </div>
 
-      {/* 3. Modals */}
+      {/* 3. Modals & Drawers */}
       <AnimatePresence>
         {isDealModalOpen && (
           <NewDealModal 
@@ -225,6 +233,14 @@ const CRM: React.FC = () => {
         isOpen={isContactSidebarOpen}
         onClose={() => setIsContactSidebarOpen(false)}
         contact={selectedContact}
+      />
+
+      <DealDetailDrawer 
+        isOpen={!!selectedDeal}
+        deal={selectedDeal}
+        onClose={() => setSelectedDeal(null)}
+        onUpdate={updateDeal}
+        onDelete={(id) => { /* updateDeal handles delete locally implicitly if null passed, but we need specific delete action in context or just filter here */ }}
       />
     </div>
   );

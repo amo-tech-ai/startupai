@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { 
   Building2, 
@@ -21,9 +22,10 @@ interface DealCardProps {
     deal: Deal;
     layout?: 'board' | 'list';
     onMove?: (direction: 'prev' | 'next') => void;
+    onClick?: () => void;
 }
 
-export const DealCard: React.FC<DealCardProps> = ({ deal, layout = 'board', onMove }) => {
+export const DealCard: React.FC<DealCardProps> = ({ deal, layout = 'board', onMove, onClick }) => {
   const getActionIcon = (text: string) => {
     const t = text ? text.toLowerCase() : '';
     if (t.includes('email') || t.includes('send')) return <Mail size={12} />;
@@ -39,6 +41,7 @@ export const DealCard: React.FC<DealCardProps> = ({ deal, layout = 'board', onMo
             layout
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
+            onClick={onClick}
             className="flex items-center px-6 py-4 border-b border-slate-100 last:border-0 hover:bg-indigo-50/30 transition-colors group cursor-pointer"
         >
             <div className="w-1/4 flex items-center gap-3">
@@ -112,6 +115,7 @@ export const DealCard: React.FC<DealCardProps> = ({ deal, layout = 'board', onMo
       layout
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
+      onClick={onClick}
       className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-indigo-200 transition-all cursor-pointer group relative"
     >
       {/* Quick Move Controls (Visible on Hover) */}

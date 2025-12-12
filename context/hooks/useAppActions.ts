@@ -1,4 +1,5 @@
 
+import React from 'react';
 import { 
   StartupProfile, UserProfile, Founder, MetricsSnapshot, 
   AICoachInsight, Activity, Task, Deck, Deal, InvestorDoc, Contact

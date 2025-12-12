@@ -1,4 +1,5 @@
 
+import React from 'react';
 import { supabase } from '../../../lib/supabaseClient';
 import { generateShortId } from '../../../lib/utils';
 import { StartupProfile, UserProfile, Founder } from '../../../types';

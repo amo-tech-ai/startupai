@@ -1,3 +1,4 @@
+
 /**
  * Environment Variable Manager
  * ----------------------------
@@ -24,7 +25,13 @@ const getSafeEnv = (key: string): string => {
 };
 
 // Application Secrets
-export const API_KEY = getSafeEnv('VITE_API_KEY') || getSafeEnv('API_KEY');
+// Note: In Vite (Client-side), keys MUST start with VITE_ to be exposed.
+export const API_KEY = 
+  getSafeEnv('VITE_API_KEY') || 
+  getSafeEnv('VITE_GEMINI_API_KEY') || 
+  getSafeEnv('VITE_GOOGLE_API_KEY') || 
+  getSafeEnv('API_KEY'); // Fallback for server-side/testing
+
 export const SUPABASE_URL = getSafeEnv('VITE_SUPABASE_URL');
 export const SUPABASE_ANON_KEY = getSafeEnv('VITE_SUPABASE_ANON_KEY');
 

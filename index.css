@@ -29,41 +29,72 @@ body {
   background: #94a3b8; 
 }
 
-/* Print Styles for PDF Export */
+/* Print Styles for PDF Export & One-Pager */
 @media print {
-  /* Hide all UI elements */
-  body * {
-    visibility: hidden;
-  }
-  
-  /* Show only the slide containers */
-  .min-h-screen.bg-white.text-black.p-0,
-  .min-h-screen.bg-white.text-black.p-0 * {
-    visibility: visible;
+  /* Global Hide Logic */
+  nav, aside, footer, button, .no-print {
+    display: none !important;
   }
 
-  .min-h-screen.bg-white.text-black.p-0 {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    margin: 0;
-    padding: 0;
-  }
-
-  /* Ensure background colors print */
-  * {
+  /* Layout Overrides */
+  body {
+    background-color: white !important;
+    font-size: 12pt;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
 
-  /* Page Break Logic */
+  .min-h-screen {
+    min-height: auto !important;
+    height: auto !important;
+    padding: 0 !important;
+  }
+
+  /* Force cards to look clean */
+  .bg-white, .bg-slate-50, .bg-indigo-50 {
+    box-shadow: none !important;
+    border: 1px solid #eee !important;
+  }
+
+  /* Grid Fixes */
+  .grid {
+    display: block !important;
+  }
+  .lg\:col-span-8 {
+    width: 100% !important;
+  }
+  .lg\:col-span-4 {
+    display: none !important; /* Hide sidebar in print unless specified */
+  }
+
+  /* Component Specifics */
+  .space-y-8 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 1.5rem !important; /* Tighten spacing */
+  }
+
+  /* Page Break Handling */
   .page-break {
     break-after: page;
     page-break-after: always;
-    height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  }
+  
+  .print\:block {
+    display: block !important;
+  }
+  
+  .print\:hidden {
+    display: none !important;
+  }
+  
+  .print\:space-y-8 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 2rem !important;
+  }
+  
+  .print\:w-full {
+    width: 100% !important;
+  }
+  
+  .print\:break-inside-avoid {
+    break-inside: avoid;
   }
 }

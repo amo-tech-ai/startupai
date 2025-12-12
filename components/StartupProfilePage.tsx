@@ -1,12 +1,13 @@
 
 import React, { useState } from 'react';
-import { Eye, Edit3, Presentation, CheckCircle2, Share2, Copy, Lock, Globe } from 'lucide-react';
+import { Eye, Edit3, Presentation, CheckCircle2, Share2, Copy, Lock, Globe, Printer } from 'lucide-react';
 import { useData } from '../context/DataContext';
 import { OverviewCard } from './startup-profile/OverviewCard';
 import { TeamCard } from './startup-profile/TeamCard';
 import { BusinessCard } from './startup-profile/BusinessCard';
 import { TractionCard } from './startup-profile/TractionCard';
 import { SummaryCard } from './startup-profile/SummaryCard';
+import { ShareModal } from './startup-profile/ShareModal';
 import { useNavigate } from 'react-router-dom';
 import { useSaveStartupProfile } from '../hooks/useSaveStartupProfile';
 import { useStartupProfile } from '../hooks/useStartupProfile';
@@ -17,9 +18,10 @@ const StartupProfilePage: React.FC = () => {
   const { profile: globalProfile } = useData(); 
   const { data: profileDTO, loading, reload } = useStartupProfile(globalProfile?.id);
   const { saveProfile, isSaving } = useSaveStartupProfile();
-  const { success, error: toastError } = useToast();
+  const { success, error: toastError, info } = useToast();
   const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<'edit' | 'investor'>('edit');
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
   if (loading && !globalProfile) return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
@@ -123,30 +125,27 @@ const StartupProfilePage: React.FC = () => {
       reload();
   };
 
-  const copyPublicLink = async () => {
-      try {
-        const url = `${window.location.origin}/#/s/${displayProfile!.id}`;
-        await navigator.clipboard.writeText(url);
-        success("Public profile link copied!");
-      } catch (err) {
-        // Fallback or quiet fail if permissions denied
-        console.warn("Clipboard access denied", err);
-        toastError("Could not copy link to clipboard.");
-      }
-  };
-
   const toggleVisibility = async () => {
       const newValue = !displayProfile!.isPublic;
       await handleSaveContext({ isPublic: newValue });
       success(newValue ? "Profile is now public!" : "Profile is now private.");
   };
 
+  const handlePrint = () => {
+      setViewMode('investor');
+      // Delay print to allow React to render 'investor' mode state
+      info("Preparing One-Pager PDF...");
+      setTimeout(() => {
+          window.print();
+      }, 500);
+  };
+
   return (
-    <div className="min-h-screen bg-slate-50 pb-20 font-sans text-slate-900">
+    <div className="min-h-screen bg-slate-50 pb-20 font-sans text-slate-900 print:bg-white print:p-0">
       <div className="container mx-auto px-4 md:px-6 lg:px-8 max-w-7xl pt-4 lg:pt-8 animate-in fade-in duration-500">
         
-        {/* HEADER */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        {/* HEADER (Hidden in Print) */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 print:hidden">
             <div>
                 <div className="flex items-center gap-3 mb-1">
                     <h1 className="text-3xl font-bold text-slate-900">{displayProfile.name}</h1>
@@ -174,6 +173,12 @@ const StartupProfilePage: React.FC = () => {
                     </button>
                 </div>
                 <button 
+                    onClick={() => setIsShareModalOpen(true)}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-lg font-bold shadow-sm hover:bg-slate-50 transition-all"
+                >
+                    <Share2 size={18} /> Share
+                </button>
+                <button 
                     onClick={() => navigate('/pitch-decks')}
                     className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-lg font-bold shadow-lg shadow-indigo-600/20 hover:bg-indigo-700 hover:-translate-y-0.5 transition-all"
                 >
@@ -182,36 +187,60 @@ const StartupProfilePage: React.FC = () => {
             </div>
         </div>
 
+        {/* PRINT HEADER (Visible only in Print) */}
+        <div className="hidden print:block mb-8 border-b border-slate-200 pb-4">
+            <h1 className="text-4xl font-bold text-slate-900 mb-2">{displayProfile.name}</h1>
+            <p className="text-xl text-slate-600">{displayProfile.tagline}</p>
+            <div className="flex gap-4 mt-4 text-sm text-slate-500">
+                <span>{displayProfile.industry}</span>
+                <span>•</span>
+                <span>{displayProfile.stage}</span>
+                <span>•</span>
+                <span>Global</span>
+            </div>
+        </div>
+
         {/* CONTENT GRID */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start print:block print:space-y-8">
             
             {/* MAIN COLUMN (8 cols) */}
-            <div className="lg:col-span-8 space-y-8">
-                <OverviewCard 
-                    viewMode={viewMode} 
-                    profile={displayProfile} 
-                    onSave={handleSaveContext} 
-                />
-                <BusinessCard 
-                    viewMode={viewMode} 
-                    profile={displayProfile}
-                    onSave={handleSaveContext}
-                />
-                <TractionCard 
-                    viewMode={viewMode} 
-                    profile={displayProfile}
-                    metrics={profileDTO?.metrics}
-                    onSave={handleSaveContext}
-                />
-                <TeamCard 
-                    viewMode={viewMode} 
-                    founders={displayFounders}
-                    onSave={(founders) => saveProfile({ startup_id: displayProfile!.id, founders })}
-                />
+            <div className="lg:col-span-8 space-y-8 print:w-full">
+                <div className="print:break-inside-avoid">
+                    <OverviewCard 
+                        viewMode={viewMode} 
+                        profile={displayProfile} 
+                        onSave={handleSaveContext} 
+                    />
+                </div>
+                
+                <div className="print:break-inside-avoid">
+                    <BusinessCard 
+                        viewMode={viewMode} 
+                        profile={displayProfile}
+                        onSave={handleSaveContext}
+                    />
+                </div>
+
+                <div className="print:break-inside-avoid">
+                    <TractionCard 
+                        viewMode={viewMode} 
+                        profile={displayProfile}
+                        metrics={profileDTO?.metrics}
+                        onSave={handleSaveContext}
+                    />
+                </div>
+
+                <div className="print:break-inside-avoid">
+                    <TeamCard 
+                        viewMode={viewMode} 
+                        founders={displayFounders}
+                        onSave={(founders) => saveProfile({ startup_id: displayProfile!.id, founders })}
+                    />
+                </div>
             </div>
 
-            {/* SIDEBAR COLUMN (4 cols) */}
-            <div className="lg:col-span-4 space-y-6 lg:sticky lg:top-24">
+            {/* SIDEBAR COLUMN (4 cols) - Hidden in Print or Adjusted */}
+            <div className="lg:col-span-4 space-y-6 lg:sticky lg:top-24 print:hidden">
                 <SummaryCard profile={displayProfile} />
                 
                 <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
@@ -244,7 +273,10 @@ const StartupProfilePage: React.FC = () => {
                         
                         <div className="grid grid-cols-2 gap-2 mt-4 pt-4 border-t border-slate-100">
                             <button 
-                                onClick={copyPublicLink}
+                                onClick={() => {
+                                    navigator.clipboard.writeText(`${window.location.origin}/#/s/${displayProfile!.id}`);
+                                    success("Link copied!");
+                                }}
                                 disabled={!displayProfile.isPublic}
                                 className="py-2 border border-slate-200 text-slate-600 text-xs font-bold rounded-lg hover:bg-slate-50 flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
@@ -269,6 +301,15 @@ const StartupProfilePage: React.FC = () => {
 
         </div>
       </div>
+
+      <ShareModal 
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        isPublic={!!displayProfile.isPublic}
+        onTogglePublic={toggleVisibility}
+        publicUrl={`${window.location.origin}/#/s/${displayProfile.id}`}
+        onDownloadPdf={handlePrint}
+      />
     </div>
   );
 };

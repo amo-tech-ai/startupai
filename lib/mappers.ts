@@ -97,6 +97,7 @@ export const mapUserProfileFromDB = (data: any): UserProfile => ({
   location: data.location,
   bio: data.bio,
   avatarUrl: data.avatar_url,
+  coverImageUrl: data.cover_image_url,
   socials: data.social_links || {},
   phone: data.phone,
   experiences: data.experiences || [],
@@ -111,6 +112,7 @@ export const mapUserProfileToDB = (data: Partial<UserProfile>) => {
   if (data.location) payload.location = data.location;
   if (data.bio) payload.bio = data.bio;
   if (data.avatarUrl) payload.avatar_url = data.avatarUrl;
+  if (data.coverImageUrl) payload.cover_image_url = data.coverImageUrl;
   if (data.socials) payload.social_links = data.socials;
   if (data.phone) payload.phone = data.phone;
   if (data.experiences) payload.experiences = data.experiences;

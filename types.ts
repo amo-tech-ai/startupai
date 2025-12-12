@@ -75,6 +75,7 @@ export interface UserProfile {
   location?: string;
   bio?: string;
   avatarUrl?: string;
+  coverImageUrl?: string;
   socials: {
     website?: string;
     linkedin?: string;

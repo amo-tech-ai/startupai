@@ -24,6 +24,7 @@ export const AddContactSidebar: React.FC<AddContactSidebarProps> = ({ isOpen, on
   const [url, setUrl] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [currentTagInput, setCurrentTagInput] = useState('');
   
   // Form State
   const [formData, setFormData] = useState({
@@ -70,6 +71,7 @@ export const AddContactSidebar: React.FC<AddContactSidebarProps> = ({ isOpen, on
       });
       setUrl('');
     }
+    setCurrentTagInput('');
   }, [contact, isOpen]);
 
   const handleSmartAutofill = async () => {
@@ -105,6 +107,21 @@ export const AddContactSidebar: React.FC<AddContactSidebarProps> = ({ isOpen, on
     } finally {
       setIsAnalyzing(false);
     }
+  };
+
+  const handleAddTag = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      const val = currentTagInput.trim().replace(/,/g, '');
+      if (val && !formData.tags.includes(val)) {
+        setFormData(prev => ({ ...prev, tags: [...prev.tags, val] }));
+        setCurrentTagInput('');
+      }
+    }
+  };
+
+  const handleRemoveTag = (tagToRemove: string) => {
+    setFormData(prev => ({ ...prev, tags: prev.tags.filter(t => t !== tagToRemove) }));
   };
 
   const handleSaveContact = async () => {
@@ -332,13 +349,29 @@ export const AddContactSidebar: React.FC<AddContactSidebarProps> = ({ isOpen, on
 
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Tags</label>
+                  
+                  {/* Tag Chips */}
+                  {formData.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {formData.tags.map((tag, idx) => (
+                        <span key={idx} className="bg-indigo-50 text-indigo-700 px-2 py-1 rounded-md text-xs font-medium border border-indigo-100 flex items-center gap-1">
+                          {tag}
+                          <button onClick={() => handleRemoveTag(tag)} className="hover:text-indigo-900">
+                            <X size={12} />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
                   <div className="relative">
                     <Tag className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                     <input 
                       type="text" 
-                      placeholder='e.g. "Fintech", "Pre-seed", "Warm intro"'
-                      value={formData.tags.join(', ')}
-                      onChange={e => setFormData({...formData, tags: e.target.value.split(',').map(t => t.trim())})}
+                      placeholder='Type tag and press Enter...'
+                      value={currentTagInput}
+                      onChange={e => setCurrentTagInput(e.target.value)}
+                      onKeyDown={handleAddTag}
                       className="w-full pl-9 p-2.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
                     />
                   </div>

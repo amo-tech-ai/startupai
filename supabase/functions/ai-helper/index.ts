@@ -43,8 +43,6 @@ serve(async (req) => {
        });
        result = JSON.parse(response.text || '{}');
     } 
-    
-    // --- ENHANCED CONTEXT ANALYSIS (Step 1 -> Step 2) ---
     else if (action === 'analyze_context') {
         const { inputs } = payload;
         const urlList = [inputs.website, inputs.linkedin, ...(inputs.additionalUrls || [])].filter(Boolean).join(', ');
@@ -155,7 +153,80 @@ serve(async (req) => {
         const cleaned = cleanJson(response.text);
         result = JSON.parse(cleaned);
     }
-    // ... (Other handlers unchanged)
+    // --- V3: TRACTION ANALYSIS ---
+    else if (action === 'analyze_traction') {
+        const { metrics, industry, stage } = payload;
+        const prompt = `
+            Act as a Senior VC Analyst.
+            Context: A ${stage} stage ${industry} startup.
+            Metrics provided: ${JSON.stringify(metrics)}.
+
+            Task:
+            1. Use Google Search to find current 2024/2025 benchmarks for ${industry} startups at ${stage} stage (Typical MRR, Growth Rates, Burn).
+            2. Compare the provided metrics against these benchmarks.
+            3. Identify "Green Flags" (strengths/traction) and "Red Flags" (risks).
+            4. Provide an investor interpretation.
+
+            Output JSON:
+            \`\`\`json
+            {
+                "investor_interpretation": "A brutally honest 1-sentence VC take on their traction.",
+                "stage_alignment": "Early Validation | Growing | Scaling | Pre-Product",
+                "benchmark_context": "Short summary of market avg (e.g. 'Median Seed SaaS MRR is $15k with 15% MoM growth').",
+                "green_flags": ["string"],
+                "red_flags": ["string"],
+                "recommended_next_metrics": [
+                    { "metric": "string", "target": "string", "timeframe": "string" }
+                ]
+            }
+            \`\`\`
+        `;
+        const response = await ai.models.generateContent({
+            model: 'gemini-3-pro-preview',
+            contents: prompt,
+            config: { 
+                tools: [{ googleSearch: {} }]
+            }
+        });
+        result = JSON.parse(cleanJson(response.text));
+    }
+    // --- V3: FUNDRAISING CALCULATOR ---
+    else if (action === 'calculate_fundraising') {
+        const { metrics, industry, stage, targetRaise } = payload;
+        const prompt = `
+            Act as a Senior VC Analyst.
+            Context: ${stage} stage ${industry} startup.
+            Financials: ${JSON.stringify(metrics)}.
+            Target Raise: $${targetRaise}.
+
+            Task:
+            1. Calculate implied runway from cash/burn (if burn > 0).
+            2. Use Google Search to find current 2024/2025 valuation multiples for ${industry} at ${stage}.
+            3. Estimate a defensible pre-money valuation range.
+            4. Determine the appropriate raise amount based on typical 18-24mo runway needs.
+
+            Output JSON:
+            \`\`\`json
+            {
+                "runway_months": number,
+                "recommended_stage": "Pre-Seed | Seed | Series A",
+                "valuation_range": { "min": number (in millions), "max": number (in millions), "reasoning": "string" },
+                "raise_sanity_check": { "status": "Healthy | Aggressive | Conservative", "message": "string" },
+                "benchmark_logic": "string (citations of multiples/market data)"
+            }
+            \`\`\`
+        `;
+        const response = await ai.models.generateContent({
+            model: 'gemini-3-pro-preview',
+            contents: prompt,
+            config: { 
+                tools: [{ googleSearch: {} }],
+                thinkingConfig: { thinkingBudget: 2048 }
+            }
+        });
+        result = JSON.parse(cleanJson(response.text));
+    }
+    // ... (Other legacy handlers)
     else if (action === 'generate_summary') {
        const { profile } = payload;
        const prompt = `Act as a VC analyst. Write a 3-paragraph executive summary. Startup: ${JSON.stringify(profile)}. Return JSON: { "summary": "HTML string..." }`;

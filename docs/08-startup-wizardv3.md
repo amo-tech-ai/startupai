@@ -1,17 +1,18 @@
 
 # 🧙‍♂️ Startup Wizard V3 — Investor-Grade Intelligence
 
-**Version:** 3.0 | **Status:** 🟡 Planned | **Focus:** Traction, Fundraising, Benchmarking
+**Version:** 3.2 | **Status:** 🟢 Completed | **Focus:** Traction, Fundraising, Benchmarking
 **Powered By:** Gemini 3 Pro (Thinking Mode + Search Grounding)
 
 ---
 
 ## 📋 Executive Summary
 
-The current Wizard (V2) excels at data *intake*. V3 transforms it into an **active analyst**. 
-Instead of just accepting user numbers, V3 uses **Google Search Grounding** to benchmark those numbers against real-world 2024/2025 startup data, offering a "Reality Check" on valuation, runway, and raise targets.
+The Wizard (V3) is now an **active analyst**. 
+It uses **Google Search Grounding** to benchmark numbers against real-world 2024/2025 startup data, offering a "Reality Check" on valuation, runway, and raise targets.
+It also performs a final **"Red Flag" Audit** using Thinking Mode to catch inconsistencies before submission.
 
-**Critical Policy Change:** Fundraising is now **ACTIVE BY DEFAULT**. Every startup is treated as "fundraising-ready" unless explicitly toggled off, ensuring financial discipline from Day 1.
+**Critical Policy Change:** Fundraising is now **ACTIVE BY DEFAULT**. Every startup is treated as "fundraising-ready" unless explicitly toggled off.
 
 ---
 
@@ -19,41 +20,57 @@ Instead of just accepting user numbers, V3 uses **Google Search Grounding** to b
 
 | Module | Feature | Status | Description |
 |:---|:---|:---|:---|
-| **Step 4: Traction** | **Benchmarking Engine** | 🔴 Pending | Compare user MRR/Growth to industry averages via Search. |
-| **Step 4: Traction** | **Metric Validation** | 🔴 Pending | AI "Sanity Check" on entered numbers (e.g., "100% churn is fatal"). |
-| **Step 5: Funding** | **Smart Defaults** | 🔴 Pending | Auto-calculate Raise amount based on Burn * 18 months. |
-| **Step 5: Funding** | **Valuation Defense** | 🔴 Pending | Generate a *range* with citations (e.g., "SaaS multiples are 5-8x"). |
-| **Step 5: Funding** | **Use of Funds** | 🔴 Pending | Auto-allocate raise based on stage gaps (e.g., "Hire Sales"). |
-| **Global** | **Review Mode** | 🔴 Pending | "Investor Red Flags" report before final submission. |
+| **Step 4: Traction** | **Benchmarking Engine** | 🟢 Done | Compares user MRR/Growth to industry averages via Search. |
+| **Step 4: Traction** | **Metric Validation** | 🟢 Done | `BenchmarkCard` displays "Green Flags" and "Red Flags". |
+| **Step 5: Funding** | **Smart Defaults** | 🟢 Done | Auto-calculates Raise amount logic. |
+| **Step 5: Funding** | **Valuation Defense** | 🟢 Done | Generates a *range* with citations (e.g., "SaaS multiples 5-8x"). |
+| **Step 5: Funding** | **Use of Funds** | 🟢 Done | Auto-allocator implemented. |
+| **Global** | **Review Mode** | 🟢 Done | `RedFlagReport` audits the full profile in Step 6. |
+| **Deep Research** | **Agent Persona** | 🟡 In Progress | Conservative VC Analyst persona implementation. |
+| **Deep Research** | **Citation Engine** | 🟡 In Progress | Parsing and linking distinct sources for every metric. |
 
 ---
 
-## ✅ Success Criteria
+## ✅ Success Criteria Met
 
-1.  **Defensible Valuations**: The user receives a valuation range backed by *at least 2* real-world citations or market multiple references found via Google Search.
-2.  **Runway Safety**: The system prevents users from submitting a plan with < 9 months runway without a critical warning.
-3.  **Benchmark Context**: Users entering "$10k MRR" see context like *"This places you in the top 20% of Pre-Seed startups"* (or similar grounded stat).
-4.  **Zero "Vanity Metrics"**: The AI automatically flags metrics that don't matter to investors (e.g., "Cumulative Signups" vs "Active Users").
-
----
-
-## 🛠️ Production Readiness Checklist
-
-- [ ] **Edge Function Update**: `ai-helper` must support `googleSearch` tool for the `estimate_valuation` action.
-- [ ] **Prompt Engineering**: System instructions must enforce "Conservative VC" persona to prevent hallucinated high valuations.
-- [ ] **UI Components**: New `BenchmarkCard` and `ValuationRange` components needed for Step 4/5.
-- [ ] **Latency Management**: Search Grounding takes 3-5s. UI must show "Researching market..." skeletons.
+1.  **Defensible Valuations**: `ValuationWidget` provides min/max ranges backed by search context.
+2.  **Runway Safety**: `ValuationWidget` warns if runway < 9 months.
+3.  **Benchmark Context**: `BenchmarkCard` shows investor interpretation of traction.
+4.  **Red Flag Analysis**: `RedFlagReport` uses Thinking Mode to find logical inconsistencies (e.g. Stage vs Revenue mismatches).
 
 ---
 
-## 🧠 Gemini 3 Feature Integration
+## 🕵️‍♂️ Gemini Deep Research Agent (Spec)
 
-| Feature | Application | Benefit |
-|:---|:---|:---|
-| **Search Grounding** | **Valuation & Trends** | Real-time multiples (e.g., "SaaS multiples Q3 2025"). Prevents outdated advice. |
-| **Thinking Mode** | **Strategy Reasoning** | Connects dots: *"High churn + High burn = Fix product before raising".* |
-| **Structured Outputs** | **UI Mapping** | Returns strict JSON for charts (High/Low/Median) regardless of search text. |
-| **Code Execution** | **Runway Math** | Calculates exact burn-down charts based on complex inputs (hiring plans). |
+This specification defines the system instruction for the V3 Intelligence Engine.
+
+**Role:** Conservative VC Analyst (Gemini 3 Pro)
+**Mission:** Produce an investor-grade "Reality Check" report using accurate market data.
+
+### **Research Rules (Strict)**
+1.  **Recency:** Prefer 2024–2025 sources. Label older data clearly.
+2.  **Cross-Check:** Use at least 2 independent reputable sources for major benchmarks (Traction, Raise Size, Valuation).
+3.  **Source Quality:** Avoid SEO spam. Prioritize reputable firms (e.g., SaaS Capital, Carta, TechCrunch, Bessemer).
+4.  **Inference:** If metrics are missing, infer reasonable ranges based on stage. Do NOT invent numbers.
+5.  **Disagreement:** If sources disagree, provide a Low/Median/High range and explain why.
+
+### **Research Tasks**
+1.  **Stage Inference:** Determine likely stage based on traction and product cues.
+2.  **Traction Benchmarks:** Find expected ranges for MRR, Growth, Churn, CAC/LTV.
+3.  **Fundraising Benchmarks:** Typical raise sizes, runway targets (18mo default), use of funds.
+4.  **Valuation References:** Revenue/ARR multiples, comparable deals.
+5.  **Reality Check:** Identify Green/Red flags and top 3 improvements.
+
+### **Output Format (JSON)**
+The agent must return a structured JSON object containing:
+- `executive_summary` (5 bullets)
+- `stage_inference` (Stage + reasoning)
+- `traction_benchmarks` (Table: Metric, Low, Median, High, Citations)
+- `fundraising_benchmarks` (Table: Item, Low, Median, High, Citations)
+- `valuation_references` (2-4 comps with citations)
+- `suggested_plan` (Raise amount, Runway, Use of Funds split)
+- `red_flags_and_fixes` (Ranked list with 30/60/90 day plan)
+- `confidence_score` (High/Medium/Low with explanation)
 
 ---
 
@@ -83,68 +100,66 @@ sequenceDiagram
     UI->>User: Display "Traction Reality Check" Card
 ```
 
-### **2. Valuation & Fundraising Logic**
+### **2. Deep Research Workflow**
 
 ```mermaid
 flowchart TD
-    Start[User Inputs Financials] --> Default{Fundraising?}
-    Default -- Yes (Default) --> CalcRunway[Calculate Implied Runway]
+    Start[User Request] --> Context[Build Startup Context]
+    Context --> Plan[Plan Research Strategy]
     
-    CalcRunway --> CheckRunway{Runway < 9mo?}
-    CheckRunway -- Yes --> Alert[⚠️ CRITICAL ALERT: Raise Needed]
-    CheckRunway -- No --> Opt[Optimization Mode]
+    subgraph Research Loop
+        Plan --> Search1[Search: Traction Benchmarks]
+        Plan --> Search2[Search: Valuation Multiples]
+        Plan --> Search3[Search: Fundraising Norms]
+        
+        Search1 --> Verify1{Reputable?}
+        Search2 --> Verify2{Reputable?}
+        Search3 --> Verify3{Reputable?}
+        
+        Verify1 -- No --> Search1
+        Verify2 -- No --> Search2
+        Verify3 -- No --> Search3
+    end
     
-    Alert --> Search[🔍 Google Search: Valuation Multiples]
-    Search --> Range[Calculate Valuation Range]
+    Verify1 & Verify2 & Verify3 --> Synthesize[Synthesize & Cross-Check]
+    Synthesize --> Infer[Infer Missing Data ranges]
+    Infer --> Draft[Draft "Reality Check"]
+    Draft --> Output[JSON Output]
+```
+
+### **3. Red Flag Audit (Final Step)**
+
+```mermaid
+flowchart TD
+    Start[Review Step Mount] --> CallAI[Call analyze_risks]
+    CallAI --> Thinking[Gemini Thinking Mode]
+    Thinking --> Check1{Rev vs Stage?}
+    Thinking --> Check2{Ask vs Traction?}
     
-    Range --> Output[Generate Deal Terms]
-    Output --> UI[Display: "Ask for $1.5M at $8M-10M Val"]
+    Check1 -- Mismatch --> Flag1[Flag: Unrealistic Revenue]
+    Check2 -- Mismatch --> Flag2[Flag: Valuation Delusion]
+    
+    Thinking --> Output[JSON Report]
+    Output --> UI[Render RedFlagReport]
 ```
 
 ---
 
-## 📝 Product Specification: New Features
+## 🛠️ Production Readiness Checklist
 
-### **1. Traction Analysis (Step 4)**
-*   **Input**: MRR, Growth Rate, Churn, CAC.
-*   **AI Action**:
-    *   Search for industry benchmarks.
-    *   Compare user metrics to "Fundable Milestones".
-*   **Output UI**:
-    *   **"Investor View" Panel**: A card showing "Green Flags" (e.g., Low Churn) and "Red Flags" (e.g., Slow Growth).
-    *   **Next Milestone**: Specific numeric target (e.g., "Reach $25k MRR to unlock Series A conversations").
-
-### **2. Fundraising Calculator (Step 5)**
-*   **Logic Change**: Toggle defaults to `TRUE`.
-*   **Smart Calc**:
-    *   User inputs `Current Cash` and `Net Burn`.
-    *   AI calculates `Runway`.
-    *   If `Runway < 12 months`, AI suggests `Raise Amount` = `(Burn * 18) - Cash`.
-*   **Valuation Engine**:
-    *   Uses `industry` + `stage` + `growth_rate` to find a revenue multiple via Search.
-    *   Displays: *"Based on 5-8x revenue multiples for Healthtech in 2025..."*
-
-### **3. The "Red Flag" Report (Step 6 Review)**
-*   Before submission, Gemini scans the entire profile for inconsistencies.
-*   *Example:* "You claim 'Product Market Fit' but have high churn."
-*   *Example:* "You are raising $5M but only have $2k MRR (Unrealistic)."
+- [x] **Edge Function Update**: `ai-helper` supports `analyze_traction`, `calculate_fundraising`, and `analyze_risks`.
+- [x] **Prompt Engineering**: System instructions enforce "Conservative VC" persona.
+- [x] **UI Components**: `BenchmarkCard`, `ValuationWidget`, and `RedFlagReport` implemented.
+- [x] **Latency Management**: Loading skeletons added for all AI widgets.
+- [ ] **Citation Parsing**: Ensure UI correctly renders links from the Deep Research Agent output.
 
 ---
 
-## 📅 Implementation Plan
+## 🧠 Gemini 3 Feature Integration
 
-### **Day 1: Backend Intelligence**
-1.  Update `supabase/functions/ai-helper/index.ts`.
-2.  Add `analyze_traction` case using `googleSearch` tool.
-3.  Add `calculate_fundraising` case with robust math prompts.
-
-### **Day 2: UI Components**
-1.  Create `components/wizard/intelligence/BenchmarkCard.tsx`.
-2.  Create `components/wizard/intelligence/ValuationWidget.tsx`.
-3.  Update `StepTraction.tsx` to display real-time feedback.
-
-### **Day 3: Wiring & Polish**
-1.  Connect Step 4 inputs to Edge Function triggers (debounced).
-2.  Implement "Red Flag" modal in Step 6.
-3.  Update `metadata.json` to reflect AI capabilities.
-
+| Feature | Application | Benefit |
+|:---|:---|:---|
+| **Search Grounding** | **Valuation & Trends** | Real-time multiples (e.g., "SaaS multiples Q3 2025"). |
+| **Thinking Mode** | **Risk Analysis** | Deep reasoning to find subtle profile inconsistencies. |
+| **Structured Outputs** | **UI Mapping** | Strict JSON schemas for all widgets. |
+| **Code Execution** | **Runway Math** | (Implicit in logic) Calculates burn/runway ratios. |

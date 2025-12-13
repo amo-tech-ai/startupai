@@ -3,11 +3,12 @@ import React, { useEffect, useState } from 'react';
 import { 
   Trophy, AlertTriangle, Sparkles, Loader2, Check, 
   Building2, Users, TrendingUp, Target, DollarSign, Globe,
-  RefreshCw, ArrowRight, Edit2
+  RefreshCw, ArrowRight, Edit2, ShieldCheck
 } from 'lucide-react';
 import { WizardService } from '../../../services/wizardAI';
 import { API_KEY } from '../../../lib/env';
 import { WizardFormData } from '../types';
+import { RedFlagReport } from '../intelligence/RedFlagReport';
 
 interface StepSummaryProps {
   formData: WizardFormData;
@@ -30,7 +31,9 @@ const getStepForMissingItem = (item: string): number => {
 export const StepSummary: React.FC<StepSummaryProps> = ({ formData, setFormData, goToStep }) => {
   const [profileScore, setProfileScore] = useState(0);
   const [missingItems, setMissingItems] = useState<string[]>([]);
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
+  const [isAnalyzingRisks, setIsAnalyzingRisks] = useState(false);
+  const [riskAnalysis, setRiskAnalysis] = useState<any>(null);
 
   useEffect(() => {
     // Calculate Score
@@ -72,21 +75,39 @@ export const StepSummary: React.FC<StepSummaryProps> = ({ formData, setFormData,
     setMissingItems(missing);
 
     // Auto-generate summary if empty
-    if (!formData.aiSummary && API_KEY && !isGenerating) {
+    if (!formData.aiSummary && API_KEY && !isGeneratingSummary) {
         handleImproveWithAI();
+    }
+
+    // Trigger Risk Analysis automatically
+    if (API_KEY && !riskAnalysis && !isAnalyzingRisks) {
+        handleAnalyzeRisks();
     }
   }, []);
 
   const handleImproveWithAI = async () => {
       if (!API_KEY) return;
-      setIsGenerating(true);
+      setIsGeneratingSummary(true);
       try {
         const summary = await WizardService.generateSummary(formData, API_KEY);
         if (summary) setFormData((prev: any) => ({ ...prev, aiSummary: summary }));
       } catch (e) {
         console.error("Failed to generate summary", e);
       } finally {
-        setIsGenerating(false);
+        setIsGeneratingSummary(false);
+      }
+  };
+
+  const handleAnalyzeRisks = async () => {
+      if (!API_KEY) return;
+      setIsAnalyzingRisks(true);
+      try {
+          const result = await WizardService.analyzeRisks(formData, API_KEY);
+          if (result) setRiskAnalysis(result);
+      } catch (e) {
+          console.error("Risk analysis failed", e);
+      } finally {
+          setIsAnalyzingRisks(false);
       }
   };
 
@@ -115,6 +136,10 @@ export const StepSummary: React.FC<StepSummaryProps> = ({ formData, setFormData,
 
   return (
     <div className="space-y-8 animate-in slide-in-from-right-4 duration-500 pb-12">
+       
+       {/* 0. Red Flag Analysis (V3 Feature) */}
+       <RedFlagReport analysis={riskAnalysis} isLoading={isAnalyzingRisks} />
+
        {/* 1. Header & Score */}
        <div className="grid md:grid-cols-3 gap-6">
            {/* Profile Strength */}
@@ -232,15 +257,15 @@ export const StepSummary: React.FC<StepSummaryProps> = ({ formData, setFormData,
                    </div>
                    <button 
                        onClick={handleImproveWithAI}
-                       disabled={isGenerating}
+                       disabled={isGeneratingSummary}
                        className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-xs font-bold transition-all backdrop-blur-sm border border-white/10"
                    >
-                       {isGenerating ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
-                       {isGenerating ? 'Improving...' : 'Improve with AI'}
+                       {isGeneratingSummary ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+                       {isGeneratingSummary ? 'Improving...' : 'Improve with AI'}
                    </button>
                </div>
 
-               {isGenerating ? (
+               {isGeneratingSummary ? (
                    <div className="space-y-3 animate-pulse opacity-50">
                        <div className="h-4 bg-white/20 rounded w-3/4"></div>
                        <div className="h-4 bg-white/20 rounded w-full"></div>

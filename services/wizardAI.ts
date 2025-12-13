@@ -160,6 +160,10 @@ export const WizardService = {
   async calculateFundraising(metrics: any, industry: string, stage: string, targetRaise: number, apiKey: string) {
     return runAI('calculate_fundraising', { metrics, industry, stage, targetRaise }, apiKey);
   },
+
+  async analyzeRisks(profile: any, apiKey: string) {
+    return runAI('analyze_risks', { profile }, apiKey);
+  },
   // ----------------------
 
   async suggestUseOfFunds(amount: number, stage: string, industry: string, apiKey: string) {

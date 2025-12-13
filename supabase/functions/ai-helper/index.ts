@@ -226,6 +226,54 @@ serve(async (req) => {
         });
         result = JSON.parse(cleanJson(response.text));
     }
+    // --- V3: RED FLAG ANALYST ---
+    else if (action === 'analyze_risks') {
+        const { profile } = payload;
+        const prompt = `
+            Act as a skeptical Venture Capitalist conducting Due Diligence.
+            Review this startup profile for logical inconsistencies, red flags, or unrealistic claims.
+            
+            Profile Data:
+            - Name: ${profile.name}
+            - Stage: ${profile.stage}
+            - MRR: $${profile.mrr || 0}
+            - Fundraising: Asking $${profile.targetRaise || 0}
+            - Team Size: ${profile.founders?.length || 1}
+            - Industry: ${profile.industry}
+            
+            Task:
+            1. Sanity check Stage vs Metrics (e.g. "Series A" with $0 revenue).
+            2. Sanity check Ask vs Traction (e.g. Raising $5M on idea stage).
+            3. Identify missing critical components (e.g. Solo founder, no technical lead).
+            4. Identify "Vague" claims (e.g. "We have no competitors").
+
+            Output JSON:
+            \`\`\`json
+            {
+                "overall_risk_level": "Low | Medium | High | Critical",
+                "risk_summary": "1 sentence overview.",
+                "issues": [
+                    {
+                        "severity": "Critical | Warning",
+                        "category": "Team | Financials | Market | Product",
+                        "title": "string",
+                        "description": "string",
+                        "fix": "Specific advice to resolve this."
+                    }
+                ],
+                "strengths": ["List 2-3 genuine strengths to balance the feedback"]
+            }
+            \`\`\`
+        `;
+        const response = await ai.models.generateContent({
+            model: 'gemini-3-pro-preview',
+            contents: prompt,
+            config: { 
+                thinkingConfig: { thinkingBudget: 4096 }
+            }
+        });
+        result = JSON.parse(cleanJson(response.text));
+    }
     // ... (Other legacy handlers)
     else if (action === 'generate_summary') {
        const { profile } = payload;

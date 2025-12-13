@@ -1,6 +1,6 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { EventData, EventStrategyAnalysis, EventLogisticsAnalysis } from "../types";
+import { EventData, EventStrategyAnalysis, EventLogisticsAnalysis, EventTask } from "../types";
 import { supabase } from "../lib/supabaseClient";
 
 export const EventAI = {
@@ -133,6 +133,61 @@ export const EventAI = {
         weatherForecast: "Weather data unavailable.",
         venueInsights: "No venue specific alerts."
       };
+    }
+  },
+
+  /**
+   * Final Step: Generate Operational Plan
+   * Generates a list of tasks backtracked from the event date.
+   */
+  async generateActionPlan(apiKey: string, eventData: EventData): Promise<any[]> {
+    const ai = new GoogleGenAI({ apiKey });
+
+    const prompt = `
+      Act as a Senior Event Producer.
+      
+      Create a detailed operational project plan for:
+      - Event: ${eventData.name} (${eventData.type})
+      - Date: ${eventData.date}
+      - City: ${eventData.city}
+      - Description: ${eventData.description}
+      
+      Generate a list of 10-15 critical tasks organized by phase (Strategy, Planning, Marketing, Operations, Post-Event).
+      
+      Output JSON format.
+    `;
+
+    try {
+      const response = await ai.models.generateContent({
+        model: 'gemini-3-pro-preview',
+        contents: prompt,
+        config: {
+          responseMimeType: 'application/json',
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              tasks: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    title: { type: Type.STRING },
+                    phase: { type: Type.STRING, enum: ['Strategy', 'Planning', 'Marketing', 'Operations', 'Post-Event'] },
+                    daysBeforeEvent: { type: Type.NUMBER, description: "Number of days before the event this task should be done" }
+                  }
+                }
+              }
+            }
+          },
+          thinkingConfig: { thinkingBudget: 1024 }
+        }
+      });
+
+      const result = JSON.parse(response.text || '{}');
+      return result.tasks || [];
+    } catch (e) {
+      console.error("Event Plan Generation Failed", e);
+      return [];
     }
   }
 };

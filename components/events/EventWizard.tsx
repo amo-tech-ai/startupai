@@ -3,8 +3,10 @@ import React, { useState } from 'react';
 import { Zap, Loader2, ArrowLeft, Sparkles, CheckCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../../context/ToastContext';
+import { useData } from '../../context/DataContext';
 import { API_KEY } from '../../lib/env';
 import { EventAI } from '../../services/eventAI';
+import { EventService } from '../../services/supabase/events';
 import { EventData, EventStrategyAnalysis, EventLogisticsAnalysis } from '../../types';
 
 // Steps
@@ -29,6 +31,7 @@ const INITIAL_DATA: EventData = {
 const EventWizard: React.FC = () => {
   const navigate = useNavigate();
   const { toast, success, error } = useToast();
+  const { profile } = useData();
   
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<EventData>(INITIAL_DATA);
@@ -116,15 +119,34 @@ const EventWizard: React.FC = () => {
         return;
     }
 
-    // Step 4 -> Finish
+    // Step 4 -> Finish (Generate Plan & Save)
     if (currentStep === 4) {
-        // Here we would call the final 'generate-event-plan' edge function to save to DB
+        if (!API_KEY) { error("API Key missing"); return; }
+        if (!profile?.id && formData.startupId === undefined) { 
+            // Fallback for guest mode or if profile context is missing
+            console.warn("No profile ID found"); 
+        }
+
         setIsProcessing(true);
-        setTimeout(() => {
+        toast("Generating Operational Plan...", "info");
+
+        try {
+            // 1. Generate Tasks
+            const tasks = await EventAI.generateActionPlan(API_KEY, formData);
+            
+            // 2. Save Event + Tasks to DB
+            const eventId = await EventService.create(formData, tasks, profile?.id || 'guest');
+            
+            success("Event Launched Successfully!");
+            setTimeout(() => {
+                navigate('/events'); 
+            }, 1000);
+        } catch (e) {
+            console.error(e);
+            error("Failed to save event.");
+        } finally {
             setIsProcessing(false);
-            success("Event Created! Redirecting to Dashboard...");
-            navigate('/dashboard'); // Placeholder: Should go to /events/id
-        }, 1500);
+        }
     }
   };
 

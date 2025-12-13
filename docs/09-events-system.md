@@ -1,9 +1,9 @@
 
 # 📅 StartupAI Events System — Architectural Blueprint
 
-**Version:** 1.0  
-**Status:** 🟡 Planned  
-**Target Model:** Gemini 3 Pro (Thinking + Search Grounding)  
+**Version:** 1.1  
+**Status:** 🟡 In Development  
+**Target Model:** Gemini 3 Pro (Thinking + Search Grounding + Interactions API)  
 **Image Model:** Nano Banana Pro (`gemini-3-pro-image-preview`)
 
 ---
@@ -120,7 +120,8 @@ A 4-step smart intake flow powered by Gemini 3 Pro.
 4.  **Ops (W-1):** Run of show, badges, catering finalization.
 5.  **Post (W+1):** Thank you notes, Lead processing.
 
-```flowchart
+```mermaid
+flowchart TD
     Start([User Completes Wizard]) --> AI[Gemini 3 Pro: Generate Plan]
     AI --> Logic{Is Virtual?}
     
@@ -144,6 +145,7 @@ erDiagram
     events ||--|{ event_tasks : contains
     events ||--|{ event_registrations : tracks
     events ||--|{ event_assets : owns
+    events ||--|{ event_budgets : monitors
     events {
         uuid id PK
         uuid startup_id FK
@@ -171,6 +173,14 @@ erDiagram
         string type "image|copy|agenda"
         text content
         string url
+    }
+    event_budgets {
+        uuid id PK
+        uuid event_id FK
+        string category
+        decimal estimated
+        decimal actual
+        boolean paid
     }
 ```
 
@@ -208,6 +218,8 @@ sequenceDiagram
 | **Structured Output** | Task Generation | Event Profile | Strict JSON array of tasks with due dates. |
 | **Nano Banana Pro** | Marketing Assets | "Tech mixer, neon theme" | 16:9 Hero Image, 1:1 Social Tile. |
 | **Function Calling** | CRM Sync | List of Attendees | Calls `sync_to_crm(attendees)`. |
+| **Code Execution** | Budget Sheet Generation | Line items + Costs | Downloadable `.csv` file. |
+| **Interactions API** | Event Concierge | "Who haven't we emailed?" | Real-time chat with state awareness. |
 
 ---
 
@@ -257,14 +269,15 @@ sequenceDiagram
 ### 2. Event Wizard (Modal)
 *   **Step 1:** Intake (Inputs + URL).
 *   **Step 2:** AI Analysis (The "Reality Check").
-*   **Step 3:** Confirmation.
+*   **Step 3:** Logistics (Date/Location).
+*   **Step 4:** Review & Launch.
 
 ### 3. Event Command Center (Detail View)
 *   **Tabs:** Overview, Tasks (Kanban), Marketing, Registrations, Budget.
 *   **Header:** Days to go, Status (On Track/At Risk).
 
 ### 4. Marketing Hub
-*   **Generator:** "Create Social Assets" button.
+*   **Generator:** "Create Social Assets" button using Nano Banana.
 *   **Gallery:** View generated images/copy.
 
 ---
@@ -289,17 +302,17 @@ sequenceDiagram
 ## 12. PRODUCTION-READY CHECKLIST
 
 ### Data Integrity
-- [ ] **Schema Validation:** Edge Functions must validate Gemini JSON against Zod schemas before DB insert.
+- [x] **Schema Validation:** Edge Functions must validate Gemini JSON against Zod schemas before DB insert.
 - [ ] **Transaction Safety:** Event + Tasks creation must be atomic.
 
 ### AI Reliability
-- [ ] **Grounding Check:** Ensure `googleSearch` tool is actually triggered for date checks.
+- [x] **Grounding Check:** Ensure `googleSearch` tool is actually triggered for date checks.
 - [ ] **Fallback:** If `gemini-3-pro` times out, fallback to `gemini-2.5-flash` for simple task generation.
 - [ ] **Thinking Budget:** Set `thinkingBudget: 2048` for the Strategy phase to ensure deep reasoning.
 
 ### UX/UI
-- [ ] **Optimistic UI:** Show "Drafting plan..." skeleton screens while AI thinks.
-- [ ] **Editability:** AI outputs must be editable by humans immediately.
+- [x] **Optimistic UI:** Show "Drafting plan..." skeleton screens while AI thinks.
+- [x] **Editability:** AI outputs must be editable by humans immediately.
 
 ---
 
@@ -356,23 +369,57 @@ create table public.event_assets (
 
 ---
 
-## 15. PROGRESS TRACKER
+## 17. ADVANCED FEATURES & IMPLEMENTATION (Gemini 3 Pro)
 
-| Feature | Status | Priority |
-|:---|:---|:---|
-| **Database Schema** | 🔴 Pending | P0 |
-| **Edge Function: `generate-event`** | 🔴 Pending | P0 |
-| **Wizard UI** | 🔴 Pending | P1 |
-| **Dashboard UI** | 🔴 Pending | P1 |
-| **Image Generation Integration** | 🔴 Pending | P2 |
+### 17.1 Post-Event Report (Deep Research)
+*   **Trigger:** Event status changes to "Completed".
+*   **Mechanism:**
+    1.  Ingest registration list (CSV) and attendance logs.
+    2.  Use **Gemini Code Execution** to calculate retention rates, no-show rates, and CAC per attendee.
+    3.  Use **Thinking Mode** to write a qualitative "Success Analysis" comparing outcomes against original Goals defined in Step 1.
+*   **Output:** A downloadable PDF or Dashboard Card showing "ROI Analysis" and "Lessons for Next Time".
+
+### 17.2 Interactions API (Event Concierge)
+*   **Concept:** A persistent chat agent aware of the specific event context.
+*   **Usage:**
+    *   *User:* "Who hasn't RSVP'd yet?"
+    *   *Agent:* Queries `event_registrations`, filters by status, and returns list.
+    *   *User:* "Draft a reminder email for them."
+    *   *Agent:* Generates copy using event tone.
+*   **Tech:** Uses `ai.chats.create` with specific event context injected into system instructions.
+
+### 17.3 Budget Optimization (Code Execution)
+*   **Feature:** "Optimize My Budget" button.
+*   **Logic:**
+    *   User uploads vendor quotes.
+    *   Gemini writes Python code to compare quotes against the total budget and suggests re-allocations (e.g., "Cut swag by 20% to afford the AV upgrade").
+    *   Generates a new `budget.csv` for download.
+
+### 17.4 Venue Scouting (Deep Research)
+*   **Feature:** "Find Venues" Agent.
+*   **Logic:**
+    *   User inputs: "Loft style, 100 people, Soho NYC, under $5k".
+    *   **Deep Research Agent:** Scans venue marketplaces and aggregator sites.
+    *   **Output:** List of 5 verified venues with *current* pricing estimates and contact links.
 
 ---
 
-## 16. FINAL VALIDATION
+## 18. DETAILED COMPONENT SPECIFICATIONS
 
-**Definition of Done:**
-1.  A user can create an event via Wizard.
-2.  Gemini generates a logical, date-aware task list.
-3.  The "AI Reality Check" screen correctly identifies a fake conflict (test case).
-4.  Tasks persist to Supabase.
-5.  An image asset can be generated and displayed.
+### **Marketing Assets Component**
+*   **Layout:** Grid of assets (Hero, Social, Email).
+*   **Action:** "Generate Bundle".
+*   **AI Logic:**
+    1.  Construct prompts based on Event Vibe + Brand Colors.
+    2.  Call `gemini-3-pro-image-preview` (Nano Banana).
+    3.  Return Base64 images -> Upload to Supabase Storage -> Display in Grid.
+
+### **Kanban Task Board (Event Specific)**
+*   **Columns:** To Do, In Progress, Blocked, Done.
+*   **Swimlanes:** Marketing, Logistics, Content, Speakers.
+*   **AI Feature:** "Suggest Subtasks" button on any card (e.g., Card "Book Caterer" -> AI suggests "Dietary survey", "Menu selection", "Deposit").
+
+### **Budget Tracker**
+*   **Visuals:** Progress bar (Spent vs Total).
+*   **List:** Line items with "Estimated" vs "Actual".
+*   **Alerts:** Red highlight if Actual > Estimated.

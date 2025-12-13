@@ -19,7 +19,8 @@ import Profile from './components/Profile';
 import StartupProfilePage from './components/StartupProfilePage';
 import StartupWizard from './components/StartupWizard';
 import PublicStartupProfile from './components/PublicStartupProfile';
-import EventWizard from './components/events/EventWizard'; // New Import
+import EventWizard from './components/events/EventWizard'; 
+import EventsDashboard from './components/events/EventsDashboard'; // New Import
 import Footer from './components/Footer';
 import { DataProvider, useData } from './context/DataContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -117,6 +118,9 @@ const AppContent = () => {
           
           {/* Startup Profile Management */}
           <Route path="/startup-profile" element={<StartupProfilePage />} />
+
+          {/* Events Dashboard */}
+          <Route path="/events" element={<EventsDashboard />} />
 
           {/* Pitch Decks Deep Linking */}
           <Route path="/pitch-decks" element={<PitchDecks />} />

@@ -35,7 +35,7 @@ const Sidebar: React.FC = () => {
   const menuItems = [
     { path: '/dashboard', icon: <LayoutDashboard size={20} />, label: 'Dashboard' },
     { path: '/startup-profile', icon: <Building size={20} />, label: 'Startup Profile' },
-    { path: '/events/new', icon: <Calendar size={20} />, label: 'Events' },
+    { path: '/events', icon: <Calendar size={20} />, label: 'Events' },
     { path: '/pitch-decks', icon: <FileText size={20} />, label: 'Pitch Decks' },
     { path: '/crm', icon: <Users size={20} />, label: 'CRM' },
     { path: '/documents', icon: <Files size={20} />, label: 'Documents' },

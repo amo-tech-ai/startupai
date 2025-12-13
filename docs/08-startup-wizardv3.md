@@ -79,3 +79,22 @@ flowchart TD
 - [x] **UI Components**: `BenchmarkCard`, `ValuationWidget`, and `RedFlagReport` implemented.
 - [x] **Latency Management**: Loading skeletons added for all AI widgets.
 - [x] **Schema**: Dedicated column added for research storage to prevent data loss.
+
+---
+
+## 🔮 Future Enhancements (V3.5 Roadmap)
+
+### 1. Interactive Scenario Modeling
+*   **Concept:** Instead of a static valuation range, allow founders to adjust inputs (Growth Rate, Churn, Margin) to see how specific performance shifts impact their valuation in real-time.
+*   **Tech:** Client-side re-calculation using the benchmarking logic provided by the `calculate_fundraising` agent.
+
+### 2. Pre-emptive "Risk Defense" Slides
+*   **Concept:** If the Red Flag Report identifies a specific weakness (e.g., "High Customer Concentration"), automatically generate a specific Pitch Deck slide titled "Risk Mitigation" that addresses this point using best-practice arguments.
+*   **Integration:** Link `RedFlagReport` output directly to `DeckService` to suggest slide insertions.
+
+### 3. Conversational Intake (Gemini Live)
+*   **Concept:** Replace the form-filling experience with a voice-based interview mode. "Tell me about your traction."
+*   **Tech:** Use the Multimodal Live API to transcribe and parse intent into the JSON schema, making onboarding feel like a coffee chat with an investor.
+
+### 4. Automated Data Room Structure
+*   **Concept:** Based on the specific due diligence risks found, auto-create the necessary folder structure in the Document Workspace (e.g., if "Regulatory Risk" is found, automatically create a "Compliance" folder with a placeholder checklist).

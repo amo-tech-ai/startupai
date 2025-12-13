@@ -249,6 +249,7 @@ export interface StartupProfileDTO {
 
 export interface EventData {
   id?: string;
+  startupId?: string;
   name: string;
   description: string;
   type: string;
@@ -263,6 +264,12 @@ export interface EventData {
   // AI Generated Data
   strategy?: EventStrategyAnalysis;
   logistics?: EventLogisticsAnalysis;
+  
+  // Database fields
+  status?: 'Planning' | 'Scheduled' | 'Completed';
+  budget_total?: number;
+  budget_spent?: number;
+  createdAt?: string;
 }
 
 export interface EventStrategyAnalysis {
@@ -278,4 +285,14 @@ export interface EventLogisticsAnalysis {
   conflicts: Array<{ name: string; date: string; impact: 'High' | 'Medium' | 'Low' }>;
   weatherForecast?: string;
   venueInsights?: string;
+}
+
+export interface EventTask {
+  id: string;
+  eventId: string;
+  title: string;
+  phase: 'Strategy' | 'Planning' | 'Marketing' | 'Operations' | 'Post-Event';
+  status: 'todo' | 'in_progress' | 'done';
+  dueDate: string; // ISO date
+  assignee?: string;
 }

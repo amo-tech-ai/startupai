@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { 
   Trophy, AlertTriangle, Sparkles, Loader2, Check, 
   Building2, Users, TrendingUp, Target, DollarSign, Globe,
-  RefreshCw, ArrowRight, Edit2, ShieldCheck
+  RefreshCw, ArrowRight, Edit2, ShieldCheck, Microscope
 } from 'lucide-react';
 import { WizardService } from '../../../services/wizardAI';
 import { API_KEY } from '../../../lib/env';
@@ -23,7 +23,7 @@ const getStepForMissingItem = (item: string): number => {
         "Company Name": 1, "Website": 1, "Tagline": 1, "Industry": 1, "Cover Image": 1,
         "Founders": 3, "Founder Bios": 3,
         "Business Model": 4, "Problem Statement": 4, "Solution Statement": 4, "Competitors": 4,
-        "Traction Metrics": 5, "Fundraising Target": 5, "Use of Funds": 5
+        "Traction Metrics": 5, "Fundraising Target": 5, "Use of Funds": 5, "Deep Research": 5
     };
     return map[item] || 1;
 };
@@ -62,8 +62,11 @@ export const StepSummary: React.FC<StepSummaryProps> = ({ formData, setFormData,
     if (formData.solution) score += 10; else missing.push("Solution Statement");
 
     // Traction (25%)
-    if (formData.mrr > 0 || formData.totalUsers > 0) score += 15; else missing.push("Traction Metrics");
+    if (formData.mrr > 0 || formData.totalUsers > 0) score += 10; else missing.push("Traction Metrics");
     
+    // Deep Research Bonus
+    if (formData.deepResearchReport) score += 10; else missing.push("Deep Research");
+
     if (formData.isRaising) {
         if (formData.targetRaise > 0) score += 5; else missing.push("Fundraising Target");
         if (formData.useOfFunds && formData.useOfFunds.length > 0) score += 5; else missing.push("Use of Funds");
@@ -227,6 +230,11 @@ export const StepSummary: React.FC<StepSummaryProps> = ({ formData, setFormData,
                    <span className="px-3 py-1 bg-slate-100 text-slate-600 text-xs font-bold rounded-full uppercase tracking-wide">
                        {formData.industry}
                    </span>
+                   {formData.deepResearchReport && (
+                       <span className="px-3 py-1 bg-indigo-100 text-indigo-700 text-xs font-bold rounded-full uppercase tracking-wide flex items-center gap-1 border border-indigo-200">
+                           <Microscope size={12} /> Deep Research
+                       </span>
+                   )}
                    {formData.isRaising && (
                        <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full uppercase tracking-wide flex items-center gap-1">
                            <TrendingUp size={12} /> Raising

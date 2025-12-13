@@ -114,6 +114,19 @@ export interface WizardFormData {
   useOfFunds: string[];
   
   aiSummary: string; // Final generated summary
+  
+  // --- V3: Deep Research Report ---
+  deepResearchReport?: {
+    executive_summary: string[];
+    stage_inference: { stage: string; reasoning: string };
+    traction_benchmarks: Array<{ metric: string; low: string; median: string; high: string; unit: string; citation: string }>;
+    fundraising_benchmarks: Array<{ item: string; low: string; median: string; high: string; citation: string }>;
+    valuation_references: Array<{ label: string; range: string; citation: string }>;
+    competitor_analysis: Array<{ name: string; differentiation: string; recent_moves: string }>;
+    market_trends: string[];
+    red_flags_and_fixes: Array<{ flag: string; fix: string; timeline: string }>;
+    confidence_score: { level: string; explanation: string };
+  };
 }
 
 export const INITIAL_WIZARD_STATE: WizardFormData = {

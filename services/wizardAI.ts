@@ -20,115 +20,175 @@ async function runAI(action: string, payload: any, apiKey: string) {
         }
     }
 
-    // 2. Client-Side Fallback
+    // 2. Client-Side Fallback 
     const ai = new GoogleGenAI({ apiKey });
-    
+    console.log(`[AI Fallback] Running '${action}' locally via Gemini SDK`);
+
     try {
-        if (action === 'rewrite_field') {
-            const { text, context } = payload;
-            const rewriteSchema: Schema = {
-                type: Type.OBJECT,
-                properties: { result: { type: Type.STRING } },
-                required: ["result"]
-            };
-            
-            const prompt = `Rewrite this text for a startup investor profile. 
-            Context: ${context}. 
-            Original: "${text}".`;
-            
-            const response = await ai.models.generateContent({
-                model: 'gemini-3-pro-preview',
-                contents: prompt,
-                config: { 
-                    responseMimeType: 'application/json',
-                    responseSchema: rewriteSchema
-                }
-            });
-            return JSON.parse(response.text || '{}').result;
-        }
-
-        if (action === 'analyze_context') {
-            // ... (Existing implementation kept in Edge Function, simplifying client fallback for brevity)
-            // For complex logic like analyze_context, we rely heavily on Edge Function.
-            // Client fallback here is simplified or skipped to save bundle size if needed.
-            return null; 
-        }
-
-        if (action === 'generate_summary') {
-            const { profile } = payload;
-            const prompt = `Act as a VC. Research this company using Google Search and write a 3-paragraph executive summary.
-            Startup: ${JSON.stringify(profile)}. 
-            
-            Return a JSON object wrapped in a markdown code block: 
-            \`\`\`json
-            { "summary": "HTML string..." }
-            \`\`\``;
-            
-            const response = await ai.models.generateContent({
-                model: 'gemini-3-pro-preview',
-                contents: prompt,
-                config: { 
-                    tools: [{ googleSearch: {} }],
-                    thinkingConfig: { thinkingBudget: 1024 } 
-                }
-            });
-            return JSON.parse(cleanJson(response.text)).summary;
-        }
-
-        if (action === 'analyze_business') {
-            const prompt = `Context: ${payload.name} (${payload.industry}) - ${payload.tagline}. 
-            Use Google Search to find real competitors and trends.
-            
-            Return a JSON object wrapped in a markdown code block:
-            \`\`\`json
-            {
-                "competitors": ["string"],
-                "coreDifferentiator": "string",
-                "keyFeatures": ["string"]
+        switch (action) {
+            case 'analyze_context': {
+                const { inputs } = payload;
+                const prompt = `Analyze this startup. Inputs: ${JSON.stringify(inputs)}. Return JSON matching WizardFormData structure for pre-filling: summary_screen, founder_intelligence, wizard_autofill.`;
+                const res = await ai.models.generateContent({
+                    model: 'gemini-3-pro-preview',
+                    contents: prompt,
+                    config: { responseMimeType: 'application/json', tools: [{ googleSearch: {} }] }
+                });
+                return JSON.parse(cleanJson(res.text));
             }
-            \`\`\``;
             
-            const response = await ai.models.generateContent({
-                model: 'gemini-3-pro-preview',
-                contents: prompt,
-                config: { 
-                    tools: [{ googleSearch: {} }],
-                    thinkingConfig: { thinkingBudget: 1024 } 
-                }
-            });
-            return JSON.parse(cleanJson(response.text));
-        }
+            // --- V3 Deep Research Pipeline Fallback ---
+            case 'research_topic': {
+                const { profile } = payload;
+                const prompt = `
+                    Act as a Senior Venture Capital Analyst.
+                    
+                    MISSION:
+                    Perform a deep-dive "Reality Check" on this startup using real-time Google Search.
+                    
+                    STARTUP:
+                    - Name: ${profile.name}
+                    - Industry: ${profile.industry}
+                    - Stage: ${profile.stage}
+                    - Context: ${profile.description || profile.tagline}
+                    
+                    RESEARCH TASKS:
+                    1. Find 2024/2025 benchmarks for ${profile.industry} at ${profile.stage} stage (Typical MRR, Growth Rates, Churn).
+                    2. Find recent comparable valuations or funding rounds in this sector (Pre-money, Deal Size).
+                    3. Identify top 3 active competitors. For each, find their specific recent moves (funding, features, pivots) in late 2024/2025.
+                    4. Identify 3 emerging market trends or shifts in this sector for 2025 (e.g. regulatory changes, tech shifts).
+                    5. Assess the feasibility of their fundraising goals ($${profile.fundingGoal || 'N/A'}).
+                    
+                    OUTPUT:
+                    Write a detailed strategic memo (Markdown).
+                    - Cite specific sources/URLs for every number found.
+                    - Be critical and realistic.
+                    - Do NOT output JSON. Write for a human partner.
+                `;
+                const res = await ai.models.generateContent({
+                    model: 'gemini-3-pro-preview',
+                    contents: prompt,
+                    config: { 
+                        tools: [{ googleSearch: {} }],
+                        thinkingConfig: { thinkingBudget: 2048 } // Lower budget for client latency
+                    }
+                });
+                return { report: res.text };
+            }
 
-        if (action === 'estimate_valuation') {
-            // Legacy V2 call - keep for backward compatibility if needed, but V3 calculate_fundraising is better
-            const valuationSchema: Schema = {
-                type: Type.OBJECT,
-                properties: {
-                    min: { type: Type.NUMBER },
-                    max: { type: Type.NUMBER },
-                    reasoning: { type: Type.STRING }
-                },
-                required: ["min", "max", "reasoning"]
-            };
+            case 'extract_insights': {
+                const { report } = payload;
+                const prompt = `
+                    Act as a Data Extraction Agent.
+                    
+                    INPUT REPORT:
+                    """
+                    ${report}
+                    """
+                    
+                    TASK:
+                    Extract key benchmarks and signals into a strict JSON format.
+                    
+                    OUTPUT JSON SCHEMA:
+                    {
+                        "executive_summary": ["string (max 5 bullets)"],
+                        "stage_inference": { "stage": "string", "reasoning": "string" },
+                        "traction_benchmarks": [
+                            { "metric": "string", "low": "string", "median": "string", "high": "string", "unit": "string", "citation": "string" }
+                        ],
+                        "fundraising_benchmarks": [
+                            { "item": "string", "low": "string", "median": "string", "high": "string", "citation": "string" }
+                        ],
+                        "valuation_references": [
+                            { "label": "string", "range": "string", "citation": "string" }
+                        ],
+                        "competitor_analysis": [
+                            { "name": "string", "differentiation": "string", "recent_moves": "string" }
+                        ],
+                        "market_trends": ["string"],
+                        "red_flags_and_fixes": [
+                            { "flag": "string", "fix": "string", "timeline": "30 days" }
+                        ],
+                        "confidence_score": { "level": "High|Medium|Low", "explanation": "string" }
+                    }
+                `;
+                const res = await ai.models.generateContent({
+                    model: 'gemini-3-pro-preview',
+                    contents: prompt,
+                    config: { responseMimeType: 'application/json' }
+                });
+                return JSON.parse(cleanJson(res.text));
+            }
 
-            const prompt = `Estimate valuation for ${payload.stage} ${payload.industry} startup with $${payload.mrr} MRR.`;
-            const response = await ai.models.generateContent({
-                model: 'gemini-3-pro-preview',
-                contents: prompt,
-                config: { 
-                    responseMimeType: 'application/json',
-                    responseSchema: valuationSchema,
-                    thinkingConfig: { thinkingBudget: 1024 } 
-                }
-            });
-            return JSON.parse(response.text || '{}');
+            // --- Standard Operations ---
+            case 'rewrite_field': {
+                const { text, context, field } = payload;
+                const prompt = `Rewrite ${field}. Context: ${context}. Original: ${text}. Return JSON: { "result": "..." }`;
+                const res = await ai.models.generateContent({
+                    model: 'gemini-3-pro-preview',
+                    contents: prompt,
+                    config: { responseMimeType: 'application/json' }
+                });
+                return JSON.parse(cleanJson(res.text));
+            }
+            case 'analyze_business': {
+                const prompt = `Analyze business. Context: ${JSON.stringify(payload)}. Return JSON: { competitors: [], keyFeatures: [], coreDifferentiator: "" }`;
+                const res = await ai.models.generateContent({
+                    model: 'gemini-3-pro-preview',
+                    contents: prompt,
+                    config: { responseMimeType: 'application/json', tools: [{ googleSearch: {} }] }
+                });
+                return JSON.parse(cleanJson(res.text));
+            }
+            case 'generate_summary': {
+                const { profile } = payload;
+                const prompt = `Write summary. Profile: ${JSON.stringify(profile)}. Return JSON: { "summary": "..." }`;
+                const res = await ai.models.generateContent({
+                    model: 'gemini-3-pro-preview',
+                    contents: prompt,
+                    config: { responseMimeType: 'application/json' }
+                });
+                return JSON.parse(cleanJson(res.text));
+            }
+            case 'analyze_risks': {
+                const { profile } = payload;
+                const prompt = `Analyze risks. Profile: ${JSON.stringify(profile)}. Return JSON with overall_risk_level, issues[].`;
+                const res = await ai.models.generateContent({
+                    model: 'gemini-3-pro-preview',
+                    contents: prompt,
+                    config: { responseMimeType: 'application/json', thinkingConfig: { thinkingBudget: 2048 } }
+                });
+                return JSON.parse(cleanJson(res.text));
+            }
+            case 'calculate_fundraising': {
+                const { metrics, industry, stage, targetRaise } = payload;
+                const prompt = `Calculate fundraising needs. Context: ${JSON.stringify({metrics, industry, stage, targetRaise})}. Return JSON with valuation_range, runway_months, recommended_stage, raise_sanity_check, benchmark_logic.`;
+                const res = await ai.models.generateContent({
+                    model: 'gemini-3-pro-preview',
+                    contents: prompt,
+                    config: { responseMimeType: 'application/json', tools: [{ googleSearch: {} }] }
+                });
+                return JSON.parse(cleanJson(res.text));
+            }
+            case 'analyze_traction': {
+                const { metrics, industry, stage } = payload;
+                const prompt = `Analyze traction for ${stage} ${industry} startup. Metrics: ${JSON.stringify(metrics)}. Return JSON with investor_interpretation, green_flags, red_flags, recommended_next_metrics.`;
+                const res = await ai.models.generateContent({
+                    model: 'gemini-3-pro-preview',
+                    contents: prompt,
+                    config: { responseMimeType: 'application/json', tools: [{ googleSearch: {} }] }
+                });
+                return JSON.parse(cleanJson(res.text));
+            }
+            
+            default:
+                console.warn(`No client-side fallback implementation for ${action}`);
+                return null;
         }
     } catch (e) {
-        console.error(`AI Error in ${action}:`, e);
+        console.error("Client-side AI fallback failed", e);
         return null;
     }
-
-    return null;
 }
 
 export const WizardService = {
@@ -137,11 +197,11 @@ export const WizardService = {
   },
 
   async refineText(text: string, context: string, apiKey: string) {
-    return runAI('rewrite_field', { text, context }, apiKey);
+    return runAI('rewrite_field', { text, context, field: 'text' }, apiKey).then(res => res?.result);
   },
 
   async rewriteBio(name: string, rawBio: string, role: string, apiKey: string) {
-    return runAI('rewrite_field', { text: rawBio, context: `Bio for ${name}, ${role}` }, apiKey);
+    return runAI('rewrite_field', { text: rawBio, context: `Bio for ${name}, ${role}`, field: 'bio' }, apiKey).then(res => res?.result);
   },
 
   async analyzeBusiness(context: any, apiKey: string) {
@@ -149,10 +209,9 @@ export const WizardService = {
   },
 
   async estimateValuation(industry: string, stage: string, mrr: number, apiKey: string) {
-    return runAI('estimate_valuation', { industry, stage, mrr }, apiKey);
+    return runAI('calculate_fundraising', { metrics: { mrr }, industry, stage, targetRaise: 0 }, apiKey);
   },
 
-  // --- V3 New Methods ---
   async analyzeTraction(metrics: any, industry: string, stage: string, apiKey: string) {
     return runAI('analyze_traction', { metrics, industry, stage }, apiKey);
   },
@@ -164,13 +223,36 @@ export const WizardService = {
   async analyzeRisks(profile: any, apiKey: string) {
     return runAI('analyze_risks', { profile }, apiKey);
   },
-  // ----------------------
+
+  /**
+   * Two-Pass Deep Research Pipeline (Client Orchestrated)
+   * 1. Search Grounding -> Markdown Report
+   * 2. Extraction -> Strict JSON
+   */
+  async performDeepResearch(profile: any, apiKey: string, onProgress?: (status: string) => void) {
+    try {
+        // Pass 1: Research
+        if (onProgress) onProgress("🔍 Scanning market sources...");
+        const researchResult = await runAI('research_topic', { profile }, apiKey);
+        
+        if (!researchResult || !researchResult.report) {
+            throw new Error("Research pass failed to generate data.");
+        }
+
+        // Pass 2: Extraction
+        if (onProgress) onProgress("📊 Synthesizing benchmarks...");
+        const insights = await runAI('extract_insights', { report: researchResult.report }, apiKey);
+        
+        return insights;
+    } catch (e) {
+        console.error("Deep Research Pipeline Failed", e);
+        return null;
+    }
+  },
 
   async suggestUseOfFunds(amount: number, stage: string, industry: string, apiKey: string) {
-    // This is simple generation, OK to leave as client-only Schema call for speed
     const ai = new GoogleGenAI({ apiKey });
     const prompt = `Suggest use of funds for $${amount} raise for ${stage} ${industry} startup.`;
-    
     try {
         const response = await ai.models.generateContent({ 
             model: 'gemini-3-pro-preview', 
@@ -188,6 +270,6 @@ export const WizardService = {
   },
 
   async generateSummary(profileData: any, apiKey: string) {
-    return runAI('generate_summary', { profile: profileData }, apiKey);
+    return runAI('generate_summary', { profile: profileData }, apiKey).then(res => res?.summary);
   }
 };

@@ -65,6 +65,7 @@ export interface StartupProfile {
   totalUsers?: number;
   plan?: 'free' | 'founder' | 'growth';
   updatedAt?: string;
+  deepResearchReport?: any; // V3 Feature persistence
 }
 
 export interface UserProfile {
@@ -131,6 +132,7 @@ export interface AICoachInsight {
   priority: 'High' | 'Medium' | 'Low';
   status: 'New' | 'Dismissed' | 'Actioned';
   generatedAt: string;
+  generated_at?: string;
 }
 
 export interface Activity {

@@ -167,7 +167,10 @@ const StartupWizard: React.FC = () => {
         fundingGoal: formData.targetRaise,
         useOfFunds: formData.useOfFunds,
         
-        stage: (formData.stage as any) || 'Seed', 
+        stage: (formData.stage as any) || 'Seed',
+        
+        // Pass the deep research report if available
+        deepResearchReport: formData.deepResearchReport
       };
 
       // 2. Create or Update Profile

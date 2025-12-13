@@ -7,6 +7,7 @@ import { TeamCard } from './startup-profile/TeamCard';
 import { BusinessCard } from './startup-profile/BusinessCard';
 import { TractionCard } from './startup-profile/TractionCard';
 import { SummaryCard } from './startup-profile/SummaryCard';
+import { ResearchCard } from './startup-profile/ResearchCard'; // New Import
 import { ShareModal } from './startup-profile/ShareModal';
 import { useNavigate } from 'react-router-dom';
 import { useSaveStartupProfile } from '../hooks/useSaveStartupProfile';
@@ -32,7 +33,7 @@ const StartupProfilePage: React.FC = () => {
       </div>
   );
 
-  // Merge RPC DTO with base type if available, else fallback to global context (Legacy/Demo support)
+  // Merge RPC DTO with base type if available
   let displayProfile: StartupProfile | null = globalProfile;
   let displayFounders: Founder[] = [];
 
@@ -58,10 +59,11 @@ const StartupProfilePage: React.FC = () => {
           isRaising: profileDTO.context.is_raising,
           isPublic: profileDTO.context.is_public,
           targetMarket: profileDTO.context.target_market || '',
-          // Use competitors from DTO root if available (mapped from RPC), fallback to context
           competitors: profileDTO.competitors || profileDTO.context.competitors || [],
           keyFeatures: profileDTO.context.key_features || [],
-          useOfFunds: profileDTO.context.use_of_funds || []
+          useOfFunds: profileDTO.context.use_of_funds || [],
+          // Map Deep Research
+          deepResearchReport: profileDTO.context.traction_data?.deep_research || null
       };
 
       displayFounders = profileDTO.founders.map(f => ({
@@ -87,10 +89,10 @@ const StartupProfilePage: React.FC = () => {
   );
 
   const handleSaveContext = async (data: Partial<StartupProfile> & { metrics?: any }) => {
-      // 1. Separate special keys that belong to different tables
-      const { metrics, competitors, ...profileContext } = data;
+      // 1. Separate special keys
+      const { metrics, competitors, deepResearchReport, ...profileContext } = data;
 
-      // 2. Map Profile Context to DB Columns (Schema Mapping)
+      // 2. Map Profile Context to DB Columns
       const contextPayload: any = {};
       if (profileContext.name) contextPayload.name = profileContext.name;
       if (profileContext.tagline) contextPayload.tagline = profileContext.tagline;
@@ -101,20 +103,21 @@ const StartupProfilePage: React.FC = () => {
       if (profileContext.yearFounded) contextPayload.year_founded = profileContext.yearFounded;
       if (profileContext.problemStatement) contextPayload.problem = profileContext.problemStatement;
       if (profileContext.solutionStatement) contextPayload.solution = profileContext.solutionStatement;
-      
-      // Convert single strings to array for DB text[] columns where applicable
       if (profileContext.businessModel) contextPayload.business_model = [profileContext.businessModel];
       if (profileContext.targetMarket) contextPayload.target_customers = [profileContext.targetMarket];
-      
       if (profileContext.pricingModel) contextPayload.pricing_model = profileContext.pricingModel;
       if (profileContext.fundingGoal) contextPayload.raise_amount = profileContext.fundingGoal;
       if (profileContext.isRaising !== undefined) contextPayload.is_raising = profileContext.isRaising;
       if (profileContext.isPublic !== undefined) contextPayload.is_public = profileContext.isPublic;
       if (profileContext.useOfFunds) contextPayload.use_of_funds = profileContext.useOfFunds;
-      if (profileContext.keyFeatures) contextPayload.unique_value = profileContext.keyFeatures.join(', '); // unique_value is text
+      if (profileContext.keyFeatures) contextPayload.unique_value = profileContext.keyFeatures.join(', ');
 
-      // 3. Send Payload to Edge Function
-      // Only include keys if they have data
+      // Persist Deep Research if present
+      if (deepResearchReport) {
+          contextPayload.traction_data = { deep_research: deepResearchReport };
+      }
+
+      // 3. Send Payload
       const payload: any = { startup_id: displayProfile!.id };
       
       if (Object.keys(contextPayload).length > 0) payload.context = contextPayload;
@@ -133,7 +136,6 @@ const StartupProfilePage: React.FC = () => {
 
   const handlePrint = () => {
       setViewMode('investor');
-      // Delay print to allow React to render 'investor' mode state
       info("Preparing One-Pager PDF...");
       setTimeout(() => {
           window.print();
@@ -187,7 +189,7 @@ const StartupProfilePage: React.FC = () => {
             </div>
         </div>
 
-        {/* PRINT HEADER (Visible only in Print) */}
+        {/* PRINT HEADER */}
         <div className="hidden print:block mb-8 border-b border-slate-200 pb-4">
             <h1 className="text-4xl font-bold text-slate-900 mb-2">{displayProfile.name}</h1>
             <p className="text-xl text-slate-600">{displayProfile.tagline}</p>
@@ -195,8 +197,6 @@ const StartupProfilePage: React.FC = () => {
                 <span>{displayProfile.industry}</span>
                 <span>•</span>
                 <span>{displayProfile.stage}</span>
-                <span>•</span>
-                <span>Global</span>
             </div>
         </div>
 
@@ -205,6 +205,15 @@ const StartupProfilePage: React.FC = () => {
             
             {/* MAIN COLUMN (8 cols) */}
             <div className="lg:col-span-8 space-y-8 print:w-full">
+                
+                {/* 0. Research Card (New) */}
+                <div className="print:break-inside-avoid">
+                    <ResearchCard 
+                        profile={displayProfile}
+                        onSave={handleSaveContext}
+                    />
+                </div>
+
                 <div className="print:break-inside-avoid">
                     <OverviewCard 
                         viewMode={viewMode} 
@@ -239,7 +248,7 @@ const StartupProfilePage: React.FC = () => {
                 </div>
             </div>
 
-            {/* SIDEBAR COLUMN (4 cols) - Hidden in Print or Adjusted */}
+            {/* SIDEBAR COLUMN (4 cols) */}
             <div className="lg:col-span-4 space-y-6 lg:sticky lg:top-24 print:hidden">
                 <SummaryCard profile={displayProfile} />
                 
@@ -290,11 +299,6 @@ const StartupProfilePage: React.FC = () => {
                                 <Share2 size={14} /> View Public
                             </button>
                         </div>
-                        {!displayProfile.isPublic && (
-                            <p className="text-[10px] text-slate-400 text-center">
-                                Turn on Public Access to share your profile.
-                            </p>
-                        )}
                     </div>
                 </div>
             </div>

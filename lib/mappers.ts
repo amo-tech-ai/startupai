@@ -34,7 +34,9 @@ export const mapProfileFromDB = (data: any): StartupProfile => ({
   fundingHistory: [], 
   mrr: 0,
   totalUsers: 0, 
-  updatedAt: data.updated_at
+  updatedAt: data.updated_at,
+  // Map Deep Research from its dedicated column
+  deepResearchReport: data.deep_research_report || null
 });
 
 export const mapProfileToDB = (data: Partial<StartupProfile>) => {
@@ -56,6 +58,12 @@ export const mapProfileToDB = (data: Partial<StartupProfile>) => {
   if (data.isPublic !== undefined) payload.is_public = data.isPublic;
   if (data.targetMarket) payload.target_customers = [data.targetMarket];
   if (data.useOfFunds) payload.use_of_funds = data.useOfFunds;
+  
+  // Persist deep research to dedicated column
+  if (data.deepResearchReport) {
+      payload.deep_research_report = data.deepResearchReport;
+  }
+  
   return payload;
 };
 

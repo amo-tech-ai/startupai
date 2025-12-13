@@ -11,7 +11,8 @@ import {
   Files,
   UserCircle,
   LogIn,
-  Building
+  Building,
+  Calendar
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
@@ -34,6 +35,7 @@ const Sidebar: React.FC = () => {
   const menuItems = [
     { path: '/dashboard', icon: <LayoutDashboard size={20} />, label: 'Dashboard' },
     { path: '/startup-profile', icon: <Building size={20} />, label: 'Startup Profile' },
+    { path: '/events/new', icon: <Calendar size={20} />, label: 'Events' },
     { path: '/pitch-decks', icon: <FileText size={20} />, label: 'Pitch Decks' },
     { path: '/crm', icon: <Users size={20} />, label: 'CRM' },
     { path: '/documents', icon: <Files size={20} />, label: 'Documents' },
@@ -70,7 +72,7 @@ const Sidebar: React.FC = () => {
       {/* Navigation */}
       <nav className="flex-1 py-6 px-3 space-y-1 overflow-y-auto">
         {menuItems.map((item) => {
-          const isActive = location.pathname === item.path;
+          const isActive = location.pathname === item.path || (item.label === 'Events' && location.pathname.startsWith('/events'));
           return (
             <button
               key={item.path}

@@ -19,6 +19,7 @@ import Profile from './components/Profile';
 import StartupProfilePage from './components/StartupProfilePage';
 import StartupWizard from './components/StartupWizard';
 import PublicStartupProfile from './components/PublicStartupProfile';
+import EventWizard from './components/events/EventWizard'; // New Import
 import Footer from './components/Footer';
 import { DataProvider, useData } from './context/DataContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -106,6 +107,9 @@ const AppContent = () => {
 
         {/* Standalone Route (Wizard) */}
         <Route path="/onboarding" element={<StartupWizard />} />
+        
+        {/* Standalone Route (Event Wizard - Needs full screen) */}
+        <Route path="/events/new" element={<RequireAuth><EventWizard /></RequireAuth>} />
 
         {/* Protected App Routes */}
         <Route element={<RequireAuth><AppLayout /></RequireAuth>}>

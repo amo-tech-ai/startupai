@@ -244,3 +244,38 @@ export interface StartupProfileDTO {
   metrics: any;
   competitors: string[];
 }
+
+// --- EVENTS SYSTEM TYPES ---
+
+export interface EventData {
+  id?: string;
+  name: string;
+  description: string;
+  type: string;
+  date: string;
+  duration: number;
+  city: string;
+  venueUrls: string[];
+  sponsorUrls: string[];
+  inspirationUrls: string[];
+  searchTerms: string[];
+  
+  // AI Generated Data
+  strategy?: EventStrategyAnalysis;
+  logistics?: EventLogisticsAnalysis;
+}
+
+export interface EventStrategyAnalysis {
+  feasibilityScore: number;
+  reasoning: string;
+  risks: Array<{ title: string; severity: 'High' | 'Medium' | 'Low' }>;
+  suggestedThemes: string[];
+  audienceProfile: string;
+  budgetEstimate: { low: number; high: number; currency: string };
+}
+
+export interface EventLogisticsAnalysis {
+  conflicts: Array<{ name: string; date: string; impact: 'High' | 'Medium' | 'Low' }>;
+  weatherForecast?: string;
+  venueInsights?: string;
+}

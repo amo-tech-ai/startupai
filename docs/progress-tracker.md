@@ -11,6 +11,7 @@
 
 | Feature | Description | Notes |
 | :--- | :--- | :--- |
+| **Design System V2** | **"Clean SaaS" Visuals** | 🟢 Implemented Orange/Obsidian palette via Tailwind Config. |
 | **Public Home** | Landing page with Hero, Features, Social Proof | Animation ready, responsive. |
 | **How It Works** | Scroll-telling page explaining the process | Complex layout implemented. |
 | **App Shell** | Layout logic, Sidebar, Navbar modes | Handles public vs app state. |
@@ -55,6 +56,7 @@
 ## 💡 Suggestions & Features
 
 ### UI/UX Enhancements
+*   [x] **Visual Refresh**: Moved to V2 "Clean SaaS" Orange/Obsidian theme.
 *   [ ] **Dark Mode**: The Dashboard would look excellent in a true dark mode (slate-900 backgrounds).
 *   [ ] **Drag & Drop**: Implement `dnd-kit` for the CRM columns and Task board.
 *   [ ] **Rich Text**: Replace the `contentEditable` divs in Document Editor with a real editor like `TipTap` or `Slate.js`.

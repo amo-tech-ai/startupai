@@ -11,16 +11,16 @@ html, body, #root {
 
 body {
   font-family: 'Inter', sans-serif;
-  background-color: #FFFFFF;
+  background-color: #F9FAFB; /* Surface Gray */
   overflow-x: hidden;
-  color: #111827;
+  color: #111827; /* Obsidian */
 }
 
-/* Large Block Grid Background */
+/* Large Block Grid Background - Updated for V2 Neutral Scale */
 .bg-block-grid {
   background-image: 
-    linear-gradient(to right, #F3F4F6 1px, transparent 1px),
-    linear-gradient(to bottom, #F3F4F6 1px, transparent 1px);
+    linear-gradient(to right, #E5E7EB 1px, transparent 1px),
+    linear-gradient(to bottom, #E5E7EB 1px, transparent 1px);
   background-size: 60px 60px;
   background-position: center top;
 }

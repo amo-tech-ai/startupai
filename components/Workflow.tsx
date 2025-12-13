@@ -96,14 +96,19 @@ const Workflow: React.FC = () => {
                             return (
                                 <div key={step.id} className="relative z-10 flex flex-col items-center group w-full md:w-auto">
                                     <MotionDiv 
-                                        className={`w-full md:w-32 h-32 bg-white rounded-2xl border-2 flex flex-col items-center justify-center gap-3 shadow-sm transition-all duration-300 relative ${
+                                        className={`w-full md:w-32 h-32 bg-white rounded-2xl border-2 flex flex-col items-center justify-center gap-3 shadow-sm transition-colors duration-300 relative ${
                                             isActive || isCompleted 
                                             ? 'border-brand-500 shadow-lg shadow-brand-500/10' 
                                             : 'border-slate-100'
                                         }`}
                                         animate={{
-                                            scale: isActive ? 1.1 : 1,
-                                            y: isActive ? -5 : 0
+                                            scale: isActive ? 1.15 : 1,
+                                            y: isActive ? -8 : 0
+                                        }}
+                                        transition={{
+                                            type: "spring",
+                                            stiffness: 400,
+                                            damping: 20
                                         }}
                                     >
                                         {/* Status Badge */}

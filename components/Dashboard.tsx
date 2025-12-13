@@ -3,9 +3,11 @@ import React, { useState, useEffect } from 'react';
 import { useData } from '../context/DataContext';
 import { API_KEY } from '../lib/env';
 import { CoachAI } from '../services/coachAI';
+import { DashboardService } from '../services/supabase/dashboard';
 import { useToast } from '../context/ToastContext';
 import { AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { StartupStats } from '../types';
 
 // New V2 Components
 import { FounderCommandCenter } from './dashboard/v2/FounderCommandCenter';
@@ -25,40 +27,56 @@ const Dashboard: React.FC = () => {
   const { toast, error, success } = useToast();
   const [isGeneratingInsights, setIsGeneratingInsights] = useState(false);
   const [isContactSidebarOpen, setIsContactSidebarOpen] = useState(false);
+  const [stats, setStats] = useState<StartupStats | null>(null);
   const navigate = useNavigate();
 
   const isGuest = profile?.userId === 'guest' || profile?.userId === 'mock';
 
-  // --- HEALTH SCORE LOGIC ---
-  const calculateHealth = () => {
+  // Load Optimized Stats
+  useEffect(() => {
+    const loadStats = async () => {
+      if (profile && !isGuest) {
+        const s = await DashboardService.getStartupStats(profile.id);
+        if (s) setStats(s);
+      }
+    };
+    loadStats();
+  }, [profile, isGuest, metrics]); // Reload if metrics change locally
+
+  // Fallback Health Calculation (if stats not loaded or in guest mode)
+  const healthData = stats ? {
+      score: stats.profileScore,
+      metrics: {
+          mrrGrowth: stats.mrrGrowthPct > 0,
+          deckReady: !stats.missingCriticalFields.pitchDeck,
+          runwayHealthy: stats.runwayMonths > 6,
+          profileComplete: stats.profileScore > 75
+      },
+      missing: [] // Simplified for now
+  } : (() => {
+      // Original client-side logic for guest mode
       let score = 0;
       const missing: string[] = [];
       const mrr = metrics[metrics.length - 1]?.mrr || 0;
       const runway = metrics[metrics.length - 1]?.runwayMonths || 0;
 
-      // 1. Business (25%)
       if (mrr > 0) score += 25; else missing.push("Revenue");
-      // 2. Fundraising (25%)
       if (decks.length > 0) score += 25; else missing.push("Pitch Deck");
-      // 3. Operations (25%)
       if (runway > 6) score += 25; else if (runway > 3) score += 10; else missing.push("Runway");
-      // 4. Profile (25%)
       if (profile?.websiteUrl) score += 10;
       if (profile?.coverImageUrl) score += 15;
 
       return {
           score: Math.min(score, 100),
           metrics: {
-              mrrGrowth: mrr > 0, // Simplified
+              mrrGrowth: mrr > 0,
               deckReady: decks.length > 0,
               runwayHealthy: runway > 6,
               profileComplete: score >= 75
           },
           missing
       };
-  };
-
-  const healthData = calculateHealth();
+  })();
 
   // --- AI COACH LOGIC ---
   const refreshInsights = async () => {
@@ -103,7 +121,6 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  // Filter Milestones
   const milestones = activities.filter(a => a.type === 'milestone');
 
   return (
@@ -141,8 +158,8 @@ const Dashboard: React.FC = () => {
           
           {/* MAIN COLUMN (8 Cols) */}
           <div className="lg:col-span-8 space-y-8">
-              {/* 1. Command Center */}
-              <FounderCommandCenter metrics={metrics} />
+              {/* 1. Command Center - Now uses Server-Side Stats */}
+              <FounderCommandCenter metrics={metrics} stats={stats} />
 
               {/* 2. AI Coach */}
               <AICoachWidget 

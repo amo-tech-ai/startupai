@@ -8,9 +8,10 @@ import { StartupProfile } from '../../types';
 
 interface SummaryCardProps {
   profile?: StartupProfile;
+  viewMode?: 'edit' | 'investor';
 }
 
-export const SummaryCard: React.FC<SummaryCardProps> = ({ profile }) => {
+export const SummaryCard: React.FC<SummaryCardProps> = ({ profile, viewMode = 'edit' }) => {
   const { success, toast } = useToast();
   const [score, setScore] = useState(0);
   const [missing, setMissing] = useState<string[]>([]);
@@ -94,9 +95,11 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({ profile }) => {
                     <h3 className="font-bold">Investor Summary</h3>
                 </div>
                 <div className="flex gap-1">
-                    <button onClick={handleRegenerate} disabled={isGenerating} className="p-1.5 hover:bg-white/10 rounded text-slate-300 hover:text-white transition-colors">
-                        <RefreshCw size={14} className={isGenerating ? "animate-spin" : ""}/>
-                    </button>
+                    {viewMode === 'edit' && (
+                        <button onClick={handleRegenerate} disabled={isGenerating} className="p-1.5 hover:bg-white/10 rounded text-slate-300 hover:text-white transition-colors">
+                            <RefreshCw size={14} className={isGenerating ? "animate-spin" : ""}/>
+                        </button>
+                    )}
                     <button onClick={handleCopy} className="p-1.5 hover:bg-white/10 rounded text-slate-300 hover:text-white transition-colors">
                         <Copy size={14} />
                     </button>

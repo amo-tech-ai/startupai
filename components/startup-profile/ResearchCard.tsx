@@ -10,9 +10,10 @@ import { useToast } from '../../context/ToastContext';
 interface ResearchCardProps {
   profile: StartupProfile;
   onSave: (data: Partial<StartupProfile>) => Promise<void>;
+  viewMode?: 'edit' | 'investor';
 }
 
-export const ResearchCard: React.FC<ResearchCardProps> = ({ profile, onSave }) => {
+export const ResearchCard: React.FC<ResearchCardProps> = ({ profile, onSave, viewMode = 'edit' }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isResearching, setIsResearching] = useState(false);
   const [researchStatus, setResearchStatus] = useState("Initializing...");
@@ -47,6 +48,11 @@ export const ResearchCard: React.FC<ResearchCardProps> = ({ profile, onSave }) =
 
   const hasReport = !!profile.deepResearchReport;
 
+  // In investor mode, if there is no report, don't show the card at all
+  if (viewMode === 'investor' && !hasReport) {
+      return null;
+  }
+
   return (
     <div className="bg-slate-900 rounded-xl shadow-lg border border-slate-800 overflow-hidden">
         <div 
@@ -67,14 +73,16 @@ export const ResearchCard: React.FC<ResearchCardProps> = ({ profile, onSave }) =
                 </div>
             </div>
             <div className="flex items-center gap-3">
-                <button 
-                    onClick={(e) => { e.stopPropagation(); handleRunResearch(); }}
-                    disabled={isResearching}
-                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg transition-colors disabled:opacity-50"
-                >
-                    {isResearching ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
-                    {hasReport ? 'Refresh' : 'Run Agent'}
-                </button>
+                {viewMode === 'edit' && (
+                    <button 
+                        onClick={(e) => { e.stopPropagation(); handleRunResearch(); }}
+                        disabled={isResearching}
+                        className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg transition-colors disabled:opacity-50"
+                    >
+                        {isResearching ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+                        {hasReport ? 'Refresh' : 'Run Agent'}
+                    </button>
+                )}
                 {isExpanded ? <ChevronUp className="text-slate-500" /> : <ChevronDown className="text-slate-500" />}
             </div>
         </div>

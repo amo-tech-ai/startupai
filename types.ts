@@ -122,6 +122,23 @@ export interface MetricsSnapshot {
   recordedAt?: string;
 }
 
+// New Interface for Materialized View
+export interface StartupStats {
+  startupId: string;
+  currentMrr: number;
+  currentUsers: number;
+  burnRate: number;
+  cashBalance: number;
+  runwayMonths: number;
+  mrrGrowthPct: number;
+  profileScore: number;
+  missingCriticalFields: {
+    website: boolean;
+    pitchDeck: boolean;
+    revenue: boolean;
+  };
+}
+
 export interface AICoachInsight {
   id: string;
   startupId: string;

@@ -1,6 +1,6 @@
 
 import { supabase } from '../../lib/supabaseClient';
-import { MetricsSnapshot, AICoachInsight, Activity } from '../../types';
+import { MetricsSnapshot, AICoachInsight, Activity, StartupStats } from '../../types';
 import { 
     mapMetricsFromDB, mapMetricsToDB, 
     mapInsightFromDB, mapInsightToDB,
@@ -8,6 +8,40 @@ import {
 } from '../../lib/mappers';
 
 export const DashboardService = {
+  /**
+   * STARTUP STATS (Materialized View)
+   */
+  async getStartupStats(startupId: string): Promise<StartupStats | null> {
+    if (!supabase) return null;
+
+    const { data, error } = await supabase
+      .from('view_startup_stats')
+      .select('*')
+      .eq('startup_id', startupId)
+      .single();
+
+    if (error) {
+      console.warn("Could not fetch pre-calculated stats", error);
+      return null;
+    }
+
+    return {
+      startupId: data.startup_id,
+      currentMrr: data.current_mrr,
+      currentUsers: data.current_users,
+      burnRate: data.burn_rate,
+      cashBalance: data.cash_balance,
+      runwayMonths: data.runway_months,
+      mrrGrowthPct: data.mrr_growth_pct,
+      profileScore: data.profile_score,
+      missingCriticalFields: {
+        website: data.missing_critical_fields?.website,
+        pitchDeck: data.missing_critical_fields?.pitch_deck,
+        revenue: data.missing_critical_fields?.revenue,
+      }
+    };
+  },
+
   /**
    * METRICS
    */

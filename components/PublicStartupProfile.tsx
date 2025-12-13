@@ -9,6 +9,7 @@ import { OverviewCard } from './startup-profile/OverviewCard';
 import { BusinessCard } from './startup-profile/BusinessCard';
 import { TeamCard } from './startup-profile/TeamCard';
 import { SummaryCard } from './startup-profile/SummaryCard';
+import { ResearchCard } from './startup-profile/ResearchCard';
 import { ArrowRight, Lock, Loader2, Mail } from 'lucide-react';
 
 const PublicStartupProfile: React.FC = () => {
@@ -135,6 +136,13 @@ const PublicStartupProfile: React.FC = () => {
                 
                 {/* Main Info */}
                 <div className="lg:col-span-2 space-y-8">
+                    {/* Optional: Show Deep Research if available, in read-only mode */}
+                    <ResearchCard 
+                        profile={profile}
+                        onSave={noOpSave}
+                        viewMode="investor"
+                    />
+
                     <section>
                         <h2 className="text-sm font-bold text-slate-500 uppercase tracking-wide mb-4">About</h2>
                         <OverviewCard 
@@ -165,7 +173,7 @@ const PublicStartupProfile: React.FC = () => {
 
                 {/* Sidebar */}
                 <div className="space-y-6">
-                    <SummaryCard profile={profile} />
+                    <SummaryCard profile={profile} viewMode="investor" />
                     
                     <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm sticky top-24">
                         <h3 className="font-bold text-slate-900 mb-2">Interested in {profile.name}?</h3>

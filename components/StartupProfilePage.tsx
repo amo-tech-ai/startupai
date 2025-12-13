@@ -1,29 +1,31 @@
 
 import React, { useState } from 'react';
-import { Eye, Edit3, Presentation, CheckCircle2, Share2, Copy, Lock, Globe, Printer } from 'lucide-react';
+import { Eye } from 'lucide-react';
 import { useData } from '../context/DataContext';
-import { OverviewCard } from './startup-profile/OverviewCard';
-import { TeamCard } from './startup-profile/TeamCard';
-import { BusinessCard } from './startup-profile/BusinessCard';
-import { TractionCard } from './startup-profile/TractionCard';
-import { SummaryCard } from './startup-profile/SummaryCard';
-import { ResearchCard } from './startup-profile/ResearchCard'; // New Import
-import { ShareModal } from './startup-profile/ShareModal';
 import { useNavigate } from 'react-router-dom';
 import { useSaveStartupProfile } from '../hooks/useSaveStartupProfile';
 import { useStartupProfile } from '../hooks/useStartupProfile';
 import { StartupProfile, Founder } from '../types';
 import { useToast } from '../context/ToastContext';
 
+// Modular Components
+import { ProfilePageHeader } from './startup-profile/ProfilePageHeader';
+import { ProfilePrintHeader } from './startup-profile/ProfilePrintHeader';
+import { ProfilePageContent } from './startup-profile/ProfilePageContent';
+import { ProfilePageSidebar } from './startup-profile/ProfilePageSidebar';
+import { ShareModal } from './startup-profile/ShareModal';
+
 const StartupProfilePage: React.FC = () => {
   const { profile: globalProfile } = useData(); 
   const { data: profileDTO, loading, reload } = useStartupProfile(globalProfile?.id);
   const { saveProfile, isSaving } = useSaveStartupProfile();
-  const { success, error: toastError, info } = useToast();
+  const { success, info } = useToast();
   const navigate = useNavigate();
+  
   const [viewMode, setViewMode] = useState<'edit' | 'investor'>('edit');
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
+  // --- 1. Loading & Error States ---
   if (loading && !globalProfile) return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
           <div className="animate-pulse flex flex-col items-center gap-4">
@@ -33,7 +35,7 @@ const StartupProfilePage: React.FC = () => {
       </div>
   );
 
-  // Merge RPC DTO with base type if available
+  // --- 2. Data Transformation (DTO -> UI Model) ---
   let displayProfile: StartupProfile | null = globalProfile;
   let displayFounders: Founder[] = [];
 
@@ -62,8 +64,8 @@ const StartupProfilePage: React.FC = () => {
           competitors: profileDTO.competitors || profileDTO.context.competitors || [],
           keyFeatures: profileDTO.context.key_features || [],
           useOfFunds: profileDTO.context.use_of_funds || [],
-          // Map Deep Research: Prefer dedicated column, fallback to traction_data
-          deepResearchReport: profileDTO.context.deep_research_report || profileDTO.context.traction_data?.deep_research || null
+          // Map Deep Research: Prefer dedicated column
+          deepResearchReport: profileDTO.context.deep_research_report || globalProfile?.deepResearchReport || null
       };
 
       displayFounders = profileDTO.founders.map(f => ({
@@ -87,6 +89,8 @@ const StartupProfilePage: React.FC = () => {
           </div>
       </div>
   );
+
+  // --- 3. Action Handlers ---
 
   const handleSaveContext = async (data: Partial<StartupProfile> & { metrics?: any }) => {
       // 1. Separate special keys
@@ -128,6 +132,10 @@ const StartupProfilePage: React.FC = () => {
       reload();
   };
 
+  const handleSaveTeam = (founders: Founder[]) => {
+      saveProfile({ startup_id: displayProfile!.id, founders });
+  };
+
   const toggleVisibility = async () => {
       const newValue = !displayProfile!.isPublic;
       await handleSaveContext({ isPublic: newValue });
@@ -146,161 +154,51 @@ const StartupProfilePage: React.FC = () => {
     <div className="min-h-screen bg-slate-50 pb-20 font-sans text-slate-900 print:bg-white print:p-0">
       <div className="container mx-auto px-4 md:px-6 lg:px-8 max-w-7xl pt-4 lg:pt-8 animate-in fade-in duration-500">
         
-        {/* HEADER (Hidden in Print) */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 print:hidden">
-            <div>
-                <div className="flex items-center gap-3 mb-1">
-                    <h1 className="text-3xl font-bold text-slate-900">{displayProfile.name}</h1>
-                    <div className="flex gap-2">
-                        <span className="px-2 py-0.5 bg-slate-100 text-slate-600 text-xs font-bold rounded uppercase border border-slate-200">{displayProfile.industry || 'Tech'}</span>
-                        <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 text-xs font-bold rounded uppercase border border-indigo-100">{displayProfile.stage || 'Seed'}</span>
-                    </div>
-                </div>
-                <p className="text-slate-500">Manage your company profile and investor data.</p>
-            </div>
+        <ProfilePageHeader 
+            profile={displayProfile}
+            viewMode={viewMode}
+            setViewMode={setViewMode}
+            onShare={() => setIsShareModalOpen(true)}
+            onGenerateDeck={() => navigate('/pitch-decks')}
+        />
 
-            <div className="flex items-center gap-3">
-                <div className="bg-white rounded-lg p-1 border border-slate-200 flex shadow-sm">
-                    <button 
-                        onClick={() => setViewMode('edit')}
-                        className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${viewMode === 'edit' ? 'bg-slate-100 text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                    >
-                        <Edit3 size={16} /> Edit
-                    </button>
-                    <button 
-                        onClick={() => setViewMode('investor')}
-                        className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${viewMode === 'investor' ? 'bg-slate-100 text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                    >
-                        <Eye size={16} /> Preview
-                    </button>
+        {/* Investor View Banner */}
+        {viewMode === 'investor' && (
+            <div className="mb-6 bg-indigo-50 border border-indigo-100 p-3 rounded-xl flex items-center justify-between print:hidden">
+                <div className="flex items-center gap-2 text-indigo-800 text-sm font-medium">
+                    <Eye size={16} />
+                    You are viewing your profile as an investor would see it.
                 </div>
-                <button 
-                    onClick={() => setIsShareModalOpen(true)}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-lg font-bold shadow-sm hover:bg-slate-50 transition-all"
-                >
-                    <Share2 size={18} /> Share
-                </button>
-                <button 
-                    onClick={() => navigate('/pitch-decks')}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-lg font-bold shadow-lg shadow-indigo-600/20 hover:bg-indigo-700 hover:-translate-y-0.5 transition-all"
-                >
-                    <Presentation size={18} /> Generate Deck
+                <button onClick={() => setViewMode('edit')} className="text-xs font-bold text-indigo-600 hover:underline">
+                    Back to Edit
                 </button>
             </div>
-        </div>
+        )}
 
-        {/* PRINT HEADER */}
-        <div className="hidden print:block mb-8 border-b border-slate-200 pb-4">
-            <h1 className="text-4xl font-bold text-slate-900 mb-2">{displayProfile.name}</h1>
-            <p className="text-xl text-slate-600">{displayProfile.tagline}</p>
-            <div className="flex gap-4 mt-4 text-sm text-slate-500">
-                <span>{displayProfile.industry}</span>
-                <span>•</span>
-                <span>{displayProfile.stage}</span>
-            </div>
-        </div>
+        <ProfilePrintHeader profile={displayProfile} />
 
-        {/* CONTENT GRID */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start print:block print:space-y-8">
             
             {/* MAIN COLUMN (8 cols) */}
-            <div className="lg:col-span-8 space-y-8 print:w-full">
-                
-                {/* 0. Research Card (New) */}
-                <div className="print:break-inside-avoid">
-                    <ResearchCard 
-                        profile={displayProfile}
-                        onSave={handleSaveContext}
-                    />
-                </div>
-
-                <div className="print:break-inside-avoid">
-                    <OverviewCard 
-                        viewMode={viewMode} 
-                        profile={displayProfile} 
-                        onSave={handleSaveContext} 
-                    />
-                </div>
-                
-                <div className="print:break-inside-avoid">
-                    <BusinessCard 
-                        viewMode={viewMode} 
-                        profile={displayProfile}
-                        onSave={handleSaveContext}
-                    />
-                </div>
-
-                <div className="print:break-inside-avoid">
-                    <TractionCard 
-                        viewMode={viewMode} 
-                        profile={displayProfile}
-                        metrics={profileDTO?.metrics}
-                        onSave={handleSaveContext}
-                    />
-                </div>
-
-                <div className="print:break-inside-avoid">
-                    <TeamCard 
-                        viewMode={viewMode} 
-                        founders={displayFounders}
-                        onSave={(founders) => saveProfile({ startup_id: displayProfile!.id, founders })}
-                    />
-                </div>
+            <div className="lg:col-span-8">
+                <ProfilePageContent 
+                    profile={displayProfile}
+                    founders={displayFounders}
+                    metrics={profileDTO?.metrics}
+                    viewMode={viewMode}
+                    onSaveContext={handleSaveContext}
+                    onSaveTeam={handleSaveTeam}
+                />
             </div>
 
             {/* SIDEBAR COLUMN (4 cols) */}
-            <div className="lg:col-span-4 space-y-6 lg:sticky lg:top-24 print:hidden">
-                <SummaryCard profile={displayProfile} />
-                
-                <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-                    <h3 className="font-bold text-slate-900 mb-3">Profile Status</h3>
-                    <div className="space-y-4">
-                        <div className="flex items-center justify-between text-sm">
-                            <span className="text-slate-500">Last Synced</span>
-                            <span className="font-medium flex items-center gap-2">
-                                {new Date().toLocaleDateString()}
-                                {isSaving ? <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" /> : <div className="w-2 h-2 bg-green-500 rounded-full" />}
-                            </span>
-                        </div>
-                        
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                                {displayProfile.isPublic ? (
-                                    <Globe size={16} className="text-green-500" />
-                                ) : (
-                                    <Lock size={16} className="text-slate-400" />
-                                )}
-                                <span>Public Access</span>
-                            </div>
-                            <button 
-                                onClick={toggleVisibility}
-                                className={`relative w-10 h-6 rounded-full transition-colors ${displayProfile.isPublic ? 'bg-green-500' : 'bg-slate-200'}`}
-                            >
-                                <div className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform shadow-sm ${displayProfile.isPublic ? 'translate-x-4' : ''}`} />
-                            </button>
-                        </div>
-                        
-                        <div className="grid grid-cols-2 gap-2 mt-4 pt-4 border-t border-slate-100">
-                            <button 
-                                onClick={() => {
-                                    navigator.clipboard.writeText(`${window.location.origin}/#/s/${displayProfile!.id}`);
-                                    success("Link copied!");
-                                }}
-                                disabled={!displayProfile.isPublic}
-                                className="py-2 border border-slate-200 text-slate-600 text-xs font-bold rounded-lg hover:bg-slate-50 flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                <Copy size={14} /> Copy Link
-                            </button>
-                            <button 
-                                onClick={() => window.open(`/#/s/${displayProfile!.id}`, '_blank')}
-                                disabled={!displayProfile.isPublic}
-                                className="py-2 border border-slate-200 text-indigo-600 text-xs font-bold rounded-lg hover:bg-indigo-50 flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                <Share2 size={14} /> View Public
-                            </button>
-                        </div>
-                    </div>
-                </div>
+            <div className="lg:col-span-4">
+                <ProfilePageSidebar 
+                    profile={displayProfile}
+                    viewMode={viewMode}
+                    isSaving={isSaving}
+                    onToggleVisibility={toggleVisibility}
+                />
             </div>
 
         </div>

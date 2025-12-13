@@ -2,37 +2,30 @@
 import React from 'react';
 import { TrendingUp, TrendingDown, DollarSign, Activity, AlertTriangle } from 'lucide-react';
 import { AreaChart, Area, ResponsiveContainer, Tooltip } from 'recharts';
-import { MetricsSnapshot } from '../../../types';
+import { MetricsSnapshot, StartupStats } from '../../../types';
 import { useNavigate } from 'react-router-dom';
 
 interface FounderCommandCenterProps {
-  metrics: MetricsSnapshot[];
+  metrics: MetricsSnapshot[]; // Kept for the chart history
+  stats: StartupStats | null; // New pre-calculated stats
 }
 
-export const FounderCommandCenter: React.FC<FounderCommandCenterProps> = ({ metrics }) => {
+export const FounderCommandCenter: React.FC<FounderCommandCenterProps> = ({ metrics, stats }) => {
   const navigate = useNavigate();
-  const latest = metrics[metrics.length - 1] || { 
-    mrr: 0, 
-    burnRate: 0, 
-    runwayMonths: 0, 
-    cashBalance: 0 
-  };
+  
+  // Use stats if available, otherwise fallback to local calculation (for guest/demo mode)
+  const latest = metrics[metrics.length - 1] || { mrr: 0, burnRate: 0, cashBalance: 0 };
+  
+  const burnRate = stats ? stats.burnRate : (latest.burnRate || 0);
+  const cash = stats ? stats.cashBalance : (latest.cashBalance || 0);
+  const runway = stats ? stats.runwayMonths : ((latest.cashBalance || 0) / (latest.burnRate || 1));
+  const currentMrr = stats ? stats.currentMrr : (latest.mrr || 0);
+  const arr = currentMrr * 12;
 
-  // Values with fallbacks
-  const burnRate = latest.burnRate || 0;
-  const cash = latest.cashBalance || 0;
-  
-  // Calculate runway if not explicit (Cash / Burn)
-  let runway = latest.runwayMonths;
-  if (!runway && burnRate > 0) {
-      runway = cash / burnRate;
-  }
-  runway = runway || 0;
-  
-  // Projection Data
+  // Projection Data (Client-side visualization still useful)
   const projectionData = metrics.length > 1 
     ? metrics.map((m, i) => ({ month: `M${i}`, value: (m.mrr || 0) * 12 }))
-    : Array(12).fill(0).map((_, i) => ({ month: `M${i}`, value: (latest.mrr || 0) * 12 * (1 + i * 0.05) }));
+    : Array(12).fill(0).map((_, i) => ({ month: `M${i}`, value: currentMrr * 12 * (1 + i * 0.05) }));
 
   const isUrgent = runway < 6 && runway > 0;
 
@@ -77,7 +70,7 @@ export const FounderCommandCenter: React.FC<FounderCommandCenterProps> = ({ metr
             Runway
           </div>
           <div className={`text-2xl font-bold ${isUrgent ? 'text-[#991B1B]' : 'text-[#1A1A1A]'}`}>
-            {runway === Infinity ? '∞' : runway.toFixed(1)} <span className="text-sm font-normal text-[#6B7280]">months</span>
+            {runway >= 999 ? '∞' : runway.toFixed(1)} <span className="text-sm font-normal text-[#6B7280]">months</span>
           </div>
         </div>
 
@@ -86,7 +79,7 @@ export const FounderCommandCenter: React.FC<FounderCommandCenterProps> = ({ metr
            <div className="text-xs font-bold text-[#6B7280] uppercase tracking-wide mb-2 flex items-center gap-2">
             <TrendingUp size={14} className="text-[#6B7280]" /> ARR Proj.
           </div>
-          <div className="text-2xl font-bold text-[#1A1A1A]">${((latest.mrr || 0) * 12).toLocaleString()}</div>
+          <div className="text-2xl font-bold text-[#1A1A1A]">${arr.toLocaleString()}</div>
         </div>
       </div>
 

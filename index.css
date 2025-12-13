@@ -11,119 +11,42 @@ html, body, #root {
 
 body {
   font-family: 'Inter', sans-serif;
-  background-color: #F7F7F5;
+  background-color: #FFFFFF;
   overflow-x: hidden;
-  color: #1A1A1A;
+  color: #111827;
 }
 
-/* Custom scrollbar for webkit */
+/* Large Block Grid Background */
+.bg-block-grid {
+  background-image: 
+    linear-gradient(to right, #F3F4F6 1px, transparent 1px),
+    linear-gradient(to bottom, #F3F4F6 1px, transparent 1px);
+  background-size: 60px 60px;
+  background-position: center top;
+}
+
+.mask-gradient-b {
+  mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
+}
+
+/* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #F7F7F5; 
+  background: #F9FAFB; 
 }
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1; 
+  background: #CBD5E1; 
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8; 
+  background: #9CA3AF; 
 }
 
-/* Print Styles for PDF Export & One-Pager */
 @media print {
-  @page {
-    margin: 0.5cm;
-    size: A4 portrait;
-  }
-
-  /* Global Hide Logic */
   nav, aside, footer, button, .no-print, [role="dialog"] {
     display: none !important;
-  }
-
-  /* Layout Overrides */
-  body {
-    background-color: white !important;
-    font-size: 11pt; /* Slightly smaller for density */
-    -webkit-print-color-adjust: exact !important; /* Force background colors */
-    print-color-adjust: exact !important;
-    width: 100%;
-  }
-
-  .min-h-screen {
-    min-height: auto !important;
-    height: auto !important;
-    padding: 0 !important;
-    overflow: visible !important;
-  }
-
-  /* Container adjustments */
-  .container {
-    max-width: 100% !important;
-    padding: 0 !important;
-    margin: 0 !important;
-  }
-
-  /* Card flatteners */
-  .bg-white, .bg-slate-50, .bg-indigo-50, .bg-slate-900 {
-    box-shadow: none !important;
-    border: 1px solid #ddd !important;
-    break-inside: avoid;
-  }
-
-  /* Grid Fixes - Force single column or specific print layout */
-  .grid {
-    display: block !important;
-  }
-  
-  .lg\:col-span-8, .lg\:col-span-12 {
-    width: 100% !important;
-  }
-  
-  .lg\:col-span-4 {
-    display: none !important; /* Hide sidebar completely in print */
-  }
-
-  /* Component Specifics */
-  .space-y-8 > :not([hidden]) ~ :not([hidden]) {
-    margin-top: 1rem !important;
-  }
-
-  /* Text Colors */
-  .text-white {
-    color: #000 !important; /* Save ink, improve readability */
-  }
-  .bg-slate-900 {
-    background-color: #f8fafc !important; /* Lighten dark backgrounds */
-    color: #0f172a !important;
-    border: 1px solid #cbd5e1 !important;
-  }
-  .bg-gradient-to-br {
-    background: none !important;
-    background-color: #f8fafc !important;
-  }
-
-  /* Page Break Handling */
-  .page-break {
-    break-after: page;
-    page-break-after: always;
-  }
-  
-  .print\:block {
-    display: block !important;
-  }
-  
-  .print\:hidden {
-    display: none !important;
-  }
-  
-  .print\:w-full {
-    width: 100% !important;
-  }
-  
-  .print\:break-inside-avoid {
-    break-inside: avoid;
   }
 }

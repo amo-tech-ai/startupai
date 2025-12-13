@@ -11,7 +11,6 @@ interface FinalCTAProps {
   secondaryCta?: string;
 }
 
-// Workaround for strict type checking issues with framer-motion in some environments
 const MotionDiv = motion.div as any;
 
 const FinalCTA: React.FC<FinalCTAProps> = ({
@@ -23,10 +22,7 @@ const FinalCTA: React.FC<FinalCTAProps> = ({
   const navigate = useNavigate();
 
   return (
-    <section className="py-24 bg-white relative overflow-hidden">
-        {/* Decorative Background */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[600px] bg-indigo-50/50 rounded-full blur-3xl -z-10" />
-
+    <section className="py-24 bg-white relative overflow-hidden border-t border-slate-200">
         <div className="container mx-auto px-6 text-center relative z-10">
             <MotionDiv
                 initial={{ opacity: 0, y: 20 }}
@@ -44,11 +40,11 @@ const FinalCTA: React.FC<FinalCTAProps> = ({
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                     <button 
                       onClick={() => navigate('/onboarding')}
-                      className="w-full sm:w-auto px-8 py-4 bg-primary-600 text-white rounded-full font-bold text-lg hover:bg-primary-700 transition-all shadow-xl shadow-primary-600/30 flex items-center justify-center gap-2 hover:-translate-y-1"
+                      className="w-full sm:w-auto px-8 py-4 bg-brand-500 text-white rounded-xl font-bold text-lg hover:bg-brand-600 transition-all shadow-xl shadow-brand-500/20 flex items-center justify-center gap-2 hover:-translate-y-1"
                     >
                         {primaryCta} <ArrowRight size={20} />
                     </button>
-                    <button className="w-full sm:w-auto px-8 py-4 bg-white text-slate-700 border border-slate-200 rounded-full font-bold text-lg hover:bg-slate-50 transition-all hover:-translate-y-1">
+                    <button className="w-full sm:w-auto px-8 py-4 bg-white text-slate-700 border border-slate-200 rounded-xl font-bold text-lg hover:bg-slate-50 transition-all hover:-translate-y-1">
                         {secondaryCta}
                     </button>
                 </div>

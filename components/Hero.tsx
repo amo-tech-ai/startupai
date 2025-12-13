@@ -1,176 +1,146 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Play, ArrowRight, BarChart3, Users, Globe, Zap } from 'lucide-react';
-import { AreaChart, Area, ResponsiveContainer, Tooltip } from 'recharts';
+import { ArrowRight, Globe, Search, Layout, FileText, Users, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-// Workaround for strict type checking issues with framer-motion in some environments
 const MotionDiv = motion.div as any;
-
-const data = [
-  { name: 'Mon', value: 40 },
-  { name: 'Tue', value: 30 },
-  { name: 'Wed', value: 60 },
-  { name: 'Thu', value: 45 },
-  { name: 'Fri', value: 80 },
-  { name: 'Sat', value: 70 },
-  { name: 'Sun', value: 95 },
-];
 
 const Hero: React.FC = () => {
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<'Analyze' | 'Deck' | 'Docs' | 'CRM'>('Analyze');
 
   return (
-    <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden bg-gradient-to-br from-indigo-50/50 via-white to-purple-50/30">
-      {/* Background Decor */}
-      <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-primary-200/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
-      <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-indigo-200/20 rounded-full blur-3xl translate-y-1/3 -translate-x-1/4" />
+    <section className="relative pt-32 pb-12 lg:pt-48 lg:pb-32 overflow-hidden bg-white">
+      {/* 1. Large Block Grid Background */}
+      <div className="absolute inset-0 bg-block-grid pointer-events-none mask-gradient-b opacity-40" />
+      
+      {/* 2. Sparkles (Floating Icons) */}
+      <div className="absolute top-40 left-[15%] text-brand-500/80 animate-pulse hidden lg:block">
+        <Sparkles size={40} strokeWidth={1.5} />
+      </div>
+      <div className="absolute top-40 right-[15%] text-brand-500/80 animate-pulse delay-700 hidden lg:block">
+        <Sparkles size={40} strokeWidth={1.5} />
+      </div>
 
       <div className="container mx-auto px-6 relative z-10">
-        <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+        <div className="flex flex-col items-center text-center max-w-5xl mx-auto mb-16">
           
-          {/* Left Content */}
+          {/* Badge */}
           <MotionDiv
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
+            className="inline-flex items-center gap-2 bg-white border border-slate-200 rounded-full px-4 py-1.5 mb-8 shadow-sm cursor-pointer hover:border-brand-200 hover:text-brand-600 transition-colors group"
           >
-            <div className="inline-flex items-center gap-2 bg-white border border-slate-200 shadow-sm rounded-full px-4 py-1.5 mb-8">
-              <span className="flex h-2 w-2 rounded-full bg-primary-600 animate-pulse"></span>
-              <span className="text-xs font-semibold text-slate-600 tracking-wide uppercase">New Founder Edition 2.0</span>
-            </div>
-            
-            <h1 className="text-5xl lg:text-7xl font-bold text-slate-900 tracking-tight leading-[1.1] mb-6">
-              Turn your vision into <span className="text-primary-600">reality</span> with AI.
-            </h1>
-            
-            <p className="text-xl text-slate-600 mb-10 leading-relaxed max-w-lg">
-              The only platform that transforms raw ideas into full business roadmaps, investor decks, and operational workflows in seconds.
-            </p>
-
-            <div className="flex flex-col sm:flex-row gap-4">
-              <button 
-                onClick={() => navigate('/onboarding')}
-                className="inline-flex items-center justify-center gap-2 bg-slate-900 text-white px-8 py-4 rounded-full text-base font-semibold hover:bg-slate-800 transition-all shadow-xl shadow-slate-900/20 hover:-translate-y-1"
-              >
-                Start Free
-                <ArrowRight size={18} />
-              </button>
-              <button className="inline-flex items-center justify-center gap-2 bg-white text-slate-700 border border-slate-200 px-8 py-4 rounded-full text-base font-semibold hover:bg-slate-50 transition-all hover:-translate-y-1">
-                <Play size={18} fill="currentColor" className="text-slate-900" />
-                Watch Demo (2 min)
-              </button>
-            </div>
-
-            <div className="mt-12 flex items-center gap-6 text-slate-500 text-sm font-medium">
-              <div className="flex -space-x-3">
-                 {[1,2,3,4].map(i => (
-                    <img key={i} src={`https://picsum.photos/40/40?random=${i}`} alt="User" className="w-10 h-10 rounded-full border-2 border-white" />
-                 ))}
-              </div>
-              <p>Trusted by 10,000+ founders</p>
+            <span className="text-xs font-semibold text-slate-700 group-hover:text-brand-600 transition-colors">
+              2 Months Free — Annually
+            </span>
+            <div className="bg-slate-100 rounded-full p-0.5 group-hover:bg-brand-100 transition-colors">
+                <ArrowRight size={12} className="text-slate-600 group-hover:text-brand-600" />
             </div>
           </MotionDiv>
-
-          {/* Right Illustration */}
+          
+          {/* Heading */}
           <MotionDiv
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
-            className="relative w-full min-w-0"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
           >
-            <div className="relative z-10 bg-white rounded-3xl shadow-2xl shadow-indigo-500/10 border border-slate-200 overflow-hidden">
-                {/* Window Controls */}
-                <div className="bg-slate-50 px-6 py-4 border-b border-slate-100 flex gap-2">
-                    <div className="w-3 h-3 rounded-full bg-red-400"></div>
-                    <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
-                    <div className="w-3 h-3 rounded-full bg-green-400"></div>
+            <h1 className="text-5xl md:text-7xl font-bold text-slate-900 tracking-tight leading-[1.1] mb-6">
+              Turn startup ideas into <br />
+              <span className="text-brand-500">investor-ready</span> assets
+            </h1>
+          </MotionDiv>
+          
+          {/* Subheading */}
+          <MotionDiv
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            <p className="text-xl text-slate-500 mb-12 leading-relaxed max-w-2xl mx-auto font-medium">
+              Power your AI apps with clean web data from any website. <br className="hidden md:block"/>
+              <span className="text-slate-400">It's also open source.</span>
+            </p>
+          </MotionDiv>
+
+          {/* Interactive Input Mockup */}
+          <MotionDiv
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.3 }}
+            className="w-full max-w-3xl mx-auto"
+          >
+            <div className="bg-white rounded-2xl shadow-[0_20px_50px_-12px_rgba(0,0,0,0.1)] border border-slate-200 overflow-hidden relative z-20">
+                {/* Input Area */}
+                <div className="p-3 pl-4 flex flex-col md:flex-row items-center gap-4 bg-white relative z-20">
+                    {/* URL Input */}
+                    <div className="flex-1 w-full flex items-center gap-3">
+                        <Globe className="text-slate-400 shrink-0" size={20} />
+                        <input 
+                            type="text" 
+                            defaultValue="https://example.com"
+                            className="w-full py-3 text-slate-700 text-lg outline-none font-medium placeholder-slate-300 bg-transparent"
+                        />
+                    </div>
+
+                    <div className="h-8 w-px bg-slate-100 hidden md:block"></div>
+
+                    {/* Actions */}
+                    <div className="flex items-center gap-1 w-full md:w-auto overflow-x-auto">
+                        {['Analyze', 'Deck', 'Docs', 'CRM'].map((tab) => {
+                            const isActive = activeTab === tab;
+                            return (
+                                <button 
+                                    key={tab}
+                                    onClick={() => setActiveTab(tab as any)}
+                                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${
+                                        isActive 
+                                        ? 'bg-slate-50 text-slate-900 shadow-sm border border-slate-200' 
+                                        : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                                    }`}
+                                >
+                                    {tab === 'Analyze' && <Search size={14} className={isActive ? 'text-brand-500' : ''} />}
+                                    {tab === 'Deck' && <Layout size={14} className={isActive ? 'text-brand-500' : ''} />}
+                                    {tab === 'Docs' && <FileText size={14} className={isActive ? 'text-brand-500' : ''} />}
+                                    {tab === 'CRM' && <Users size={14} className={isActive ? 'text-brand-500' : ''} />}
+                                    {tab}
+                                </button>
+                            )
+                        })}
+                    </div>
+
+                    <button 
+                        onClick={() => navigate('/onboarding')}
+                        className="w-full md:w-auto flex items-center justify-center gap-2 bg-brand-500 hover:bg-brand-600 text-white px-5 py-3 rounded-xl transition-all hover:scale-105 active:scale-95 shadow-md shadow-brand-500/20 font-bold"
+                    >
+                        Generate <ArrowRight size={18} />
+                    </button>
                 </div>
 
-                {/* Dashboard Body */}
-                <div className="p-8">
-                    <div className="flex justify-between items-center mb-8">
-                        <div>
-                            <h3 className="text-lg font-bold text-slate-800">Growth Projection</h3>
-                            <p className="text-sm text-slate-500">Real-time market analysis</p>
-                        </div>
-                        <div className="px-3 py-1 bg-green-50 text-green-700 text-sm font-semibold rounded-full flex items-center gap-1">
-                            +124% <ArrowRight size={12} className="-rotate-45" />
-                        </div>
-                    </div>
-                    
-                    {/* Recharts Container Fix: Strict dimensions */}
-                    <div className="w-full min-w-0">
-                      <div className="h-64 w-full min-w-0 bg-slate-50/50 rounded-xl border border-slate-100 p-2">
-                          <ResponsiveContainer width="100%" height="100%">
-                              <AreaChart data={data}>
-                                  <defs>
-                                      <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                                          <stop offset="5%" stopColor="#6366f1" stopOpacity={0.2}/>
-                                          <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
-                                      </linearGradient>
-                                  </defs>
-                                  <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }} />
-                                  <Area type="monotone" dataKey="value" stroke="#6366f1" strokeWidth={3} fillOpacity={1} fill="url(#colorValue)" />
-                              </AreaChart>
-                          </ResponsiveContainer>
-                      </div>
-                    </div>
-
-                    <div className="mt-8 grid grid-cols-2 gap-4">
-                        <div className="bg-slate-50 p-4 rounded-xl">
-                            <div className="flex items-center gap-2 mb-2 text-slate-500 text-sm font-medium">
-                                <Users size={16} />
-                                <span>Active Users</span>
-                            </div>
-                            <div className="text-2xl font-bold text-slate-900">4,289</div>
-                        </div>
-                         <div className="bg-slate-50 p-4 rounded-xl">
-                            <div className="flex items-center gap-2 mb-2 text-slate-500 text-sm font-medium">
-                                <Globe size={16} />
-                                <span>Regions</span>
-                            </div>
-                            <div className="text-2xl font-bold text-slate-900">24</div>
-                        </div>
+                {/* Output Area Simulation (Faded code) */}
+                <div className="border-t border-slate-100 bg-slate-50/50 p-6 text-left font-mono text-xs md:text-sm text-slate-400 overflow-hidden relative h-40">
+                    <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/20 to-white pointer-events-none"></div>
+                    <div className="opacity-70 space-y-1.5">
+                        <p className="flex gap-2"><span className="text-purple-600">const</span> response = <span className="text-purple-600">await</span> ai.analyze(<span className="text-green-600">'https://example.com'</span>);</p>
+                        <p className="mb-4">console.log(response);</p>
+                        <p className="text-slate-300">// Output</p>
+                        <p className="text-slate-600">{`{`}</p>
+                        <p className="pl-4 text-slate-600">"status": <span className="text-brand-500">"success"</span>,</p>
+                        <p className="pl-4 text-slate-600">"data": {`{`}</p>
+                        <p className="pl-8 text-slate-600">"valuation": <span className="text-blue-600">"$4.2M"</span>,</p>
+                        <p className="pl-8 text-slate-600">"market_fit": <span className="text-blue-600">"Strong"</span>,</p>
+                        <p className="pl-8 text-slate-600">"next_step": <span className="text-brand-500">"Generate Pitch Deck"</span></p>
+                        <p className="pl-4 text-slate-600">{`}`}</p>
+                        <p className="text-slate-600">{`}`}</p>
                     </div>
                 </div>
             </div>
-
-            {/* Floating Elements */}
-            <MotionDiv 
-                className="absolute -right-8 top-20 bg-white p-5 rounded-2xl shadow-xl border border-slate-100 hidden md:block"
-                animate={{ y: [0, -15, 0] }}
-                transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-            >
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center text-primary-600">
-                        <BarChart3 size={20} />
-                    </div>
-                    <div>
-                        <div className="text-sm font-semibold text-slate-800">Insights Ready</div>
-                        <div className="text-xs text-slate-500">Just now</div>
-                    </div>
-                </div>
-            </MotionDiv>
-
-             <MotionDiv 
-                className="absolute -left-12 bottom-32 bg-slate-900 p-5 rounded-2xl shadow-2xl hidden md:block"
-                animate={{ y: [0, 20, 0] }}
-                transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-            >
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center text-green-400">
-                        <Zap size={20} />
-                    </div>
-                    <div>
-                        <div className="text-sm font-semibold text-white">Efficiency</div>
-                        <div className="text-xs text-slate-400">Boosted by 45%</div>
-                    </div>
-                </div>
-            </MotionDiv>
-
+            
+            {/* Background "Glow" behind the card */}
+            <div className="absolute -inset-1 bg-brand-500/5 rounded-[2rem] blur-xl -z-10 translate-y-4"></div>
           </MotionDiv>
+
         </div>
       </div>
     </section>

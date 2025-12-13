@@ -10,8 +10,8 @@ const Footer: React.FC = () => {
         <div className="grid md:grid-cols-4 gap-12 mb-12">
           <div className="col-span-1 md:col-span-1">
             <div className="flex items-center gap-2 mb-4">
-                <div className="bg-primary-600 text-white p-1.5 rounded-lg">
-                  <Zap size={18} fill="currentColor" />
+                <div className="text-brand-500">
+                  <Zap size={24} fill="currentColor" />
                 </div>
                 <span className="text-xl font-bold text-slate-900">startupAI</span>
             </div>
@@ -23,38 +23,27 @@ const Footer: React.FC = () => {
           <div>
             <h4 className="font-bold text-slate-900 mb-4">Platform</h4>
             <ul className="space-y-2 text-sm text-slate-600">
-              <li>
-                <Link to="/onboarding" className="hover:text-primary-600 transition-colors">Startup Wizard</Link>
-              </li>
-              <li>
-                <Link to="/features" className="hover:text-primary-600 transition-colors">Features</Link>
-              </li>
-              <li>
-                <a href="#" className="hover:text-primary-600 transition-colors">Integrations</a>
-              </li>
-              <li>
-                <Link to="/pricing" className="hover:text-primary-600 transition-colors">Pricing</Link>
-              </li>
-              <li>
-                <Link to="/dashboard" className="hover:text-primary-600 transition-colors font-medium text-indigo-600">Dashboard</Link>
-              </li>
+              <li><Link to="/onboarding" className="hover:text-brand-500 transition-colors">Startup Wizard</Link></li>
+              <li><Link to="/features" className="hover:text-brand-500 transition-colors">Features</Link></li>
+              <li><Link to="/pricing" className="hover:text-brand-500 transition-colors">Pricing</Link></li>
+              <li><Link to="/dashboard" className="hover:text-brand-500 transition-colors">Dashboard</Link></li>
             </ul>
           </div>
 
           <div>
             <h4 className="font-bold text-slate-900 mb-4">Resources</h4>
              <ul className="space-y-2 text-sm text-slate-600">
-              <li><a href="#" className="hover:text-primary-600 transition-colors">Blog</a></li>
-              <li><a href="#" className="hover:text-primary-600 transition-colors">Documentation</a></li>
-              <li><a href="#" className="hover:text-primary-600 transition-colors">Community</a></li>
+              <li><a href="#" className="hover:text-brand-500 transition-colors">Blog</a></li>
+              <li><a href="#" className="hover:text-brand-500 transition-colors">Documentation</a></li>
+              <li><a href="#" className="hover:text-brand-500 transition-colors">Community</a></li>
             </ul>
           </div>
 
           <div>
             <h4 className="font-bold text-slate-900 mb-4">Legal</h4>
              <ul className="space-y-2 text-sm text-slate-600">
-              <li><a href="#" className="hover:text-primary-600 transition-colors">Privacy Policy</a></li>
-              <li><a href="#" className="hover:text-primary-600 transition-colors">Terms of Service</a></li>
+              <li><a href="#" className="hover:text-brand-500 transition-colors">Privacy Policy</a></li>
+              <li><a href="#" className="hover:text-brand-500 transition-colors">Terms of Service</a></li>
             </ul>
           </div>
         </div>

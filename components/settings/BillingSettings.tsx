@@ -1,13 +1,18 @@
 
 import React, { useState, useEffect } from 'react';
-import { Check, CreditCard, CheckCircle2 } from 'lucide-react';
+import { Check, CreditCard, CheckCircle2, Loader2, ExternalLink } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { useToast } from '../../context/ToastContext';
+import { BillingService } from '../../services/billing';
+import { useSearchParams } from 'react-router-dom';
 
 export const BillingSettings: React.FC = () => {
   const { profile, updateProfile } = useData();
-  const { success } = useToast();
+  const { success, info } = useToast();
+  const [searchParams] = useSearchParams();
+  
   const [billingPlan, setBillingPlan] = useState<'free' | 'founder' | 'growth'>(profile?.plan || 'free');
+  const [isLoading, setIsLoading] = useState<string | null>(null); // 'founder' | 'growth' | null
 
   useEffect(() => {
     if (profile?.plan) {
@@ -15,13 +20,42 @@ export const BillingSettings: React.FC = () => {
     }
   }, [profile]);
 
-  const handleUpdatePlan = (newPlan: 'free' | 'founder' | 'growth') => {
-    if (newPlan === billingPlan) return;
+  // Handle Return from Mock Checkout
+  useEffect(() => {
+      const successParam = searchParams.get('success');
+      const planParam = searchParams.get('plan');
+      
+      if (successParam === 'true' && planParam && profile) {
+          if (profile.plan !== planParam) {
+              updateProfile({ plan: planParam as any });
+              success(`Subscription successfully upgraded to ${planParam.charAt(0).toUpperCase() + planParam.slice(1)}!`);
+              // Clear params in a real app
+          }
+      }
+  }, [searchParams, profile]);
+
+  const handleUpgrade = async (planId: 'founder' | 'growth') => {
+    setIsLoading(planId);
+    info("Redirecting to secure checkout...");
     
-    // In a real app, this would trigger a Stripe checkout or portal
-    setBillingPlan(newPlan);
-    updateProfile({ plan: newPlan });
-    success(`Subscription updated to ${newPlan.charAt(0).toUpperCase() + newPlan.slice(1)} plan`);
+    try {
+        const url = await BillingService.createCheckoutSession(planId);
+        // In a real app: window.location.href = url;
+        // For simulation, we just reload the page with params
+        window.location.href = url; 
+    } catch (e) {
+        console.error(e);
+    } finally {
+        setIsLoading(null);
+    }
+  };
+
+  const handleManageSubscription = async () => {
+      setIsLoading('portal');
+      info("Opening billing portal...");
+      await BillingService.openCustomerPortal();
+      setIsLoading(null);
+      success("Portal opened (Mock)");
   };
 
   return (
@@ -33,11 +67,12 @@ export const BillingSettings: React.FC = () => {
                 { id: 'growth', name: 'Growth', price: '$79', features: ['Everything in Founder', 'Team Collaboration', 'Priority Support', 'Data Room Access'] }
             ].map((plan) => {
                 const isActive = billingPlan === plan.id;
+                const isProcessing = isLoading === plan.id;
+                
                 return (
                     <div 
                         key={plan.id}
-                        onClick={() => handleUpdatePlan(plan.id as any)}
-                        className={`relative p-6 rounded-2xl border-2 cursor-pointer transition-all flex flex-col h-full ${
+                        className={`relative p-6 rounded-2xl border-2 transition-all flex flex-col h-full ${
                             isActive
                             ? 'border-indigo-600 bg-indigo-50 shadow-md ring-2 ring-indigo-200' 
                             : 'border-slate-100 hover:border-slate-300 hover:bg-slate-50'
@@ -60,32 +95,57 @@ export const BillingSettings: React.FC = () => {
                                 </li>
                             ))}
                         </ul>
-                        <button 
-                            className={`w-full py-2 rounded-lg font-bold text-sm transition-colors ${
-                                isActive 
-                                ? 'bg-indigo-600 text-white hover:bg-indigo-700' 
-                                : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
-                            }`}
-                        >
-                            {isActive ? 'Current Plan' : plan.id === 'free' ? 'Downgrade' : 'Upgrade'}
-                        </button>
+                        
+                        {isActive ? (
+                            <button 
+                                disabled
+                                className="w-full py-2 rounded-lg font-bold text-sm bg-indigo-600 text-white opacity-90 cursor-default"
+                            >
+                                Current Plan
+                            </button>
+                        ) : plan.id === 'free' ? (
+                             <button 
+                                disabled
+                                className="w-full py-2 rounded-lg font-bold text-sm bg-white border border-slate-200 text-slate-400 cursor-not-allowed"
+                            >
+                                Downgrade
+                            </button>
+                        ) : (
+                            <button 
+                                onClick={() => handleUpgrade(plan.id as any)}
+                                disabled={!!isLoading}
+                                className="w-full py-2 rounded-lg font-bold text-sm bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-indigo-300 hover:text-indigo-600 transition-colors flex items-center justify-center gap-2"
+                            >
+                                {isProcessing && <Loader2 size={16} className="animate-spin" />}
+                                {isProcessing ? 'Processing...' : 'Upgrade'}
+                            </button>
+                        )}
                     </div>
                 );
             })}
         </div>
 
-        <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-                <div className="p-3 bg-white border border-slate-200 rounded-lg shadow-sm">
-                    <CreditCard size={24} className="text-slate-600" />
+        {billingPlan !== 'free' && (
+            <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                    <div className="p-3 bg-white border border-slate-200 rounded-lg shadow-sm">
+                        <CreditCard size={24} className="text-slate-600" />
+                    </div>
+                    <div>
+                        <div className="font-bold text-slate-900">Payment Settings</div>
+                        <div className="text-sm text-slate-500">Manage invoices and payment methods via Stripe.</div>
+                    </div>
                 </div>
-                <div>
-                    <div className="font-bold text-slate-900">Payment Method</div>
-                    <div className="text-sm text-slate-500">Visa ending in 4242 • Expires 12/25</div>
-                </div>
+                <button 
+                    onClick={handleManageSubscription}
+                    disabled={!!isLoading}
+                    className="text-sm font-bold text-indigo-600 hover:underline flex items-center gap-1"
+                >
+                    {isLoading === 'portal' ? <Loader2 size={14} className="animate-spin" /> : <ExternalLink size={14} />}
+                    Manage Subscription
+                </button>
             </div>
-            <button className="text-sm font-bold text-indigo-600 hover:underline">Update Card</button>
-        </div>
+        )}
     </div>
   );
 };

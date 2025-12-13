@@ -1,18 +1,28 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useData } from '../context/DataContext';
 import { Deck } from '../types';
 import { PitchDeckGallery } from './pitch-deck/PitchDeckGallery';
 import { NewDeckModal } from './pitch-deck/NewDeckModal';
 import { DeckEditor } from './pitch-deck/DeckEditor';
 import { AnimatePresence } from 'framer-motion';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 
 const PitchDecks: React.FC = () => {
   const { decks } = useData();
   const { deckId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Auto-open modal if state passed
+  useEffect(() => {
+      if (location.state && (location.state as any).openNew) {
+          setIsModalOpen(true);
+          // Clear state so it doesn't reopen on refresh/back
+          window.history.replaceState({}, document.title);
+      }
+  }, [location]);
 
   // Derive view state from URL parameter
   const selectedDeck = deckId ? decks.find(d => d.id === deckId) : null;

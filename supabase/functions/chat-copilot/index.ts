@@ -45,6 +45,22 @@ serve(async (req) => {
       Cash: $${latestMetric.cashBalance || 0}
     ` : "Metrics: No data available.";
 
+    // CRM Context Construction
+    const deals = context.deals || [];
+    const pipelineValue = deals.reduce((acc: number, d: any) => acc + (d.stage !== 'Closed' ? d.value : 0), 0);
+    const dealContext = deals.length > 0 ? `
+      Active Pipeline Value: $${pipelineValue}
+      Top Deals:
+      ${deals.slice(0, 5).map((d: any) => `- ${d.company} (${d.stage}): $${d.amount || d.value}`).join('\n')}
+    ` : "CRM: No active deals.";
+
+    // Task Context Construction
+    const tasks = context.tasks || [];
+    const taskContext = tasks.length > 0 ? `
+      Active Tasks:
+      ${tasks.filter((t: any) => t.status !== 'Done').slice(0, 5).map((t: any) => `- [${t.priority}] ${t.title}`).join('\n')}
+    ` : "Tasks: No pending tasks.";
+
     const systemInstruction = `
       You are the "StartupAI Copilot", an expert venture capital advisor and operational co-founder.
       You are talking to the founder of the startup described below.
@@ -52,6 +68,8 @@ serve(async (req) => {
       CONTEXT:
       ${profileContext}
       ${metricsContext}
+      ${dealContext}
+      ${taskContext}
 
       ROLE:
       - Be concise, actionable, and encouraging but realistic.

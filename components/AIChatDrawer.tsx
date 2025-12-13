@@ -19,7 +19,7 @@ interface AIChatDrawerProps {
 const CHAT_STORAGE_KEY = 'startup_ai_chat_history';
 
 export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({ isOpen, onClose }) => {
-  const { profile, metrics } = useData();
+  const { profile, metrics, deals, tasks } = useData(); // Added deals, tasks
   const [input, setInput] = useState('');
   
   // Initialize from storage or default welcome
@@ -33,7 +33,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({ isOpen, onClose }) =
       return [{ 
           id: 'welcome', 
           role: 'model', 
-          content: `Hi! I'm your Startup Copilot. I have access to your profile and metrics. How can I help you grow ${profile?.name || 'your startup'} today?`, 
+          content: `Hi! I'm your Startup Copilot. I have access to your metrics, CRM pipeline, and roadmap. How can I help you grow ${profile?.name || 'your startup'} today?`, 
           timestamp: new Date().toISOString() 
       }];
   });
@@ -78,7 +78,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({ isOpen, onClose }) =
         API_KEY,
         apiHistory,
         userMsg.content,
-        { profile, metrics }
+        { profile, metrics, deals, tasks } // Pass full context
       );
 
       const aiMsg: ChatMessage = {

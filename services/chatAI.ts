@@ -1,17 +1,21 @@
 
 import { GoogleGenAI } from "@google/genai";
-import { StartupProfile, MetricsSnapshot } from "../types";
+import { StartupProfile, MetricsSnapshot, Deal, Task } from "../types";
 import { supabase } from "../lib/supabaseClient";
+
+interface ChatContext {
+    profile: StartupProfile | null;
+    metrics: MetricsSnapshot[];
+    deals?: Deal[];
+    tasks?: Task[];
+}
 
 export const ChatAI = {
   async sendMessage(
     apiKey: string,
     history: { role: string; parts: { text: string }[] }[],
     message: string,
-    context: {
-        profile: StartupProfile | null;
-        metrics: MetricsSnapshot[];
-    }
+    context: ChatContext
   ) {
     // 1. Try Supabase Edge Function (Preferred for Security)
     if (supabase) {
@@ -22,8 +26,10 @@ export const ChatAI = {
                     message, 
                     context: {
                         profile: context.profile,
-                        // Minimize payload size if metrics history is huge
-                        metrics: context.metrics.slice(-12) 
+                        // Minimize payload size
+                        metrics: context.metrics.slice(-12),
+                        deals: context.deals?.slice(0, 10), // Send top 10 deals
+                        tasks: context.tasks?.slice(0, 10)  // Send top 10 tasks
                     } 
                 }
             });
@@ -55,6 +61,20 @@ export const ChatAI = {
       Cash: $${latestMetric.cashBalance || 0}
     ` : "Metrics: No data available.";
 
+    // CRM Context
+    const pipelineValue = context.deals?.reduce((acc, d) => acc + (d.stage !== 'Closed' ? d.value : 0), 0) || 0;
+    const dealContext = context.deals && context.deals.length > 0 ? `
+      Active Pipeline Value: $${pipelineValue}
+      Top Deals:
+      ${context.deals.slice(0, 5).map(d => `- ${d.company} (${d.stage}): $${d.value}`).join('\n')}
+    ` : "CRM: No active deals.";
+
+    // Task Context
+    const taskContext = context.tasks && context.tasks.length > 0 ? `
+      Active Tasks:
+      ${context.tasks.filter(t => t.status !== 'Done').slice(0, 5).map(t => `- [${t.priority}] ${t.title}`).join('\n')}
+    ` : "Tasks: No pending tasks.";
+
     const systemInstruction = `
       You are the "StartupAI Copilot", an expert venture capital advisor and operational co-founder.
       You are talking to the founder of the startup described below.
@@ -62,11 +82,14 @@ export const ChatAI = {
       CONTEXT:
       ${profileContext}
       ${metricsContext}
+      ${dealContext}
+      ${taskContext}
 
       ROLE:
       - Be concise, actionable, and encouraging but realistic.
       - If asked about metrics, refer to the data provided.
       - If asked for advice, use Paul Graham / Y Combinator principles.
+      - You can see their Deals and Tasks. Refer to them if relevant.
     `;
 
     try {

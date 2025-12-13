@@ -2,6 +2,7 @@
 import React from 'react';
 import { Plus, UserPlus, FileText } from 'lucide-react';
 import { StartupProfile } from '../../types';
+import { useNavigate } from 'react-router-dom';
 
 interface WelcomeHeaderProps {
   profile: StartupProfile | null;
@@ -16,7 +17,13 @@ export const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({
   onAddContact,
   onCreateDoc 
 }) => {
+  const navigate = useNavigate();
   const startupName = profile?.name || "My Startup";
+
+  const handleNewDeck = () => {
+      // Navigate with state to trigger modal open
+      navigate('/pitch-decks', { state: { openNew: true } });
+  };
 
   return (
     <section className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-2 border-b border-[#E5E5E5]">
@@ -33,7 +40,7 @@ export const WelcomeHeader: React.FC<WelcomeHeaderProps> = ({
       
       <div className="flex flex-wrap items-center gap-3">
          <button 
-            onClick={onNewDeck}
+            onClick={handleNewDeck}
             className="flex items-center gap-2 px-6 py-3 bg-[#1A1A1A] text-white rounded-lg font-medium shadow-sm hover:bg-black transition-all hover:-translate-y-0.5"
          >
             <Plus size={18} /> New Deck

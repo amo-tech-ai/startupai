@@ -10,6 +10,10 @@ async function runAI(action: string, payload: any, apiKey: string) {
     // 1. Try Supabase Edge Function (Keeps API Key Secure & Uses centralized logic)
     if (supabase) {
         try {
+            // NOTE: Deep Research/Thinking agents can take 30-60s. We MUST invoke with the client library's global config
+            // but the per-request timeout isn't easily set in the JS client without global config changes.
+            // However, Edge Functions default timeout is 60s (Pro plan) or 10s (Free). 
+            // We rely on the platform limit here.
             const { data, error } = await supabase.functions.invoke('ai-helper', {
                 body: { action, payload }
             });

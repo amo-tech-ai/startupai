@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Send, Sparkles, User, Bot, Loader2, RefreshCw } from 'lucide-react';
+import { X, Send, Sparkles, User, Bot, Loader2, Trash2 } from 'lucide-react';
 import { ChatAI } from '../services/chatAI';
 import { useData } from '../context/DataContext';
 import { API_KEY } from '../lib/env';
@@ -16,20 +16,42 @@ interface AIChatDrawerProps {
   onClose: () => void;
 }
 
+const CHAT_STORAGE_KEY = 'startup_ai_chat_history';
+
 export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({ isOpen, onClose }) => {
   const { profile, metrics } = useData();
   const [input, setInput] = useState('');
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    { id: 'welcome', role: 'model', content: `Hi! I'm your Startup Copilot. I have access to your profile and metrics. How can I help you grow ${profile?.name || 'your startup'} today?`, timestamp: new Date().toISOString() }
-  ]);
+  
+  // Initialize from storage or default welcome
+  const [messages, setMessages] = useState<ChatMessage[]>(() => {
+      const saved = sessionStorage.getItem(CHAT_STORAGE_KEY);
+      if (saved) {
+          try {
+              return JSON.parse(saved);
+          } catch(e) { console.error("Failed to parse chat history"); }
+      }
+      return [{ 
+          id: 'welcome', 
+          role: 'model', 
+          content: `Hi! I'm your Startup Copilot. I have access to your profile and metrics. How can I help you grow ${profile?.name || 'your startup'} today?`, 
+          timestamp: new Date().toISOString() 
+      }];
+  });
+
   const [isTyping, setIsTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Auto-save to sessionStorage
+  useEffect(() => {
+      sessionStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(messages));
+  }, [messages]);
+
+  // Scroll to bottom on new messages
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages, isOpen]);
+  }, [messages, isOpen, isTyping]);
 
   const handleSend = async () => {
     if (!input.trim() || !API_KEY) return;
@@ -80,6 +102,17 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({ isOpen, onClose }) =
     }
   };
 
+  const handleClear = () => {
+      const welcomeMsg = [{ 
+          id: 'welcome', 
+          role: 'model', 
+          content: `Hi! I'm your Startup Copilot. Context reset.`, 
+          timestamp: new Date().toISOString() 
+      } as ChatMessage];
+      setMessages(welcomeMsg);
+      sessionStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(welcomeMsg));
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -119,9 +152,14 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({ isOpen, onClose }) =
                   </p>
                 </div>
               </div>
-              <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full text-slate-400 transition-colors">
-                <X size={20} />
-              </button>
+              <div className="flex items-center gap-1">
+                <button onClick={handleClear} className="p-2 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 transition-colors" title="Clear Chat">
+                    <Trash2 size={18} />
+                </button>
+                <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full text-slate-400 transition-colors">
+                    <X size={20} />
+                </button>
+              </div>
             </div>
 
             {/* Chat Area */}

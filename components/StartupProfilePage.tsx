@@ -62,8 +62,8 @@ const StartupProfilePage: React.FC = () => {
           competitors: profileDTO.competitors || profileDTO.context.competitors || [],
           keyFeatures: profileDTO.context.key_features || [],
           useOfFunds: profileDTO.context.use_of_funds || [],
-          // Map Deep Research
-          deepResearchReport: profileDTO.context.traction_data?.deep_research || null
+          // Map Deep Research: Prefer dedicated column, fallback to traction_data
+          deepResearchReport: profileDTO.context.deep_research_report || profileDTO.context.traction_data?.deep_research || null
       };
 
       displayFounders = profileDTO.founders.map(f => ({
@@ -112,9 +112,9 @@ const StartupProfilePage: React.FC = () => {
       if (profileContext.useOfFunds) contextPayload.use_of_funds = profileContext.useOfFunds;
       if (profileContext.keyFeatures) contextPayload.unique_value = profileContext.keyFeatures.join(', ');
 
-      // Persist Deep Research if present
+      // Persist Deep Research to dedicated column
       if (deepResearchReport) {
-          contextPayload.traction_data = { deep_research: deepResearchReport };
+          contextPayload.deep_research_report = deepResearchReport;
       }
 
       // 3. Send Payload

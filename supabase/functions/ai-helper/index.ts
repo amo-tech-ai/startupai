@@ -49,7 +49,8 @@ serve(async (req) => {
         case 'analyze_risks': {
             const { profile } = payload;
             const prompt = `Analyze risks. Profile: ${JSON.stringify(profile)}. Return JSON with overall_risk_level, issues[].`;
-            result = await stdAgent.runTask(prompt);
+            // Enable Thinking Mode for deep analysis
+            result = await stdAgent.runTask(prompt, { thinkingConfig: { thinkingBudget: 2048 } });
             break;
         }
         case 'generate_summary': {

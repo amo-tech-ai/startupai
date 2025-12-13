@@ -22,16 +22,16 @@ export class DeepResearchAgent {
         - Stage: ${profile.stage}
         - Context: ${profile.description || profile.tagline}
         
-        RESEARCH TASKS:
-        1. Find 2024/2025 benchmarks for ${profile.industry} at ${profile.stage} stage (Typical MRR, Growth Rates, Churn).
-        2. Find recent comparable valuations or funding rounds in this sector (Pre-money, Deal Size).
+        RESEARCH TASKS (SEARCH REQUIRED):
+        1. Find **2024/2025 benchmarks** for ${profile.industry} at ${profile.stage} stage (Typical MRR, Growth Rates, Churn).
+        2. Find **recent (last 6-12 months)** comparable valuations or funding rounds in this sector (Pre-money, Deal Size).
         3. Identify top 3 active competitors. For each, find their specific recent moves (funding, features, pivots) in late 2024/2025.
         4. Identify 3 emerging market trends or shifts in this sector for 2025 (e.g. regulatory changes, tech shifts).
         5. Assess the feasibility of their fundraising goals ($${profile.fundingGoal || 'N/A'}).
         
         OUTPUT:
         Write a detailed strategic memo (Markdown).
-        - Cite specific sources/URLs for every number found.
+        - **CITE SOURCES:** You must include URL links for every metric or claim found.
         - Be critical and realistic.
         - Do NOT output JSON. Write for a human partner.
     `;
@@ -68,13 +68,13 @@ export class DeepResearchAgent {
             "executive_summary": ["string (max 5 bullets)"],
             "stage_inference": { "stage": "string", "reasoning": "string" },
             "traction_benchmarks": [
-                { "metric": "string", "low": "string", "median": "string", "high": "string", "unit": "string", "citation": "string" }
+                { "metric": "string", "low": "string", "median": "string", "high": "string", "unit": "string", "citation": "string (URL or Source Name)" }
             ],
             "fundraising_benchmarks": [
-                { "item": "string", "low": "string", "median": "string", "high": "string", "citation": "string" }
+                { "item": "string", "low": "string", "median": "string", "high": "string", "citation": "string (URL or Source Name)" }
             ],
             "valuation_references": [
-                { "label": "string", "range": "string", "citation": "string" }
+                { "label": "string", "range": "string", "citation": "string (URL or Source Name)" }
             ],
             "competitor_analysis": [
                 { "name": "string", "differentiation": "string", "recent_moves": "string" }

@@ -1,8 +1,10 @@
 
-import React from 'react';
-import { Plus, Presentation, Layers, ChevronRight, MoreHorizontal } from 'lucide-react';
+import React, { useState } from 'react';
+import { Plus, Presentation, Layers, ChevronRight, MoreHorizontal, Lock } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Deck } from '../../types';
+import { useFeatureAccess } from '../../hooks/useFeatureAccess';
+import { UpgradeModal } from '../ui/UpgradeModal';
 
 // Workaround for strict type checking issues with framer-motion in some environments
 const MotionDiv = motion.div as any;
@@ -14,6 +16,17 @@ interface PitchDeckGalleryProps {
 }
 
 export const PitchDeckGallery: React.FC<PitchDeckGalleryProps> = ({ decks, onCreateNew, onOpenDeck }) => {
+  const { canCreateDeck, usage } = useFeatureAccess();
+  const [showUpgrade, setShowUpgrade] = useState(false);
+
+  const handleCreateClick = () => {
+    if (canCreateDeck) {
+      onCreateNew();
+    } else {
+      setShowUpgrade(true);
+    }
+  };
+
   return (
     <div className="pt-24 px-6 pb-12 container mx-auto animate-in fade-in duration-500">
       {/* Header */}
@@ -22,12 +35,24 @@ export const PitchDeckGallery: React.FC<PitchDeckGalleryProps> = ({ decks, onCre
           <h1 className="text-3xl font-bold text-slate-900">Pitch Decks</h1>
           <p className="text-slate-500 mt-2">Manage your presentations and investor materials.</p>
         </div>
-        <button 
-          onClick={onCreateNew}
-          className="flex items-center gap-2 bg-indigo-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-600/20 hover:-translate-y-1"
-        >
-          <Plus size={20} /> New Deck
-        </button>
+        <div className="flex items-center gap-4">
+           {!canCreateDeck && (
+             <span className="text-sm text-slate-500 font-medium bg-slate-100 px-3 py-1 rounded-full">
+               Limit Reached ({usage.decks.current}/{usage.decks.limit})
+             </span>
+           )}
+           <button 
+            onClick={handleCreateClick}
+            className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all shadow-lg ${
+                canCreateDeck 
+                ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-600/20 hover:-translate-y-1' 
+                : 'bg-slate-800 text-slate-400 cursor-not-allowed'
+            }`}
+          >
+            {canCreateDeck ? <Plus size={20} /> : <Lock size={20} />} 
+            New Deck
+          </button>
+        </div>
       </div>
 
       {/* Deck Grid */}
@@ -81,15 +106,27 @@ export const PitchDeckGallery: React.FC<PitchDeckGalleryProps> = ({ decks, onCre
 
         {/* Create New Placeholder */}
         <button 
-          onClick={onCreateNew}
-          className="group h-[400px] border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center gap-4 text-slate-400 hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50/50 transition-all"
+          onClick={handleCreateClick}
+          className="group h-[400px] border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center gap-4 text-slate-400 hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50/50 transition-all relative overflow-hidden"
         >
-          <div className="w-16 h-16 rounded-full bg-slate-50 group-hover:bg-white group-hover:shadow-md flex items-center justify-center transition-all">
-            <Plus size={32} />
+          <div className={`w-16 h-16 rounded-full flex items-center justify-center transition-all ${canCreateDeck ? 'bg-slate-50 group-hover:bg-white group-hover:shadow-md' : 'bg-slate-100 text-slate-300'}`}>
+            {canCreateDeck ? <Plus size={32} /> : <Lock size={24} />}
           </div>
-          <span className="font-bold">Create New Deck</span>
+          <span className="font-bold">{canCreateDeck ? 'Create New Deck' : 'Upgrade to Create'}</span>
+          
+          {!canCreateDeck && (
+             <div className="absolute inset-x-0 bottom-0 bg-slate-50 p-4 text-center text-xs text-slate-500 border-t border-slate-200">
+                Free Plan Limit Reached
+             </div>
+          )}
         </button>
       </div>
+
+      <UpgradeModal 
+        isOpen={showUpgrade} 
+        onClose={() => setShowUpgrade(false)} 
+        featureName="Unlimited Pitch Decks" 
+      />
     </div>
   );
 };

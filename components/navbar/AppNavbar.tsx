@@ -4,8 +4,10 @@ import { Menu, X, Zap, Bell, Sparkles, Settings as SettingsIcon, LogOut, Search 
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useNotifications } from '../../context/NotificationContext';
 import { AIChatDrawer } from '../AIChatDrawer';
 import { NavSearch } from './NavSearch';
+import { NotificationsMenu } from './NotificationsMenu';
 
 // Workaround for strict type checking issues with framer-motion
 const MotionDiv = motion.div as any;
@@ -13,8 +15,10 @@ const MotionDiv = motion.div as any;
 export const AppNavbar: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   
   const { user, signOut } = useAuth();
+  const { unreadCount } = useNotifications();
   const navigate = useNavigate();
 
   const handleNav = (path: string) => {
@@ -56,10 +60,18 @@ export const AppNavbar: React.FC = () => {
 
             <div className="h-6 w-px bg-slate-200 mx-1 hidden sm:block"></div>
 
-            <button className="relative p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-50 rounded-lg transition-colors">
-                <Bell size={20} />
-                <span className="absolute top-2 right-2.5 w-2 h-2 bg-rose-500 rounded-full border border-white"></span>
-            </button>
+            <div className="relative">
+                <button 
+                    onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+                    className="relative p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-50 rounded-lg transition-colors"
+                >
+                    <Bell size={20} />
+                    {unreadCount > 0 && (
+                        <span className="absolute top-2 right-2.5 w-2 h-2 bg-rose-500 rounded-full border border-white animate-pulse"></span>
+                    )}
+                </button>
+                <NotificationsMenu isOpen={isNotificationsOpen} onClose={() => setIsNotificationsOpen(false)} />
+            </div>
             
             <button 
               onClick={() => handleNav('/settings')}

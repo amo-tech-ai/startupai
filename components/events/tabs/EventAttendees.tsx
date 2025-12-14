@@ -1,19 +1,22 @@
 
 import React, { useState, useEffect } from 'react';
-import { Users, Plus, Download, Search, Mail, Tag, CheckCircle2, Circle } from 'lucide-react';
+import { Users, Plus, Download, Search, Mail, Tag, CheckCircle2, Circle, RefreshCw, ArrowRight } from 'lucide-react';
 import { EventData, EventAttendee } from '../../../types';
 import { EventService } from '../../../services/supabase/events';
 import { useToast } from '../../../context/ToastContext';
+import { useData } from '../../../context/DataContext';
 
 interface EventAttendeesProps {
   event: EventData;
 }
 
 export const EventAttendees: React.FC<EventAttendeesProps> = ({ event }) => {
-  const { success, error } = useToast();
+  const { success, error, info } = useToast();
+  const { contacts, addContact, updateContact } = useData();
   const [attendees, setAttendees] = useState<EventAttendee[]>([]);
   const [newAttendee, setNewAttendee] = useState({ name: '', email: '', ticketType: 'General' });
   const [isAdding, setIsAdding] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   useEffect(() => {
       if (event.id) {
@@ -63,6 +66,51 @@ export const EventAttendees: React.FC<EventAttendeesProps> = ({ event }) => {
       }
   };
 
+  const handleSyncToCRM = async () => {
+      if (attendees.length === 0) return;
+      setIsSyncing(true);
+      info(`Syncing ${attendees.length} attendees to CRM...`);
+
+      let newCount = 0;
+      let updatedCount = 0;
+      const eventTag = `Event: ${event.name}`;
+
+      try {
+          for (const attendee of attendees) {
+              // 1. Check if contact exists by email
+              const existingContact = contacts.find(c => c.email?.toLowerCase() === attendee.email.toLowerCase());
+
+              if (existingContact) {
+                  // Update existing: Add tag if not present
+                  if (!existingContact.tags?.includes(eventTag)) {
+                      const newTags = [...(existingContact.tags || []), eventTag];
+                      await updateContact(existingContact.id, { tags: newTags });
+                      updatedCount++;
+                  }
+              } else {
+                  // Create new contact
+                  const nameParts = attendee.name.split(' ');
+                  await addContact({
+                      firstName: nameParts[0],
+                      lastName: nameParts.slice(1).join(' '),
+                      email: attendee.email,
+                      role: 'Attendee',
+                      type: 'Lead',
+                      tags: [eventTag],
+                      notes: `Registered for ${event.name} as ${attendee.ticketType}`
+                  });
+                  newCount++;
+              }
+          }
+          success(`Sync Complete: ${newCount} new contacts, ${updatedCount} updated.`);
+      } catch (e) {
+          console.error(e);
+          error("Sync failed partially.");
+      } finally {
+          setIsSyncing(false);
+      }
+  };
+
   return (
     <div className="space-y-6">
         <div className="flex items-center justify-between">
@@ -76,8 +124,14 @@ export const EventAttendees: React.FC<EventAttendeesProps> = ({ event }) => {
             </div>
             
             <div className="flex gap-3">
-                <button className="p-2 bg-white border border-slate-200 rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-50">
-                    <Download size={18} />
+                <button 
+                    onClick={handleSyncToCRM}
+                    disabled={isSyncing || attendees.length === 0}
+                    className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-bold text-slate-600 hover:bg-slate-50 hover:text-indigo-600 transition-colors disabled:opacity-50"
+                    title="Add attendees to CRM as Leads"
+                >
+                    <RefreshCw size={16} className={isSyncing ? "animate-spin" : ""} /> 
+                    {isSyncing ? 'Syncing...' : 'Sync to CRM'}
                 </button>
                 <button 
                     onClick={() => setIsAdding(!isAdding)}

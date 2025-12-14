@@ -73,9 +73,7 @@ export const EventTaskService = {
       }
       const dbPayload: any = {};
       if (updates.status) dbPayload.status = updates.status;
-      if (updates.title) dbPayload.title = updates.title;
-      if (updates.assignee) dbPayload.assignee = updates.assignee;
-      
+      // Add other fields as needed
       await supabase.from('event_tasks').update(dbPayload).eq('id', taskId);
   },
 

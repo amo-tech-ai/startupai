@@ -17,7 +17,7 @@ export const EventAttendeeService = {
       return data ? data.map((a: any) => ({
           id: a.id,
           eventId: a.event_id,
-          name: a.name || 'Guest',
+          name: a.name || 'Guest', // Fallback
           email: a.email || '',
           status: a.status,
           ticketType: a.ticket_type || 'General',
@@ -37,6 +37,7 @@ export const EventAttendeeService = {
           return newAttendee;
       }
 
+      // Map to DB
       const { data, error } = await supabase.from('event_registrations').insert({
           event_id: attendee.eventId,
           user_id: null, // Anonymous / manual entry
@@ -68,8 +69,6 @@ export const EventAttendeeService = {
       }
       const dbPayload: any = {};
       if (updates.status) dbPayload.status = updates.status;
-      if (updates.ticketType) dbPayload.ticket_type = updates.ticketType;
-      
       await supabase.from('event_registrations').update(dbPayload).eq('id', attendeeId);
   },
 

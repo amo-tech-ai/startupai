@@ -1,13 +1,6 @@
-
-import React, { useState } from 'react';
+import React from 'react';
 import { Zap, Loader2, ArrowLeft, Sparkles, CheckCircle } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { useToast } from '../../context/ToastContext';
-import { useData } from '../../context/DataContext';
-import { API_KEY } from '../../lib/env';
-import { EventAI } from '../../services/eventAI';
-import { EventService } from '../../services/supabase/events';
-import { EventData, EventStrategyAnalysis, EventLogisticsAnalysis } from '../../types';
+import { useEventWizard } from '../../hooks/useEventWizard';
 
 // Steps
 import { Step1Context } from './wizard/Step1Context';
@@ -15,138 +8,18 @@ import { Step2Strategy } from './wizard/Step2Strategy';
 import { Step3Logistics } from './wizard/Step3Logistics';
 import { Step4Review } from './wizard/Step4Review';
 
-const INITIAL_DATA: EventData = {
-  name: '',
-  description: '',
-  type: '',
-  date: '',
-  duration: 4,
-  city: '',
-  venueUrls: [],
-  sponsorUrls: [],
-  inspirationUrls: [],
-  searchTerms: []
-};
-
 const EventWizard: React.FC = () => {
-  const navigate = useNavigate();
-  const { toast, success, error } = useToast();
-  const { profile } = useData();
-  
-  const [currentStep, setCurrentStep] = useState(1);
-  const [formData, setFormData] = useState<EventData>(INITIAL_DATA);
-  const [isProcessing, setIsProcessing] = useState(false);
-
-  // Analysis State
-  const [strategyAnalysis, setStrategyAnalysis] = useState<EventStrategyAnalysis | null>(null);
-  const [logisticsAnalysis, setLogisticsAnalysis] = useState<EventLogisticsAnalysis | null>(null);
-
-  const updateData = (key: string, value: any) => {
-    setFormData(prev => ({ ...prev, [key]: value }));
-  };
-
-  // --- Step Actions ---
-
-  const handleRunStrategy = async () => {
-    if (!API_KEY) { error("API Key missing"); return; }
-    setIsProcessing(true);
-    toast("Generating Intelligence Brief (Gemini 3)...", "info");
-    
-    try {
-        const result = await EventAI.analyzeStrategy(API_KEY, formData);
-        if (result) {
-            setStrategyAnalysis(result);
-            updateData('strategy', result);
-            setCurrentStep(2);
-            success("Strategy Analysis Complete!");
-        } else {
-            error("Analysis failed. Please try again.");
-        }
-    } catch (e) {
-        console.error(e);
-        error("AI Service Error");
-    } finally {
-        setIsProcessing(false);
-    }
-  };
-
-  const handleCheckLogistics = async () => {
-    if (!API_KEY) { error("API Key missing"); return; }
-    setIsProcessing(true);
-    
-    try {
-        const result = await EventAI.checkLogistics(API_KEY, formData.date, formData.city);
-        if (result) {
-            setLogisticsAnalysis(result);
-            updateData('logistics', result);
-            success("Logistics Scan Complete!");
-        }
-    } finally {
-        setIsProcessing(false);
-    }
-  };
-
-  const handleNext = async () => {
-    // Step 1 -> 2: Run AI Strategy
-    if (currentStep === 1) {
-        if (!formData.name || !formData.description || !formData.type) {
-            toast("Please complete required fields.", "error");
-            return;
-        }
-        await handleRunStrategy();
-        return;
-    }
-
-    // Step 2 -> 3: Just Move
-    if (currentStep === 2) {
-        setCurrentStep(3);
-        window.scrollTo(0,0);
-        return;
-    }
-
-    // Step 3 -> 4: Validate Logistics
-    if (currentStep === 3) {
-        if (!formData.date || !formData.city) {
-            toast("Please select a date and location.", "error");
-            return;
-        }
-        if (!logisticsAnalysis) {
-            // Auto-run if user skipped the manual button
-            await handleCheckLogistics(); 
-        }
-        setCurrentStep(4);
-        window.scrollTo(0,0);
-        return;
-    }
-
-    // Step 4 -> Finish (Generate Plan & Save)
-    if (currentStep === 4) {
-        if (!API_KEY) { error("API Key missing"); return; }
-        
-        setIsProcessing(true);
-        toast("Generating Operational Plan...", "info");
-
-        try {
-            // 1. Generate Tasks
-            const tasks = await EventAI.generateActionPlan(API_KEY, formData);
-            
-            // 2. Save Event + Tasks to DB
-            const eventId = await EventService.create(formData, tasks, profile?.id || 'guest');
-            
-            success("Event Launched Successfully!");
-            setTimeout(() => {
-                // Navigate to the specific event dashboard
-                if (eventId) navigate(`/events/${eventId}`);
-                else navigate('/events'); 
-            }, 1000);
-        } catch (e) {
-            console.error(e);
-            error("Failed to save event.");
-        } finally {
-            setIsProcessing(false);
-        }
-    }
-  };
+  const { 
+    currentStep, 
+    formData, 
+    isProcessing, 
+    strategyAnalysis, 
+    logisticsAnalysis, 
+    updateData, 
+    nextStep, 
+    prevStep,
+    checkLogistics 
+  } = useEventWizard();
 
   return (
     <div className="min-h-screen bg-[#F7F7F5] flex flex-col font-sans text-slate-900">
@@ -205,7 +78,7 @@ const EventWizard: React.FC = () => {
                 logistics={logisticsAnalysis} 
                 isLoading={isProcessing}
                 onUpdate={updateData}
-                onCheckConflicts={handleCheckLogistics}
+                onCheckConflicts={checkLogistics}
             />
         )}
         {currentStep === 4 && (
@@ -217,10 +90,7 @@ const EventWizard: React.FC = () => {
       <footer className="sticky bottom-0 bg-white border-t border-[#E5E5E5] p-4 md:px-8 z-30 shadow-[0_-4px_20px_-5px_rgba(0,0,0,0.05)]">
          <div className="max-w-7xl mx-auto flex items-center justify-between">
             <button 
-                onClick={() => {
-                    if (currentStep === 1) navigate('/dashboard');
-                    else setCurrentStep(prev => prev - 1);
-                }}
+                onClick={prevStep}
                 className="flex items-center gap-2 px-6 py-3 rounded-xl text-[#6B7280] font-bold text-sm hover:bg-[#F7F7F5] transition-colors disabled:opacity-50"
             >
                 <ArrowLeft size={16} />
@@ -229,7 +99,7 @@ const EventWizard: React.FC = () => {
 
             <div className="flex flex-col items-end">
                 <button 
-                    onClick={handleNext}
+                    onClick={nextStep}
                     disabled={isProcessing}
                     className="flex items-center gap-2 px-8 py-3 bg-indigo-600 text-white rounded-xl font-bold text-sm hover:bg-indigo-700 shadow-lg shadow-indigo-600/20 transition-all hover:-translate-y-0.5 active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed min-w-[200px] justify-center"
                 >

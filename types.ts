@@ -338,3 +338,26 @@ export interface EventAttendee {
   ticketType: string;
   registeredAt: string;
 }
+
+// --- NOTIFICATIONS ---
+export interface AppNotification {
+  id: string;
+  title: string;
+  message: string;
+  type: 'info' | 'success' | 'warning' | 'error';
+  timestamp: string;
+  read: boolean;
+  link?: string;
+}
+
+// --- DATA ROOM ---
+export interface DataRoomFile {
+  id: string;
+  name: string;
+  size: number;
+  type: string;
+  url: string;
+  uploadedAt: string;
+  uploadedBy: string;
+  status: 'scanning' | 'clean' | 'infected';
+}

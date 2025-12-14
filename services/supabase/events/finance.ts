@@ -3,7 +3,6 @@ import { EventBudgetItem } from '../../../types';
 
 export const EventFinanceService = {
   async updateBudget(eventId: string, items: EventBudgetItem[]): Promise<void> {
-      // Auto-calculate spent amount based on actuals
       const spent = items.reduce((acc, item) => acc + item.actual, 0);
       
       if (!supabase) {

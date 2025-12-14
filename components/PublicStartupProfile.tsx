@@ -28,8 +28,11 @@ const PublicStartupProfile: React.FC = () => {
         if (p) {
           setProfile(p);
           setFounders(f);
+          // Set Page Title for SEO
+          document.title = `${p.name} | StartupAI Profile`;
         } else {
           setError("Profile not found");
+          document.title = "Profile Not Found | StartupAI";
         }
       } catch (err) {
         setError("Failed to load profile");
@@ -39,6 +42,11 @@ const PublicStartupProfile: React.FC = () => {
     };
 
     fetchProfile();
+    
+    // Cleanup title on unmount
+    return () => {
+        document.title = "StartupAI - Build Faster";
+    };
   }, [id]);
 
   const noOpSave = async () => {};

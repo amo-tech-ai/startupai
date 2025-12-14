@@ -2,18 +2,23 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Calendar, MapPin, Plus, ArrowRight, Loader2, 
-  MoreHorizontal, DollarSign
+  MoreHorizontal, DollarSign, Lock
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useData } from '../../context/DataContext';
 import { EventService } from '../../services/supabase/events';
 import { EventData } from '../../types';
+import { useFeatureAccess } from '../../hooks/useFeatureAccess';
+import { UpgradeModal } from '../ui/UpgradeModal';
 
 export const EventsDashboard: React.FC = () => {
   const navigate = useNavigate();
   const { profile } = useData();
   const [events, setEvents] = useState<EventData[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  const { canCreateEvent } = useFeatureAccess();
+  const [showUpgrade, setShowUpgrade] = useState(false);
 
   useEffect(() => {
     const loadEvents = async () => {
@@ -29,6 +34,14 @@ export const EventsDashboard: React.FC = () => {
     };
     loadEvents();
   }, [profile]);
+
+  const handleCreateClick = () => {
+      if (canCreateEvent(events.length)) {
+          navigate('/events/new');
+      } else {
+          setShowUpgrade(true);
+      }
+  };
 
   return (
     <div className="min-h-screen bg-[#F7F7F5] pb-20 p-6 md:p-12">
@@ -46,10 +59,14 @@ export const EventsDashboard: React.FC = () => {
         </div>
         
         <button 
-           onClick={() => navigate('/events/new')}
-           className="flex items-center gap-2 px-6 py-3 bg-[#1A1A1A] text-white rounded-xl font-medium shadow-lg hover:bg-black transition-all hover:-translate-y-0.5"
+           onClick={handleCreateClick}
+           className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium shadow-lg transition-all hover:-translate-y-0.5 ${
+               canCreateEvent(events.length) 
+               ? 'bg-[#1A1A1A] text-white hover:bg-black' 
+               : 'bg-slate-300 text-slate-500 cursor-not-allowed'
+           }`}
         >
-           <Plus size={18} /> New Event
+           {canCreateEvent(events.length) ? <Plus size={18} /> : <Lock size={18} />} New Event
         </button>
       </div>
 
@@ -68,7 +85,7 @@ export const EventsDashboard: React.FC = () => {
                     Start planning your next big moment. Gemini 3 Pro will handle the strategy and logistics.
                 </p>
                 <button 
-                   onClick={() => navigate('/events/new')}
+                   onClick={handleCreateClick}
                    className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-colors"
                 >
                    Launch Event Wizard
@@ -125,6 +142,12 @@ export const EventsDashboard: React.FC = () => {
             </div>
         )}
       </div>
+
+      <UpgradeModal 
+        isOpen={showUpgrade} 
+        onClose={() => setShowUpgrade(false)} 
+        featureName="Unlimited Events" 
+      />
     </div>
   );
 };

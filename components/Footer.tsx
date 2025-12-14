@@ -28,6 +28,7 @@ const Footer: React.FC = () => {
               <li><Link to="/documents" className="hover:text-brand-500 transition-colors">Document Factory</Link></li>
               <li><Link to="/crm" className="hover:text-brand-500 transition-colors">Visual CRM</Link></li>
               <li><Link to="/tasks" className="hover:text-brand-500 transition-colors">Tasks & Ops</Link></li>
+              <li><Link to="/events" className="hover:text-brand-500 transition-colors">Event Command Center</Link></li>
             </ul>
           </div>
 

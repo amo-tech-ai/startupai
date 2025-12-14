@@ -6,14 +6,15 @@ export const EventCoreService = {
   
   async create(event: EventData, tasks: any[], startupId: string): Promise<string | null> {
     if (!supabase) {
-        // Mock persistence for demo/guest mode
+        // Mock persistence for demo mode
         const mockId = generateUUID();
         const mockEvent = { ...event, id: mockId, startupId, status: 'Planning', createdAt: new Date().toISOString() };
         
+        // Save to local storage for persistence in demo
         const existing = JSON.parse(localStorage.getItem('guest_events') || '[]');
         localStorage.setItem('guest_events', JSON.stringify([...existing, mockEvent]));
         
-        // Save tasks locally
+        // Save tasks
         const mockTasks = tasks.map((t: any) => ({
             ...t,
             id: generateUUID(),
@@ -77,23 +78,13 @@ export const EventCoreService = {
           const events = JSON.parse(localStorage.getItem('guest_events') || '[]');
           const updated = events.map((e: any) => {
               if (e.id !== id) return e;
-              // Deep merge logic for mock data
-              const strategy = updates.strategy ? { ...e.strategy, ...updates.strategy } : e.strategy;
-              const logistics = updates.logistics ? { ...e.logistics, ...updates.logistics } : e.logistics;
-              
-              // Handle ROI specifically if it's being updated
-              const newAnalysis = { 
-                  strategy,
-                  logistics,
-                  roi: updates.roi || e.roi 
-              };
+              // Deep merge AI analysis if present
+              const newAnalysis = updates.roi ? { ...e.strategy, ...e.logistics, roi: updates.roi } : (e.strategy || e.logistics);
               
               return { 
                   ...e, 
                   ...updates, 
-                  // If we are updating ROI/Strategy/Logistics, we might need to flatten or unflatten depending on how mock stores it.
-                  // For simplicity in mock, we merge at top level and assume components handle it.
-                  ...newAnalysis
+                  strategy: newAnalysis // Mock structure flattening
               };
           });
           localStorage.setItem('guest_events', JSON.stringify(updated));
@@ -106,9 +97,7 @@ export const EventCoreService = {
       if (updates.name) dbPayload.name = updates.name;
       if (updates.description) dbPayload.description = updates.description;
       
-      // Handle complex JSONB updates (merge strategy)
       if (updates.roi) {
-          // Fetch current to merge safely
           const { data: current } = await supabase.from('events').select('ai_analysis').eq('id', id).single();
           const currentAnalysis = current?.ai_analysis || {};
           dbPayload.ai_analysis = { ...currentAnalysis, roi: updates.roi };
@@ -149,7 +138,7 @@ export const EventCoreService = {
         status: e.status,
         strategy: e.ai_analysis?.strategy,
         logistics: e.ai_analysis?.logistics,
-        roi: e.ai_analysis?.roi,
+        roi: e.ai_analysis?.roi, // Map ROI
         budget_total: e.budget_total,
         budget_items: e.budget_data?.items || []
     }));
@@ -185,7 +174,7 @@ export const EventCoreService = {
         status: e.status,
         strategy: e.ai_analysis?.strategy,
         logistics: e.ai_analysis?.logistics,
-        roi: e.ai_analysis?.roi,
+        roi: e.ai_analysis?.roi, // Map ROI
         budget_total: e.budget_total,
         budget_items: e.budget_data?.items || []
       };

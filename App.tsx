@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { Routes, Route, Navigate, useLocation, Outlet } from 'react-router-dom';
 import Navbar from './components/Navbar';
@@ -20,11 +21,12 @@ import StartupWizard from './components/StartupWizard';
 import PublicStartupProfile from './components/PublicStartupProfile';
 import EventWizard from './components/events/EventWizard'; 
 import { EventsDashboard } from './components/events/EventsDashboard';
-import EventDetailsPage from './components/events/EventDetailsPage'; // New Import
+import EventDetailsPage from './components/events/EventDetailsPage'; 
 import Footer from './components/Footer';
 import { DataProvider, useData } from './context/DataContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
+import { NotificationProvider } from './context/NotificationContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
 // Scroll to top on route change
@@ -154,11 +156,13 @@ const App = () => {
   return (
     <ErrorBoundary>
       <ToastProvider>
-        <AuthProvider>
-          <DataProvider>
-            <AppContent />
-          </DataProvider>
-        </AuthProvider>
+        <NotificationProvider>
+          <AuthProvider>
+            <DataProvider>
+              <AppContent />
+            </DataProvider>
+          </AuthProvider>
+        </NotificationProvider>
       </ToastProvider>
     </ErrorBoundary>
   );

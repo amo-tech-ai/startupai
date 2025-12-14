@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { PenTool, BrainCircuit, BarChart2, Workflow } from 'lucide-react';
+import { PenTool, BrainCircuit, BarChart2, Workflow, Calendar } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 // Workaround for strict type checking issues
@@ -30,6 +30,12 @@ const features = [
     title: "Founder CRM",
     desc: "Track investor conversations and follow-ups. Automated pipeline management for your fundraising round.",
     delay: 0.4
+  },
+  {
+    icon: <Calendar size={24} />,
+    title: "Event Operations",
+    desc: "Plan demo days and mixers with an AI ops manager. Auto-generate budgets, timelines, and marketing assets.",
+    delay: 0.5
   }
 ];
 
@@ -42,7 +48,8 @@ const Features: React.FC = () => {
             <p className="text-lg text-slate-600">Everything you need to go from idea to IPO, packed into one intelligent interface.</p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Using auto-fit grid to handle 5 items gracefully */}
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 justify-center">
             {features.map((feature, idx) => (
                 <MotionDiv
                     key={idx}

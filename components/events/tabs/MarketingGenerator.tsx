@@ -6,6 +6,7 @@ import { API_KEY } from '../../../lib/env';
 import { EventAI } from '../../../services/eventAI';
 import { EventService } from '../../../services/supabase/events';
 import { useToast } from '../../../context/ToastContext';
+import { useData } from '../../../context/DataContext';
 
 interface MarketingGeneratorProps {
   event: EventData;
@@ -14,8 +15,24 @@ interface MarketingGeneratorProps {
 
 export const MarketingGenerator: React.FC<MarketingGeneratorProps> = ({ event, onAssetCreated }) => {
   const { toast, success, error } = useToast();
+  const { uploadFile } = useData();
   const [isGenerating, setIsGenerating] = useState(false);
   const [activeType, setActiveType] = useState<'Social' | 'Email' | 'Poster'>('Social');
+
+  // Helper to convert Base64 to File object
+  const dataURLtoFile = (dataurl: string, filename: string) => {
+    const arr = dataurl.split(',');
+    const match = arr[0].match(/:(.*?);/);
+    if (!match) return null;
+    const mime = match[1];
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while (n--) {
+        u8arr[n] = bstr.charCodeAt(n);
+    }
+    return new File([u8arr], filename, { type: mime });
+  };
 
   const handleGenerate = async () => {
       if (!API_KEY || !event.id) return;
@@ -26,18 +43,29 @@ export const MarketingGenerator: React.FC<MarketingGeneratorProps> = ({ event, o
           const result = await EventAI.generateMarketingAssets(API_KEY, event, activeType);
           
           if (result) {
-              // Save Image
+              // 1. Process Image
               if (result.imageUrl) {
+                  let finalImageUrl = result.imageUrl;
+                  
+                  // Optimisation: Upload Base64 to Storage
+                  const imageFile = dataURLtoFile(result.imageUrl, `event-${event.id}-${activeType.toLowerCase()}.png`);
+                  if (imageFile) {
+                      const uploadedUrl = await uploadFile(imageFile, 'startup-assets');
+                      if (uploadedUrl) {
+                          finalImageUrl = uploadedUrl;
+                      }
+                  }
+
                   const imgAsset = await EventService.createAsset({
                       eventId: event.id,
                       type: 'image',
-                      content: result.imageUrl,
+                      content: finalImageUrl,
                       title: `${activeType} Visual`
                   });
                   if (imgAsset) onAssetCreated(imgAsset);
               }
 
-              // Save Copy
+              // 2. Process Copy
               if (result.copy) {
                   const textAsset = await EventService.createAsset({
                       eventId: event.id,

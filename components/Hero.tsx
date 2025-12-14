@@ -1,14 +1,77 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, Globe, Search, Layout, FileText, Users, Sparkles } from 'lucide-react';
+import { ArrowRight, Globe, Search, Layout, FileText, Users, Sparkles, Calendar } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const MotionDiv = motion.div as any;
 
 const Hero: React.FC = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'Analyze' | 'Deck' | 'Docs' | 'CRM'>('Analyze');
+  const [activeTab, setActiveTab] = useState<'Analyze' | 'Deck' | 'Docs' | 'CRM' | 'Events'>('Analyze');
+
+  const getCodeSnippet = () => {
+    switch (activeTab) {
+      case 'Analyze':
+        return (
+          <>
+            <p className="flex gap-2"><span className="text-purple-600">const</span> response = <span className="text-purple-600">await</span> ai.analyze(<span className="text-green-600">'https://example.com'</span>);</p>
+            <p className="mb-4">console.log(response);</p>
+            <p className="text-slate-300">// Output</p>
+            <p className="text-slate-600">{`{`}</p>
+            <p className="pl-4 text-slate-600">"status": <span className="text-brand-500">"success"</span>,</p>
+            <p className="pl-4 text-slate-600">"data": {`{`}</p>
+            <p className="pl-8 text-slate-600">"valuation": <span className="text-blue-600">"$4.2M"</span>,</p>
+            <p className="pl-8 text-slate-600">"market_fit": <span className="text-blue-600">"Strong"</span>,</p>
+            <p className="pl-8 text-slate-600">"next_step": <span className="text-brand-500">"Generate Pitch Deck"</span></p>
+            <p className="pl-4 text-slate-600">{`}`}</p>
+            <p className="text-slate-600">{`}`}</p>
+          </>
+        );
+      case 'Deck':
+        return (
+          <>
+            <p className="flex gap-2"><span className="text-purple-600">const</span> deck = <span className="text-purple-600">await</span> ai.generateDeck(<span className="text-green-600">'Series A'</span>);</p>
+            <p className="mb-4">console.log(deck.slides[0]);</p>
+            <p className="text-slate-300">// Output</p>
+            <p className="text-slate-600">{`{`}</p>
+            <p className="pl-4 text-slate-600">"title": <span className="text-brand-500">"The Problem"</span>,</p>
+            <p className="pl-4 text-slate-600">"bullets": [<span className="text-blue-600">"Fragmented data..."</span>, <span className="text-blue-600">"Lost revenue..."</span>],</p>
+            <p className="pl-4 text-slate-600">"visual": <span className="text-blue-600">"bar_chart_market_loss"</span></p>
+            <p className="text-slate-600">{`}`}</p>
+          </>
+        );
+      case 'Events':
+        return (
+          <>
+            <p className="flex gap-2"><span className="text-purple-600">const</span> plan = <span className="text-purple-600">await</span> ai.events.plan(<span className="text-green-600">'/demo-day'</span>);</p>
+            <p className="mb-4">console.log(plan);</p>
+            <p className="text-slate-300">// Output</p>
+            <p className="text-slate-600">{`{`}</p>
+            <p className="pl-4 text-slate-600">"status": <span className="text-brand-500">"feasibility_check_passed"</span>,</p>
+            <p className="pl-4 text-slate-600">"venue": <span className="text-blue-600">"Moscone Center"</span>,</p>
+            <p className="pl-4 text-slate-600">"budget_est": <span className="text-blue-600">"$15k - $20k"</span>,</p>
+            <p className="pl-4 text-slate-600">"risk_level": <span className="text-green-600">"Low"</span></p>
+            <p className="text-slate-600">{`}`}</p>
+          </>
+        );
+      default:
+        return (
+          <>
+            <p className="flex gap-2"><span className="text-purple-600">const</span> result = <span className="text-purple-600">await</span> ai.execute();</p>
+            <p className="text-slate-300">// Processing...</p>
+          </>
+        );
+    }
+  };
+
+  const handleCtaClick = () => {
+    if (activeTab === 'Events') {
+      navigate('/events/new');
+    } else {
+      navigate('/onboarding');
+    }
+  };
 
   return (
     <section className="relative pt-32 pb-12 lg:pt-48 lg:pb-32 overflow-hidden bg-white">
@@ -88,7 +151,7 @@ const Hero: React.FC = () => {
 
                     {/* Actions */}
                     <div className="flex items-center gap-1 w-full md:w-auto overflow-x-auto">
-                        {['Analyze', 'Deck', 'Docs', 'CRM'].map((tab) => {
+                        {['Analyze', 'Deck', 'Docs', 'CRM', 'Events'].map((tab) => {
                             const isActive = activeTab === tab;
                             return (
                                 <button 
@@ -104,6 +167,7 @@ const Hero: React.FC = () => {
                                     {tab === 'Deck' && <Layout size={14} className={isActive ? 'text-brand-500' : ''} />}
                                     {tab === 'Docs' && <FileText size={14} className={isActive ? 'text-brand-500' : ''} />}
                                     {tab === 'CRM' && <Users size={14} className={isActive ? 'text-brand-500' : ''} />}
+                                    {tab === 'Events' && <Calendar size={14} className={isActive ? 'text-brand-500' : ''} />}
                                     {tab}
                                 </button>
                             )
@@ -111,10 +175,10 @@ const Hero: React.FC = () => {
                     </div>
 
                     <button 
-                        onClick={() => navigate('/onboarding')}
+                        onClick={handleCtaClick}
                         className="w-full md:w-auto flex items-center justify-center gap-2 bg-brand-500 hover:bg-brand-600 text-white px-5 py-3 rounded-xl transition-all hover:scale-105 active:scale-95 shadow-md shadow-brand-500/20 font-bold"
                     >
-                        Generate <ArrowRight size={18} />
+                        {activeTab === 'Events' ? 'Plan Event' : 'Generate'} <ArrowRight size={18} />
                     </button>
                 </div>
 
@@ -122,17 +186,7 @@ const Hero: React.FC = () => {
                 <div className="border-t border-slate-100 bg-slate-50/50 p-6 text-left font-mono text-xs md:text-sm text-slate-400 overflow-hidden relative h-40">
                     <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/20 to-white pointer-events-none"></div>
                     <div className="opacity-70 space-y-1.5">
-                        <p className="flex gap-2"><span className="text-purple-600">const</span> response = <span className="text-purple-600">await</span> ai.analyze(<span className="text-green-600">'https://example.com'</span>);</p>
-                        <p className="mb-4">console.log(response);</p>
-                        <p className="text-slate-300">// Output</p>
-                        <p className="text-slate-600">{`{`}</p>
-                        <p className="pl-4 text-slate-600">"status": <span className="text-brand-500">"success"</span>,</p>
-                        <p className="pl-4 text-slate-600">"data": {`{`}</p>
-                        <p className="pl-8 text-slate-600">"valuation": <span className="text-blue-600">"$4.2M"</span>,</p>
-                        <p className="pl-8 text-slate-600">"market_fit": <span className="text-blue-600">"Strong"</span>,</p>
-                        <p className="pl-8 text-slate-600">"next_step": <span className="text-brand-500">"Generate Pitch Deck"</span></p>
-                        <p className="pl-4 text-slate-600">{`}`}</p>
-                        <p className="text-slate-600">{`}`}</p>
+                        {getCodeSnippet()}
                     </div>
                 </div>
             </div>

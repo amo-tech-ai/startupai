@@ -265,10 +265,14 @@ export interface EventData {
   strategy?: EventStrategyAnalysis;
   logistics?: EventLogisticsAnalysis;
   
+  // New V3: ROI Analysis
+  roi?: EventROIAnalysis;
+  
   // Database fields
   status?: 'Planning' | 'Scheduled' | 'Completed';
   budget_total?: number;
   budget_spent?: number;
+  budget_items?: EventBudgetItem[]; // JSONB content
   createdAt?: string;
 }
 
@@ -285,6 +289,15 @@ export interface EventLogisticsAnalysis {
   conflicts: Array<{ name: string; date: string; impact: 'High' | 'Medium' | 'Low' }>;
   weatherForecast?: string;
   venueInsights?: string;
+  suggestedVenues?: Array<{ name: string; capacity: string; cost: string; notes: string }>;
+}
+
+export interface EventROIAnalysis {
+  score: number; // 0-100
+  costPerAttendee: number;
+  summary: string;
+  highlights: string[];
+  improvements: string[];
 }
 
 export interface EventTask {
@@ -295,4 +308,33 @@ export interface EventTask {
   status: 'todo' | 'in_progress' | 'done';
   dueDate: string; // ISO date
   assignee?: string;
+  is_ai_generated?: boolean;
+}
+
+export interface EventAsset {
+  id: string;
+  eventId: string;
+  type: 'image' | 'copy' | 'email';
+  title: string;
+  content: string; // Text content or Image URL
+  createdAt: string;
+}
+
+export interface EventBudgetItem {
+  id: string;
+  category: 'Venue' | 'Food' | 'Marketing' | 'Speakers' | 'Ops' | 'Other';
+  item: string;
+  estimated: number;
+  actual: number;
+  status: 'Planned' | 'Paid' | 'Pending';
+}
+
+export interface EventAttendee {
+  id: string;
+  eventId: string;
+  name: string;
+  email: string;
+  status: 'Registered' | 'Attended' | 'Cancelled';
+  ticketType: string;
+  registeredAt: string;
 }

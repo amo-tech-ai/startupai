@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { Routes, Route, Navigate, useLocation, Outlet } from 'react-router-dom';
 import Navbar from './components/Navbar';
@@ -20,7 +19,8 @@ import StartupProfilePage from './components/StartupProfilePage';
 import StartupWizard from './components/StartupWizard';
 import PublicStartupProfile from './components/PublicStartupProfile';
 import EventWizard from './components/events/EventWizard'; 
-import EventsDashboard from './components/events/EventsDashboard'; // New Import
+import { EventsDashboard } from './components/events/EventsDashboard';
+import EventDetailsPage from './components/events/EventDetailsPage'; // New Import
 import Footer from './components/Footer';
 import { DataProvider, useData } from './context/DataContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -121,6 +121,7 @@ const AppContent = () => {
 
           {/* Events Dashboard */}
           <Route path="/events" element={<EventsDashboard />} />
+          <Route path="/events/:id" element={<EventDetailsPage />} />
 
           {/* Pitch Decks Deep Linking */}
           <Route path="/pitch-decks" element={<PitchDecks />} />

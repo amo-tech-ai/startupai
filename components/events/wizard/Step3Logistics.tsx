@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Calendar, MapPin, AlertCircle, Sun, Map as MapIcon, Search } from 'lucide-react';
+import { Calendar, MapPin, AlertCircle, Sun, Map as MapIcon, Search, Building } from 'lucide-react';
 import { EventLogisticsAnalysis } from '../../../types';
 
 interface Step3LogisticsProps {
@@ -51,7 +51,7 @@ export const Step3Logistics: React.FC<Step3LogisticsProps> = ({
             disabled={isLoading || !date || !city}
             className="w-full md:w-auto px-6 py-3 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
           >
-            {isLoading ? 'Scanning...' : 'Check Conflicts'}
+            {isLoading ? 'Scanning...' : 'Analyze & Scout Venues'}
           </button>
         </div>
       </div>
@@ -113,6 +113,27 @@ export const Step3Logistics: React.FC<Step3LogisticsProps> = ({
               </p>
             </div>
           </div>
+
+          {/* Venue Recommendations (New for V3) */}
+          {logistics.suggestedVenues && logistics.suggestedVenues.length > 0 && (
+            <div className="md:col-span-2 bg-indigo-50 border border-indigo-100 rounded-2xl p-6">
+               <h3 className="font-bold text-indigo-900 flex items-center gap-2 mb-4">
+                  <Building size={20} className="text-indigo-600" /> Top Venue Recommendations
+               </h3>
+               <div className="grid md:grid-cols-3 gap-4">
+                  {logistics.suggestedVenues.map((venue, idx) => (
+                      <div key={idx} className="bg-white p-4 rounded-xl shadow-sm border border-indigo-100 flex flex-col h-full">
+                          <div className="flex justify-between items-start mb-2">
+                              <h4 className="font-bold text-slate-900">{venue.name}</h4>
+                              <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">{venue.cost}</span>
+                          </div>
+                          <div className="text-xs text-slate-500 mb-3 font-medium">Capacity: {venue.capacity}</div>
+                          <p className="text-xs text-slate-600 leading-relaxed flex-1">{venue.notes}</p>
+                      </div>
+                  ))}
+               </div>
+            </div>
+          )}
 
         </div>
       )}

@@ -122,11 +122,7 @@ const EventWizard: React.FC = () => {
     // Step 4 -> Finish (Generate Plan & Save)
     if (currentStep === 4) {
         if (!API_KEY) { error("API Key missing"); return; }
-        if (!profile?.id && formData.startupId === undefined) { 
-            // Fallback for guest mode or if profile context is missing
-            console.warn("No profile ID found"); 
-        }
-
+        
         setIsProcessing(true);
         toast("Generating Operational Plan...", "info");
 
@@ -139,7 +135,9 @@ const EventWizard: React.FC = () => {
             
             success("Event Launched Successfully!");
             setTimeout(() => {
-                navigate('/events'); 
+                // Navigate to the specific event dashboard
+                if (eventId) navigate(`/events/${eventId}`);
+                else navigate('/events'); 
             }, 1000);
         } catch (e) {
             console.error(e);

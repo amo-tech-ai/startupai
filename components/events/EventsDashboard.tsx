@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Calendar, MapPin, Plus, ArrowRight, Loader2, 
-  MoreHorizontal, Users, DollarSign, Clock 
+  MoreHorizontal, DollarSign
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useData } from '../../context/DataContext';
@@ -81,7 +81,7 @@ export const EventsDashboard: React.FC = () => {
                         <div className="h-32 bg-slate-100 relative">
                             <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-purple-500/10"></div>
                             <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold text-[#1A1A1A] shadow-sm">
-                                {event.status}
+                                {event.status || 'Planning'}
                             </div>
                         </div>
                         
@@ -109,7 +109,10 @@ export const EventsDashboard: React.FC = () => {
                             </div>
 
                             <div className="mt-auto pt-4 border-t border-[#F3F4F6] flex justify-between items-center">
-                                <button className="text-sm font-bold text-[#1A1A1A] hover:text-indigo-600 transition-colors flex items-center gap-1 group-hover:gap-2">
+                                <button 
+                                    onClick={() => navigate(`/events/${event.id}`)}
+                                    className="text-sm font-bold text-[#1A1A1A] hover:text-indigo-600 transition-colors flex items-center gap-1 group-hover:gap-2"
+                                >
                                     Manage <ArrowRight size={16} />
                                 </button>
                                 <button className="p-2 hover:bg-[#F3F4F6] rounded-full text-[#9CA3AF] hover:text-[#1A1A1A] transition-colors">
@@ -125,5 +128,3 @@ export const EventsDashboard: React.FC = () => {
     </div>
   );
 };
-
-export default EventsDashboard;

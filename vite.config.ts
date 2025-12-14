@@ -11,6 +11,8 @@ const __dirname = path.dirname(__filename);
 export default defineConfig({
   plugins: [react()],
   base: './', // Ensures assets are loaded relatively
+  // Explicitly allow GEMINI_ prefix to be exposed to client
+  envPrefix: ['VITE_', 'GEMINI_'],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './'),

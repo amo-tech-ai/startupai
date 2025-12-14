@@ -5,6 +5,7 @@ interface ImportMetaEnv {
   readonly VITE_API_KEY: string
   readonly VITE_GEMINI_API_KEY: string
   readonly VITE_GOOGLE_API_KEY: string
+  readonly GEMINI_API_KEY: string
   readonly API_KEY: string
   [key: string]: any
 }

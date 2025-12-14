@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, FileText, Users, Briefcase, Presentation, ArrowRight } from 'lucide-react';
+import { Search, FileText, Users, Briefcase, Presentation, ArrowRight, Calendar } from 'lucide-react';
 import { useData } from '../context/DataContext';
 
 interface GlobalSearchProps {
@@ -10,7 +10,7 @@ interface GlobalSearchProps {
 }
 
 export const GlobalSearch: React.FC<GlobalSearchProps> = ({ query, onClose }) => {
-  const { deals, contacts, docs, decks } = useData();
+  const { deals, contacts, docs, decks, events } = useData();
   const navigate = useNavigate();
   const [results, setResults] = useState<any[]>([]);
 
@@ -26,10 +26,11 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ query, onClose }) =>
       ...contacts.filter(c => `${c.firstName} ${c.lastName}`.toLowerCase().includes(q)).map(c => ({ type: 'contact', id: c.id, title: `${c.firstName} ${c.lastName}`, sub: c.role, icon: <Users size={16}/>, link: '/crm' })),
       ...docs.filter(d => d.title.toLowerCase().includes(q)).map(d => ({ type: 'doc', id: d.id, title: d.title, sub: d.type, icon: <FileText size={16}/>, link: `/documents/${d.id}` })),
       ...decks.filter(d => d.title.toLowerCase().includes(q)).map(d => ({ type: 'deck', id: d.id, title: d.title, sub: d.template, icon: <Presentation size={16}/>, link: `/pitch-decks/${d.id}` })),
+      ...(events || []).filter(e => e.name.toLowerCase().includes(q)).map(e => ({ type: 'event', id: e.id, title: e.name, sub: e.type, icon: <Calendar size={16}/>, link: `/events/${e.id}` })),
     ];
 
     setResults(hits.slice(0, 5)); // Limit to 5
-  }, [query, deals, contacts, docs, decks]);
+  }, [query, deals, contacts, docs, decks, events]);
 
   if (!query) return null;
 

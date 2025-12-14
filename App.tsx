@@ -1,33 +1,36 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, Suspense } from 'react';
 import { Routes, Route, Navigate, useLocation, Outlet } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
-import Home from './components/Home';
-import HowItWorks from './components/HowItWorks';
-import FeaturesPage from './components/FeaturesPage';
-import Pricing from './components/Pricing';
-import Login from './components/Login';
-import Signup from './components/Signup';
-import Dashboard from './components/Dashboard';
-import PitchDecks from './components/PitchDecks';
-import CRM from './components/CRM';
-import Documents from './components/Documents';
-import Tasks from './components/Tasks';
-import Settings from './components/Settings';
-import Profile from './components/Profile';
-import StartupProfilePage from './components/StartupProfilePage';
-import StartupWizard from './components/StartupWizard';
-import PublicStartupProfile from './components/PublicStartupProfile';
-import EventWizard from './components/events/EventWizard'; 
-import { EventsDashboard } from './components/events/EventsDashboard';
-import EventDetailsPage from './components/events/EventDetailsPage'; 
 import Footer from './components/Footer';
 import { DataProvider, useData } from './context/DataContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
 import { NotificationProvider } from './context/NotificationContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import NotFound from './components/NotFound';
+
+// Lazy Load Pages
+const Home = React.lazy(() => import('./components/Home'));
+const HowItWorks = React.lazy(() => import('./components/HowItWorks'));
+const FeaturesPage = React.lazy(() => import('./components/FeaturesPage'));
+const Pricing = React.lazy(() => import('./components/Pricing'));
+const Login = React.lazy(() => import('./components/Login'));
+const Signup = React.lazy(() => import('./components/Signup'));
+const Dashboard = React.lazy(() => import('./components/Dashboard'));
+const PitchDecks = React.lazy(() => import('./components/PitchDecks'));
+const CRM = React.lazy(() => import('./components/CRM'));
+const Documents = React.lazy(() => import('./components/Documents'));
+const Tasks = React.lazy(() => import('./components/Tasks'));
+const Settings = React.lazy(() => import('./components/Settings'));
+const Profile = React.lazy(() => import('./components/Profile'));
+const StartupProfilePage = React.lazy(() => import('./components/StartupProfilePage'));
+const StartupWizard = React.lazy(() => import('./components/StartupWizard'));
+const PublicStartupProfile = React.lazy(() => import('./components/PublicStartupProfile'));
+const EventWizard = React.lazy(() => import('./components/events/EventWizard'));
+const EventsDashboard = React.lazy(() => import('./components/events/EventsDashboard').then(module => ({ default: module.EventsDashboard })));
+const EventDetailsPage = React.lazy(() => import('./components/events/EventDetailsPage'));
 
 // Scroll to top on route change
 const ScrollToTop = () => {
@@ -38,12 +41,21 @@ const ScrollToTop = () => {
   return null;
 };
 
+// Loading Fallback
+const PageLoader = () => (
+  <div className="min-h-screen flex items-center justify-center bg-slate-50">
+    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+  </div>
+);
+
 // Layouts
 const PublicLayout = () => (
   <div className="min-h-screen text-slate-900 overflow-x-hidden font-sans flex flex-col">
     <Navbar type="public" />
     <main className="flex-1">
-      <Outlet />
+      <Suspense fallback={<PageLoader />}>
+        <Outlet />
+      </Suspense>
     </main>
     <Footer />
   </div>
@@ -55,7 +67,9 @@ const AppLayout = () => (
     <div className="flex-1 flex flex-col h-full overflow-hidden relative">
       <Navbar type="app" />
       <main className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar">
-        <Outlet />
+        <Suspense fallback={<PageLoader />}>
+          <Outlet />
+        </Suspense>
       </main>
     </div>
   </div>
@@ -68,11 +82,7 @@ const RequireAuth = ({ children }: { children?: React.ReactNode }) => {
   const location = useLocation();
 
   if (authLoading || (user && dataLoading)) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-      </div>
-    );
+    return <PageLoader />;
   }
 
   // Check guest mode
@@ -106,13 +116,27 @@ const AppContent = () => {
         </Route>
 
         {/* Public Shared Profile (No Auth Required) */}
-        <Route path="/s/:id" element={<PublicStartupProfile />} />
+        <Route path="/s/:id" element={
+          <Suspense fallback={<PageLoader />}>
+            <PublicStartupProfile />
+          </Suspense>
+        } />
 
         {/* Standalone Route (Wizard) */}
-        <Route path="/onboarding" element={<StartupWizard />} />
+        <Route path="/onboarding" element={
+          <Suspense fallback={<PageLoader />}>
+            <StartupWizard />
+          </Suspense>
+        } />
         
         {/* Standalone Route (Event Wizard - Needs full screen) */}
-        <Route path="/events/new" element={<RequireAuth><EventWizard /></RequireAuth>} />
+        <Route path="/events/new" element={
+          <RequireAuth>
+            <Suspense fallback={<PageLoader />}>
+              <EventWizard />
+            </Suspense>
+          </RequireAuth>
+        } />
 
         {/* Protected App Routes */}
         <Route element={<RequireAuth><AppLayout /></RequireAuth>}>
@@ -145,8 +169,8 @@ const AppContent = () => {
           <Route path="/profile" element={<Profile />} />
         </Route>
 
-        {/* Catch all */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        {/* 404 Route */}
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </>
   );

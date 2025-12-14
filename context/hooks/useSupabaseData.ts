@@ -13,7 +13,8 @@ import {
   Deck, 
   Deal, 
   InvestorDoc,
-  Contact
+  Contact,
+  EventData
 } from '../../types';
 import { ProfileService } from '../../services/supabase/profile';
 import { UserService } from '../../services/supabase/user';
@@ -21,6 +22,7 @@ import { DeckService } from '../../services/supabase/decks';
 import { CrmService } from '../../services/supabase/crm';
 import { DocumentService } from '../../services/supabase/documents';
 import { DashboardService } from '../../services/supabase/dashboard';
+import { EventService } from '../../services/supabase/events';
 import { mapDealFromDB } from '../../lib/mappers';
 import { useToast } from '../ToastContext';
 
@@ -37,6 +39,7 @@ export const useSupabaseData = () => {
   const [deals, setDeals] = useState<Deal[]>(initialDatabaseState.deals); 
   const [contacts, setContacts] = useState<Contact[]>(initialDatabaseState.contacts);
   const [docs, setDocs] = useState<InvestorDoc[]>(initialDatabaseState.docs);
+  const [events, setEvents] = useState<EventData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
   // Realtime Channel Ref for safe cleanup
@@ -59,6 +62,7 @@ export const useSupabaseData = () => {
               const dl = localStorage.getItem('guest_deals'); if(dl) setDeals(JSON.parse(dl));
               const c = localStorage.getItem('guest_contacts'); if(c) setContacts(JSON.parse(c));
               const do_ = localStorage.getItem('guest_docs'); if(do_) setDocs(JSON.parse(do_));
+              const ev = localStorage.getItem('guest_events'); if(ev) setEvents(JSON.parse(ev));
               const up = localStorage.getItem('guest_user_profile'); if(up) setUserProfile(JSON.parse(up));
           } catch(e) {
               console.error("Failed to load guest data", e);
@@ -122,6 +126,20 @@ export const useSupabaseData = () => {
               for (const doc of docs) await DocumentService.create(doc, startupId, userId);
           }
 
+          // Events
+          const lEvents = localStorage.getItem('guest_events');
+          if (lEvents) {
+              const events: EventData[] = JSON.parse(lEvents);
+              // Need simpler migration for events as create handles tasks internally or we need logic here
+              // For now, simpler approach: create event logic
+              for (const event of events) {
+                  // We need to fetch tasks for this event from local storage too
+                  const allTasks = JSON.parse(localStorage.getItem('guest_event_tasks') || '[]');
+                  const eventTasks = allTasks.filter((t: any) => t.eventId === event.id);
+                  await EventService.create(event, eventTasks, startupId);
+              }
+          }
+
           // Migrate User Profile (My Profile)
           const guestUserStr = localStorage.getItem('guest_user_profile');
           if (guestUserStr) {
@@ -142,6 +160,10 @@ export const useSupabaseData = () => {
           localStorage.removeItem('guest_insights');
           localStorage.removeItem('guest_activities');
           localStorage.removeItem('guest_user_profile');
+          localStorage.removeItem('guest_events');
+          localStorage.removeItem('guest_event_tasks');
+          localStorage.removeItem('guest_event_assets');
+          localStorage.removeItem('guest_event_attendees');
 
           console.log("Migration complete.");
           success("Data migration complete!");
@@ -193,7 +215,8 @@ export const useSupabaseData = () => {
                           DashboardService.getMetricsHistory(p.id),
                           DashboardService.getInsights(p.id),
                           DashboardService.getActivities(p.id),
-                          CrmService.getContacts(p.id)
+                          CrmService.getContacts(p.id),
+                          EventService.getAll(p.id)
                       ]);
 
                       const unwrap = <T,>(result: PromiseSettledResult<T>, fallback: T): T => 
@@ -207,6 +230,7 @@ export const useSupabaseData = () => {
                       setInsights(unwrap(results[5], []));
                       setActivities(unwrap(results[6], []));
                       setContacts(unwrap(results[7], []));
+                      setEvents(unwrap(results[8], []));
 
                       // Realtime Setup
                       if (realtimeChannelRef.current) supabase.removeChannel(realtimeChannelRef.current);
@@ -244,6 +268,7 @@ export const useSupabaseData = () => {
                           setDeals([]);
                           setContacts([]);
                           setDocs([]);
+                          setEvents([]);
                       }
                   }
               }
@@ -292,6 +317,7 @@ export const useSupabaseData = () => {
     deals, setDeals,
     contacts, setContacts,
     docs, setDocs,
+    events, setEvents,
     isLoading
   };
 };

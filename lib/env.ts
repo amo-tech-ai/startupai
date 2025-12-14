@@ -26,7 +26,9 @@ const getSafeEnv = (key: string): string => {
 
 // Application Secrets
 // Note: In Vite (Client-side), keys MUST start with VITE_ to be exposed.
+// We have added 'GEMINI_' to envPrefix in vite.config.ts to support GEMINI_API_KEY.
 export const API_KEY = 
+  getSafeEnv('GEMINI_API_KEY') || 
   getSafeEnv('VITE_API_KEY') || 
   getSafeEnv('VITE_GEMINI_API_KEY') || 
   getSafeEnv('VITE_GOOGLE_API_KEY') || 

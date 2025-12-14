@@ -4,6 +4,7 @@ import { Menu, X, Zap, Bell, Sparkles, Settings as SettingsIcon, LogOut, Search 
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useData } from '../../context/DataContext';
 import { useNotifications } from '../../context/NotificationContext';
 import { AIChatDrawer } from '../AIChatDrawer';
 import { NavSearch } from './NavSearch';
@@ -18,6 +19,7 @@ export const AppNavbar: React.FC = () => {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   
   const { user, signOut } = useAuth();
+  const { profile } = useData(); // Get startup profile for logo
   const { unreadCount } = useNotifications();
   const navigate = useNavigate();
 
@@ -37,7 +39,23 @@ export const AppNavbar: React.FC = () => {
     <>
       <div className="sticky top-0 z-30 bg-white border-b border-slate-200 h-16 px-6 flex items-center justify-between shadow-sm">
         {/* Left: Search Bar (Desktop) */}
-        <NavSearch />
+        <div className="hidden md:flex items-center gap-4 flex-1">
+            <div className="flex items-center gap-2 mr-4 cursor-pointer" onClick={() => navigate('/dashboard')}>
+                {profile?.logoUrl ? (
+                    // Startup Branding
+                    <img src={profile.logoUrl} alt="Logo" className="w-8 h-8 rounded-lg object-cover" />
+                ) : (
+                    // Default Branding
+                    <div className="bg-primary-600 text-white p-1.5 rounded-lg">
+                        <Zap size={16} fill="currentColor" />
+                    </div>
+                )}
+                <span className="font-bold text-slate-900 hidden lg:block">
+                    {profile?.name || 'startupAI'}
+                </span>
+            </div>
+            <NavSearch />
+        </div>
 
         {/* Mobile Toggle (App Mode) */}
         <div className="md:hidden flex items-center gap-2">
@@ -138,6 +156,7 @@ export const AppNavbar: React.FC = () => {
                   <button onClick={() => handleNav('/documents')} className="w-full text-left py-3 px-4 text-slate-600 font-medium hover:bg-slate-50 rounded-xl">Documents</button>
                   <button onClick={() => handleNav('/crm')} className="w-full text-left py-3 px-4 text-slate-600 font-medium hover:bg-slate-50 rounded-xl">CRM</button>
                   <button onClick={() => handleNav('/tasks')} className="w-full text-left py-3 px-4 text-slate-600 font-medium hover:bg-slate-50 rounded-xl">Tasks</button>
+                  <button onClick={() => handleNav('/events')} className="w-full text-left py-3 px-4 text-slate-600 font-medium hover:bg-slate-50 rounded-xl">Events</button>
                   <button onClick={() => handleNav('/settings')} className="w-full text-left py-3 px-4 text-slate-600 font-medium hover:bg-slate-50 rounded-xl flex items-center gap-2">
                       <SettingsIcon size={18} /> Settings
                   </button>

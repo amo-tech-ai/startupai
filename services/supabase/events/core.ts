@@ -1,3 +1,4 @@
+
 import { supabase } from '../../../lib/supabaseClient';
 import { EventData } from '../../../types';
 import { generateUUID } from '../../../lib/utils';
@@ -8,7 +9,7 @@ export const EventCoreService = {
     if (!supabase) {
         // Mock persistence for demo mode
         const mockId = generateUUID();
-        const mockEvent = { ...event, id: mockId, startupId, status: 'Planning', createdAt: new Date().toISOString() };
+        const mockEvent = { ...event, id: mockId, startupId, status: 'Planning', isPublic: false, createdAt: new Date().toISOString() };
         
         // Save to local storage for persistence in demo
         const existing = JSON.parse(localStorage.getItem('guest_events') || '[]');
@@ -41,6 +42,7 @@ export const EventCoreService = {
             description: event.description,
             ai_analysis: { strategy: event.strategy, logistics: event.logistics },
             status: 'Planning',
+            is_public: false, // Default to private
             budget_total: event.strategy?.budgetEstimate?.high || 0
           })
           .select()
@@ -96,6 +98,7 @@ export const EventCoreService = {
       if (updates.status) dbPayload.status = updates.status;
       if (updates.name) dbPayload.name = updates.name;
       if (updates.description) dbPayload.description = updates.description;
+      if (updates.isPublic !== undefined) dbPayload.is_public = updates.isPublic;
       
       if (updates.roi) {
           const { data: current } = await supabase.from('events').select('ai_analysis').eq('id', id).single();
@@ -136,6 +139,7 @@ export const EventCoreService = {
         inspirationUrls: [],
         searchTerms: [],
         status: e.status,
+        isPublic: e.is_public,
         strategy: e.ai_analysis?.strategy,
         logistics: e.ai_analysis?.logistics,
         roi: e.ai_analysis?.roi, // Map ROI
@@ -172,6 +176,7 @@ export const EventCoreService = {
         inspirationUrls: [],
         searchTerms: [],
         status: e.status,
+        isPublic: e.is_public,
         strategy: e.ai_analysis?.strategy,
         logistics: e.ai_analysis?.logistics,
         roi: e.ai_analysis?.roi, // Map ROI

@@ -270,6 +270,7 @@ export interface EventData {
   
   // Database fields
   status?: 'Planning' | 'Scheduled' | 'Completed';
+  isPublic?: boolean; // Added for Public Landing Page
   budget_total?: number;
   budget_spent?: number;
   budget_items?: EventBudgetItem[]; // JSONB content

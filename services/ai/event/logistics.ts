@@ -1,9 +1,26 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { EventLogisticsAnalysis } from "../../../types";
 import { EventPrompts } from "../../../lib/prompts/eventPrompts";
 import { cleanJson } from "../../../lib/utils";
+import { supabase } from "../../../lib/supabaseClient";
 
 export const checkLogistics = async (apiKey: string, date: string, city: string): Promise<EventLogisticsAnalysis | null> => {
+  
+  // 1. Try Edge Function
+  if (supabase) {
+    try {
+      const { data, error } = await supabase.functions.invoke('ai-helper', {
+        body: { action: 'check_event_logistics', payload: { date, city } }
+      });
+      if (!error && data) return data;
+      console.warn("Edge Function 'check_event_logistics' failed, falling back...", error);
+    } catch (e) {
+       console.warn("Edge connection error", e);
+    }
+  }
+
+  // 2. Client Fallback
   const ai = new GoogleGenAI({ apiKey });
   const prompt = EventPrompts.checkLogistics(date, city);
 

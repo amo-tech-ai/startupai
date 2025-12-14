@@ -1,9 +1,26 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { EventData } from "../../../types";
 import { EventPrompts } from "../../../lib/prompts/eventPrompts";
 import { cleanJson } from "../../../lib/utils";
+import { supabase } from "../../../lib/supabaseClient";
 
 export const generateActionPlan = async (apiKey: string, eventData: EventData): Promise<any[]> => {
+  
+  // 1. Try Edge Function
+  if (supabase) {
+    try {
+      const { data, error } = await supabase.functions.invoke('ai-helper', {
+        body: { action: 'generate_event_plan', payload: { eventData } }
+      });
+      if (!error && data) return data.tasks || [];
+      console.warn("Edge Function 'generate_event_plan' failed, falling back...", error);
+    } catch (e) {
+       console.warn("Edge connection error", e);
+    }
+  }
+
+  // 2. Client Fallback
   const ai = new GoogleGenAI({ apiKey });
   const prompt = EventPrompts.generateActionPlan(eventData);
 

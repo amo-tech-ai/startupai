@@ -28,6 +28,7 @@ const Profile = React.lazy(() => import('./components/Profile'));
 const StartupProfilePage = React.lazy(() => import('./components/StartupProfilePage'));
 const StartupWizard = React.lazy(() => import('./components/StartupWizard'));
 const PublicStartupProfile = React.lazy(() => import('./components/PublicStartupProfile'));
+const PublicEventPage = React.lazy(() => import('./components/PublicEventPage')); // New Public Event Page
 const EventWizard = React.lazy(() => import('./components/events/EventWizard'));
 const EventsDashboard = React.lazy(() => import('./components/events/EventsDashboard').then(module => ({ default: module.EventsDashboard })));
 const EventDetailsPage = React.lazy(() => import('./components/events/EventDetailsPage'));
@@ -119,6 +120,13 @@ const AppContent = () => {
         <Route path="/s/:id" element={
           <Suspense fallback={<PageLoader />}>
             <PublicStartupProfile />
+          </Suspense>
+        } />
+
+        {/* Public Event Page (No Auth Required) */}
+        <Route path="/e/:id" element={
+          <Suspense fallback={<PageLoader />}>
+            <PublicEventPage />
           </Suspense>
         } />
 

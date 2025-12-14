@@ -1,10 +1,11 @@
 
 import React, { useState } from 'react';
-import { UploadCloud, File, FileText, Image as ImageIcon, MoreHorizontal, Trash2, Download, Search, ShieldCheck } from 'lucide-react';
+import { UploadCloud, File, FileText, Image as ImageIcon, MoreHorizontal, Trash2, Download, Search, ShieldCheck, Loader2 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { useToast } from '../../context/ToastContext';
 import { DataRoomFile } from '../../types';
 import { generateShortId } from '../../lib/utils';
+import { AssetService } from '../../services/supabase/assets';
 
 export const DataRoom: React.FC = () => {
   const { uploadFile, profile } = useData();
@@ -12,6 +13,7 @@ export const DataRoom: React.FC = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [files, setFiles] = useState<DataRoomFile[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -23,24 +25,24 @@ export const DataRoom: React.FC = () => {
   };
 
   const processUpload = async (file: File) => {
-    toast("Uploading secure file...", "info");
+    toast("Encrypting & uploading to secure vault...", "info");
     try {
-        // Upload to 'data-room' bucket in Supabase (or fallback to base64 in dev)
-        const url = await uploadFile(file, 'data-room');
+        // Upload to 'data-room' bucket. Returns path for private buckets.
+        const path = await uploadFile(file, 'data-room');
         
-        if (url) {
+        if (path) {
             const newFile: DataRoomFile = {
                 id: generateShortId(),
                 name: file.name,
                 size: file.size,
                 type: file.type,
-                url: url,
+                url: path, // Store path, not public URL
                 uploadedAt: new Date().toISOString(),
                 uploadedBy: profile?.name || 'User',
                 status: 'clean'
             };
             setFiles(prev => [newFile, ...prev]);
-            success("File uploaded to Data Room");
+            success("File securely stored.");
         }
     } catch (e) {
         error("Upload failed");
@@ -59,6 +61,27 @@ export const DataRoom: React.FC = () => {
     if (e.target.files && e.target.files[0]) {
       await processUpload(e.target.files[0]);
     }
+  };
+
+  const handleDownload = async (file: DataRoomFile) => {
+      setDownloadingId(file.id);
+      try {
+          const signedUrl = await AssetService.getSignedUrl('data-room', file.url);
+          if (signedUrl) {
+              const a = document.createElement('a');
+              a.href = signedUrl;
+              a.download = file.name;
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+          } else {
+              error("Could not generate secure link.");
+          }
+      } catch (e) {
+          error("Download failed.");
+      } finally {
+          setDownloadingId(null);
+      }
   };
 
   const formatSize = (bytes: number) => {
@@ -86,7 +109,7 @@ export const DataRoom: React.FC = () => {
                 </div>
                 <p className="text-indigo-200 text-sm max-w-lg">
                     A secure vault for your incorporation documents, financial statements, and IP.
-                    Files are encrypted and access-logged.
+                    Files are stored in private buckets with time-limited access tokens.
                 </p>
             </div>
         </div>
@@ -96,7 +119,7 @@ export const DataRoom: React.FC = () => {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                 <input 
                     type="text" 
-                    placeholder="Search files..." 
+                    placeholder="Search secure files..." 
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
                     className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
@@ -133,7 +156,7 @@ export const DataRoom: React.FC = () => {
                 </div>
                 <h3 className="font-bold text-slate-900">Drag & Drop files here</h3>
                 <p className="text-slate-500 text-sm mt-1">or click "Upload File" to browse</p>
-                <p className="text-xs text-slate-400 mt-4">Supports PDF, PNG, JPG, CSV (Max 25MB)</p>
+                <p className="text-xs text-slate-400 mt-4">Encrypted Storage • Max 50MB</p>
             </div>
         ) : (
             <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
@@ -160,14 +183,18 @@ export const DataRoom: React.FC = () => {
                                 <td className="px-6 py-4 text-slate-500">{new Date(file.uploadedAt).toLocaleDateString()}</td>
                                 <td className="px-6 py-4">
                                     <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div> Clean
+                                        <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div> Secured
                                     </span>
                                 </td>
                                 <td className="px-6 py-4 text-right">
                                     <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <a href={file.url} download className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded">
-                                            <Download size={16} />
-                                        </a>
+                                        <button 
+                                            onClick={() => handleDownload(file)}
+                                            className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded"
+                                            title="Download Securely"
+                                        >
+                                            {downloadingId === file.id ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+                                        </button>
                                         <button className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded">
                                             <Trash2 size={16} />
                                         </button>

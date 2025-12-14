@@ -23,7 +23,7 @@ import { CrmService } from '../../services/supabase/crm';
 import { DocumentService } from '../../services/supabase/documents';
 import { DashboardService } from '../../services/supabase/dashboard';
 import { EventService } from '../../services/supabase/events';
-import { mapDealFromDB } from '../../lib/mappers';
+import { mapDealFromDB, mapTaskFromDB } from '../../lib/mappers';
 import { useToast } from '../ToastContext';
 
 export const useSupabaseData = () => {
@@ -130,10 +130,7 @@ export const useSupabaseData = () => {
           const lEvents = localStorage.getItem('guest_events');
           if (lEvents) {
               const events: EventData[] = JSON.parse(lEvents);
-              // Need simpler migration for events as create handles tasks internally or we need logic here
-              // For now, simpler approach: create event logic
               for (const event of events) {
-                  // We need to fetch tasks for this event from local storage too
                   const allTasks = JSON.parse(localStorage.getItem('guest_event_tasks') || '[]');
                   const eventTasks = allTasks.filter((t: any) => t.eventId === event.id);
                   await EventService.create(event, eventTasks, startupId);
@@ -234,29 +231,47 @@ export const useSupabaseData = () => {
 
                       // Realtime Setup
                       if (realtimeChannelRef.current) supabase.removeChannel(realtimeChannelRef.current);
+                      
                       const channel = supabase.channel('public-db-changes')
+                        // Deals
                         .on('postgres_changes', { event: '*', schema: 'public', table: 'crm_deals', filter: `startup_id=eq.${p.id}` }, (payload: any) => {
                             if (payload.eventType === 'INSERT') setDeals(prev => [...prev, mapDealFromDB(payload.new)]);
                             else if (payload.eventType === 'UPDATE') setDeals(prev => prev.map(d => d.id === payload.new.id ? mapDealFromDB(payload.new) : d));
                             else if (payload.eventType === 'DELETE') setDeals(prev => prev.filter(d => d.id !== payload.old.id));
                         })
+                        // Tasks
+                        .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks', filter: `startup_id=eq.${p.id}` }, (payload: any) => {
+                            if (payload.eventType === 'INSERT') setTasks(prev => [...prev, mapTaskFromDB(payload.new)]);
+                            else if (payload.eventType === 'UPDATE') setTasks(prev => prev.map(t => t.id === payload.new.id ? mapTaskFromDB(payload.new) : t));
+                            else if (payload.eventType === 'DELETE') setTasks(prev => prev.filter(t => t.id !== payload.old.id));
+                        })
+                        // Events
+                        .on('postgres_changes', { event: '*', schema: 'public', table: 'events', filter: `startup_id=eq.${p.id}` }, async (payload: any) => {
+                            // Events are complex, simpler to reload list on change for now or map partially
+                            if (payload.eventType === 'DELETE') {
+                                setEvents(prev => prev.filter(e => e.id !== payload.old.id));
+                            } else {
+                                // Reload logic or mapper required. For now, fetch all is safest for events
+                                const newEvents = await EventService.getAll(p.id);
+                                setEvents(newEvents);
+                            }
+                        })
                         .subscribe();
+                        
                       realtimeChannelRef.current = channel;
 
                       setIsLoading(false);
                       return; // Done loading real user data
                   } else {
                       // AUTHENTICATED BUT NO REMOTE PROFILE
-                      // CHECK FOR GUEST DATA TO MIGRATE
                       const guestProfileStr = localStorage.getItem('guest_profile');
                       if (guestProfileStr) {
                           const guestProfile = JSON.parse(guestProfileStr);
                           await migrateGuestData(user.id, guestProfile);
-                          // Recursive call to reload the migrated data
                           loadData();
                           return;
                       } else {
-                          // Truly new user, clear everything for fresh onboarding
+                          // Fresh user
                           setProfile(null);
                           setUserProfile(null);
                           setFounders([]);
@@ -279,7 +294,6 @@ export const useSupabaseData = () => {
 
       } catch (e) {
           console.warn("Data Load Error (Falling back to local):", e);
-          // Fallback to guest data on network error, timeout, or offline
           loadGuestData();
       } finally {
           setIsLoading(false);

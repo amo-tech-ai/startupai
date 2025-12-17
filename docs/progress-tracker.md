@@ -1,71 +1,42 @@
 
 # 📊 StartupAI - Progress Tracker
 
-**Current Version:** v2.1.0
-**Overall Progress:** 100%
+**Current Version:** v3.5.0
+**Overall Progress:** 100% (Production Ready)
 
 ---
 
 ## 🟢 Completed (100%)
-*Features that are fully designed, implemented, and responsive.*
+*Features that are fully designed, implemented, and production-wired.*
 
-| Feature | Description | Notes |
+| Feature | Description | Status |
 | :--- | :--- | :--- |
-| **Design System V2** | **"Clean SaaS" Visuals** | 🟢 Implemented Orange/Obsidian palette via Tailwind Config. |
-| **Public Home** | Landing page with Hero, Features, Social Proof | Animation ready, responsive. |
-| **How It Works** | Scroll-telling page explaining the process | Complex layout implemented. |
-| **App Shell** | Layout logic, Sidebar, Navbar modes | Handles public vs app state. |
-| **Dashboard** | Founder Command Center | High-fidelity UI, KPI cards, Activity feed. Fully wired actions. |
-| **Startup Profile** | **Profile Management Dashboard** | Complete view/edit interface with AI tools replacing the wizard. |
-| **Documents** | Full Workspace: Dashboard + Editor | Dual-view state, Templates, AI Panel. |
-| **CRM** | Deal Pipeline (Kanban) | Full board layout, stats header, rich cards. |
-| **Tasks** | Intelligent Task Manager | Kanban + AI Auto-Planning implemented. |
-| **Settings** | Profile Management | Full Read/Update capability connected to Context. |
-| **Pitch Decks** | AI Deck Generator | Visual Gallery + Slide Generator using Gemini 3. |
-| **Navigation** | Responsive menus for Mobile/Desktop | Smooth transitions. |
-| **Startup Wizard** | 9-Step Onboarding Flow | UI, Validation, and Gemini 3 Integration complete. |
-| **AI Enrichment** | Auto-Fill & Refinement | URL Context Analysis + Context-aware rewriting implemented. |
-| **Data Binding** | Dashboard <-> Wizard | Global Context implemented. Real data flows to dashboard. |
-| **AI Coach** | Automated Recommendations | Live Gemini 3 Pro analysis integrated into Dashboard. |
-| **Profile Score** | Health & Completion Feedback | Logic and UI Widget for profile completeness implemented. |
-| **Authentication** | Login/Signup + Dev Mode | Production auth flow + Dev bypass for quick iteration. |
+| **Event Command Center** | **AI-Ops Manager** | 🟢 Complete |
+| **Secure Data Room** | **Signed URL Storage** | 🟢 Complete |
+| **Pitch Deck Engine** | **Sequoia-Standard AI Gen** | 🟢 Complete |
+| **Startup Profile** | **Investor-View + AI Research** | 🟢 Complete |
+| **Intelligence Hub** | **Gemini 3 Pro + Search Grounding** | 🟢 Complete |
+| **Billing System** | **Stripe Checkout + Webhooks** | 🟢 Complete |
+| **Architecture** | **Edge Function Proxy (FAT Edge)** | 🟢 Complete |
+| **Real-time Sync** | **Realtime DB Subscriptions** | 🟢 Complete |
 
 ---
 
-## 🟡 In Progress (90-100%)
-*Features that have a UI structure and core logic.*
+## 🚀 Post-Launch Enhancements
+*Future roadmap for v4.0.*
 
-| Feature | Description | Notes |
+| Feature | Description | Priority |
 | :--- | :--- | :--- |
-| **Pricing** | Plan comparison page | Static layout, plan selection logic ready. |
-| **Features** | Detailed feature list | Placeholder content exists. |
+| **Vanity URLs** | startupai.com/s/acme-ai | Low |
+| **Live Chat API** | Multimodal Live Voice Intake | High |
+| **Interactive Scenario** | MRR/Growth Slider for Valuation | Medium |
 
 ---
 
-## 🔴 Todo / Future
-*Features for V3.*
+## ✅ Production Checklist (Verified)
 
-| Feature | Description | Plan |
-| :--- | :--- | :--- |
-| **Public Sharing** | Read-only Profile View | Allow sharing profile via link. |
-| **Billing Integration** | Stripe Connect | Backend webhook logic required. |
-| **Team Collaboration** | Real-time cursors | WebSocket implementation needed. |
-
----
-
-## 💡 Suggestions & Features
-
-### UI/UX Enhancements
-*   [x] **Visual Refresh**: Moved to V2 "Clean SaaS" Orange/Obsidian theme.
-*   [ ] **Dark Mode**: The Dashboard would look excellent in a true dark mode (slate-900 backgrounds).
-*   [ ] **Drag & Drop**: Implement `dnd-kit` for the CRM columns and Task board.
-*   [ ] **Rich Text**: Replace the `contentEditable` divs in Document Editor with a real editor like `TipTap` or `Slate.js`.
-
-### "Wow" Factors
-*   [ ] **AI Typing Effect**: When "Generating" content in the editor, simulate typing speed.
-*   [ ] **Chart Interactivity**: Make the Recharts on the dashboard interactive (hover tooltips are there, but filtering would be nice).
-*   [ ] **Onboarding Tour**: Add a "first-time user" tour overlay highlighting the Sidebar and AI button.
-
-### Tech Debt
-*   [ ] **Router**: Move from conditional rendering in `App.tsx` to `react-router-dom` for deep linking (e.g., `/dashboard` should actually change the URL).
-*   [ ] **Mock Data**: Centralize mock data in a store or context so changes in one view reflect in others (e.g., adding a deal in CRM updates the Dashboard KPI).
+- [x] **No Hardcoded Secrets:** All AI calls proxy through Edge Functions.
+- [x] **Offline Resilience:** LocalStorage fallback for Guest mode.
+- [x] **Data Safety:** Signed URLs for private documents.
+- [x] **Responsiveness:** Validated for Mobile/Desktop breakpoints.
+- [x] **Build Stability:** `importmap` removed, Vite-native resolution.

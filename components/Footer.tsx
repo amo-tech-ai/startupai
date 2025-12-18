@@ -1,13 +1,13 @@
 
 import React from 'react';
-import { Zap, Twitter, Linkedin, Github } from 'lucide-react';
+import { Twitter, Linkedin, Github } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const Footer: React.FC = () => {
   return (
-    <footer className="bg-slate-50 border-t border-slate-200 pt-16 pb-8">
+    <footer className="bg-slate-50 border-t border-slate-200 pt-16 pb-8 print:hidden">
       <div className="container mx-auto px-6">
-        <div className="grid md:grid-cols-4 gap-12 mb-12">
+        <div className="grid md:grid-cols-5 gap-12 mb-12">
           <div className="col-span-1 md:col-span-1">
             <div className="flex items-center gap-2 mb-4">
                 <div className="text-brand-500">
@@ -21,20 +21,30 @@ const Footer: React.FC = () => {
           </div>
           
           <div>
-            <h4 className="font-bold text-slate-900 mb-4">Features</h4>
-            <ul className="space-y-2 text-sm text-slate-600">
+            <h4 className="font-bold text-slate-900 mb-4 text-xs uppercase tracking-widest">Platform</h4>
+            <ul className="space-y-2 text-sm text-slate-600 font-medium">
               <li><Link to="/onboarding" className="hover:text-brand-500 transition-colors">Startup Wizard</Link></li>
               <li><Link to="/pitch-decks" className="hover:text-brand-500 transition-colors">Pitch Deck Engine</Link></li>
               <li><Link to="/documents" className="hover:text-brand-500 transition-colors">Document Factory</Link></li>
               <li><Link to="/crm" className="hover:text-brand-500 transition-colors">Visual CRM</Link></li>
               <li><Link to="/tasks" className="hover:text-brand-500 transition-colors">Tasks & Ops</Link></li>
-              <li><Link to="/events" className="hover:text-brand-500 transition-colors">Event Command Center</Link></li>
+              <li><Link to="/events" className="hover:text-brand-500 transition-colors">Event Center</Link></li>
             </ul>
           </div>
 
           <div>
-            <h4 className="font-bold text-slate-900 mb-4">Intelligence</h4>
-             <ul className="space-y-2 text-sm text-slate-600">
+            <h4 className="font-bold text-slate-900 mb-4 text-xs uppercase tracking-widest">System Views</h4>
+             <ul className="space-y-2 text-sm text-slate-600 font-medium">
+              <li><Link to="/blueprint/architecture" className="hover:text-brand-500 transition-colors">View Architecture</Link></li>
+              <li><Link to="/blueprint/workflow" className="hover:text-brand-500 transition-colors">View Workflow</Link></li>
+              <li><Link to="/blueprint/ai-flowchart" className="hover:text-brand-500 transition-colors">View AI Flowchart</Link></li>
+              <li><Link to="/blueprint/journey" className="hover:text-brand-500 transition-colors">View User Journey</Link></li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="font-bold text-slate-900 mb-4 text-xs uppercase tracking-widest">Intelligence</h4>
+             <ul className="space-y-2 text-sm text-slate-600 font-medium">
               <li><Link to="/startup-profile" className="hover:text-brand-500 transition-colors">Market Research</Link></li>
               <li><Link to="/dashboard" className="hover:text-brand-500 transition-colors">Investor Readiness</Link></li>
               <li><Link to="/pricing" className="hover:text-brand-500 transition-colors">Pricing</Link></li>
@@ -42,8 +52,8 @@ const Footer: React.FC = () => {
           </div>
 
           <div>
-            <h4 className="font-bold text-slate-900 mb-4">Legal</h4>
-             <ul className="space-y-2 text-sm text-slate-600">
+            <h4 className="font-bold text-slate-900 mb-4 text-xs uppercase tracking-widest">Legal</h4>
+             <ul className="space-y-2 text-sm text-slate-600 font-medium">
               <li><a href="#" className="hover:text-brand-500 transition-colors">Privacy Policy</a></li>
               <li><a href="#" className="hover:text-brand-500 transition-colors">Terms of Service</a></li>
               <li><a href="#" className="hover:text-brand-500 transition-colors">Security</a></li>
@@ -52,7 +62,10 @@ const Footer: React.FC = () => {
         </div>
 
         <div className="border-t border-slate-200 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-slate-400 text-sm">© 2024 StartupAI Inc. All rights reserved.</p>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-brand-500 rounded-full animate-pulse"></div>
+            <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">© 2024 StartupAI OS v3.5. All rights reserved.</p>
+          </div>
           <div className="flex gap-4">
             <a href="#" className="text-slate-400 hover:text-slate-600 transition-colors"><Twitter size={20} /></a>
             <a href="#" className="text-slate-400 hover:text-slate-600 transition-colors"><Linkedin size={20} /></a>
@@ -64,7 +77,6 @@ const Footer: React.FC = () => {
   );
 };
 
-// Simple Icon component helper if Zap isn't imported from Lucide (though it is)
 const Sparkles = ({ size, fill }: { size: number, fill?: string }) => (
     <svg 
       xmlns="http://www.w3.org/2000/svg" 

@@ -28,7 +28,8 @@ export const StepTeam: React.FC<StepTeamProps> = ({ formData, setFormData }) => 
 
     setRewritingId(founder.id);
     try {
-      const newBio = await WizardService.rewriteBio(founder.name, founder.bio, founder.title, API_KEY);
+      /* Fix: Removed API_KEY argument which is not expected by WizardService.rewriteBio */
+      const newBio = await WizardService.rewriteBio(founder.name, founder.bio, founder.title);
       const updated = [...formData.founders];
       updated[idx].bio = newBio;
       setFormData((prev: any) => ({ ...prev, founders: updated }));

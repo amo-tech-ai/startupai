@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Presentation, Users, FileText, CheckSquare, Settings, Home, Zap, Command, Globe, Briefcase } from 'lucide-react';
+import { Search, Presentation, Users, FileText, CheckSquare, Settings, Home, Zap, Command, Globe, Briefcase, ArrowRight, CheckCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useData } from '../../context/DataContext';
 
 interface CommandPaletteProps {
   isOpen: boolean;
@@ -12,6 +13,7 @@ const MotionDiv = motion.div as any;
 
 export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose }) => {
   const [query, setQuery] = useState('');
+  const { deals, contacts, docs, decks, events } = useData();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -20,19 +22,59 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose 
     }
   }, [isOpen]);
 
-  const items = [
-    { icon: <Home size={18}/>, title: 'Go to Dashboard', shortcut: 'G D', path: '/dashboard' },
-    { icon: <Presentation size={18}/>, title: 'Pitch Decks', shortcut: 'G P', path: '/pitch-decks' },
-    { icon: <Users size={18}/>, title: 'CRM & Pipeline', shortcut: 'G C', path: '/crm' },
-    { icon: <FileText size={18}/>, title: 'Documents Hub', shortcut: 'G F', path: '/documents' },
-    { icon: <CheckSquare size={18}/>, title: 'Tasks & Ops', shortcut: 'G T', path: '/tasks' },
-    { icon: <Briefcase size={18}/>, title: 'Startup Profile', shortcut: 'G S', path: '/startup-profile' },
-    { icon: <Globe size={18}/>, title: 'Public Page', shortcut: 'G W', path: '/s/demo' },
-    { icon: <Zap size={18}/>, title: 'New Event', shortcut: 'N E', path: '/events/new' },
-    { icon: <Settings size={18}/>, title: 'Settings', shortcut: 'G S', path: '/settings' },
+  const navigationItems = [
+    { icon: <Home size={18}/>, title: 'Go to Dashboard', shortcut: 'G D', path: '/dashboard', type: 'nav' },
+    { icon: <Presentation size={18}/>, title: 'Pitch Decks', shortcut: 'G P', path: '/pitch-decks', type: 'nav' },
+    { icon: <Users size={18}/>, title: 'CRM & Pipeline', shortcut: 'G C', path: '/crm', type: 'nav' },
+    { icon: <FileText size={18}/>, title: 'Documents Hub', shortcut: 'G F', path: '/documents', type: 'nav' },
+    { icon: <CheckSquare size={18}/>, title: 'Tasks & Ops', shortcut: 'G T', path: '/tasks', type: 'nav' },
+    { icon: <Briefcase size={18}/>, title: 'Startup Profile', shortcut: 'G S', path: '/startup-profile', type: 'nav' },
+    { icon: <Zap size={18}/>, title: 'New Event', shortcut: 'N E', path: '/events/new', type: 'nav' },
+    { icon: <Settings size={18}/>, title: 'Settings', shortcut: 'G S', path: '/settings', type: 'nav' },
   ];
 
-  const filtered = items.filter(i => i.title.toLowerCase().includes(query.toLowerCase()));
+  const filteredItems = useMemo(() => {
+    const q = query.toLowerCase();
+    
+    // 1. Filter Navigation
+    const navs = navigationItems.filter(i => i.title.toLowerCase().includes(q));
+
+    if (!q) return navs;
+
+    // 2. Search Data Context
+    const dataResults = [
+        ...deals.filter(d => d.company.toLowerCase().includes(q)).map(d => ({ 
+            icon: <Briefcase size={18} className="text-indigo-500" />, 
+            title: `Deal: ${d.company}`, 
+            shortcut: d.stage, 
+            path: '/crm', 
+            type: 'data' 
+        })),
+        ...contacts.filter(c => `${c.firstName} ${c.lastName}`.toLowerCase().includes(q)).map(c => ({ 
+            icon: <Users size={18} className="text-purple-500" />, 
+            title: `Contact: ${c.firstName} ${c.lastName}`, 
+            shortcut: c.type, 
+            path: '/crm', 
+            type: 'data' 
+        })),
+        ...docs.filter(d => d.title.toLowerCase().includes(q)).map(d => ({ 
+            icon: <FileText size={18} className="text-rose-500" />, 
+            title: `Doc: ${d.title}`, 
+            shortcut: 'DOC', 
+            path: `/documents/${d.id}`, 
+            type: 'data' 
+        })),
+        ...decks.filter(d => d.title.toLowerCase().includes(q)).map(d => ({ 
+            icon: <Presentation size={18} className="text-emerald-500" />, 
+            title: `Deck: ${d.title}`, 
+            shortcut: 'DECK', 
+            path: `/pitch-decks/${d.id}`, 
+            type: 'data' 
+        })),
+    ];
+
+    return [...navs, ...dataResults].slice(0, 8);
+  }, [query, deals, contacts, docs, decks]);
 
   const handleAction = (path: string) => {
     navigate(path);
@@ -63,7 +105,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose 
                     autoFocus
                     value={query}
                     onChange={e => setQuery(e.target.value)}
-                    placeholder="Search commands or modules..."
+                    placeholder="Search commands, deals, or decks..."
                     className="flex-1 bg-transparent border-none focus:ring-0 text-slate-800 text-lg outline-none"
                 />
                 <div className="flex items-center gap-1.5 px-2 py-1 bg-slate-100 rounded-lg text-slate-400 border border-slate-200">
@@ -71,10 +113,10 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose 
                 </div>
             </div>
 
-            <div className="max-h-96 overflow-y-auto p-2">
-                {filtered.length > 0 ? (
+            <div className="max-h-96 overflow-y-auto p-2 custom-scrollbar">
+                {filteredItems.length > 0 ? (
                     <div className="space-y-1">
-                        {filtered.map((item, idx) => (
+                        {filteredItems.map((item, idx) => (
                             <button 
                                 key={idx}
                                 onClick={() => handleAction(item.path)}
@@ -97,7 +139,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose 
                 ) : (
                     <div className="py-12 text-center text-slate-400 flex flex-col items-center gap-2">
                         <Command size={32} className="opacity-20" />
-                        <p className="font-medium">No commands found matching "{query}"</p>
+                        <p className="font-medium">No results found for "{query}"</p>
                     </div>
                 )}
             </div>
@@ -117,11 +159,3 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose 
     </AnimatePresence>
   );
 };
-
-const ArrowRight = ({ size }: any) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-);
-
-const CheckCircle = ({ size }: any) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-);

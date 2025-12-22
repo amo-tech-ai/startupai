@@ -92,7 +92,8 @@ export const StepSummary: React.FC<StepSummaryProps> = ({ formData, setFormData,
       if (!API_KEY) return;
       setIsGeneratingSummary(true);
       try {
-        const summary = await WizardService.generateSummary(formData, API_KEY);
+        /* Fix: Removed API_KEY argument which is not expected by WizardService.generateSummary */
+        const summary = await WizardService.generateSummary(formData);
         if (summary) setFormData((prev: any) => ({ ...prev, aiSummary: summary }));
       } catch (e) {
         console.error("Failed to generate summary", e);
@@ -105,7 +106,8 @@ export const StepSummary: React.FC<StepSummaryProps> = ({ formData, setFormData,
       if (!API_KEY) return;
       setIsAnalyzingRisks(true);
       try {
-          const result = await WizardService.analyzeRisks(formData, API_KEY);
+          /* Fix: Removed API_KEY argument which is not expected by WizardService.analyzeRisks */
+          const result = await WizardService.analyzeRisks(formData);
           if (result) setRiskAnalysis(result);
       } catch (e) {
           console.error("Risk analysis failed", e);

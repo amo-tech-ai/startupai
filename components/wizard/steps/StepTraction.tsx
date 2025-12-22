@@ -41,11 +41,11 @@ export const StepTraction: React.FC<StepTractionProps> = ({ formData, setFormDat
           if (formData.mrr > 0 && API_KEY && !tractionData) {
               setAnalyzingTraction(true);
               try {
+                  /* Fix: Removed API_KEY argument which is not expected by WizardService.analyzeTraction */
                   const result = await WizardService.analyzeTraction(
                       { mrr: formData.mrr, users: formData.totalUsers },
                       formData.industry || 'Tech',
-                      formData.stage || 'Seed',
-                      API_KEY
+                      formData.stage || 'Seed'
                   );
                   if (result) setTractionData(result);
               } catch(e) { console.error(e); } 
@@ -62,6 +62,7 @@ export const StepTraction: React.FC<StepTractionProps> = ({ formData, setFormDat
           if ((formData.targetRaise > 0 || formData.mrr > 0) && API_KEY && !fundraisingData) {
               setAnalyzingFundraising(true);
               try {
+                  /* Fix: Removed API_KEY argument which is not expected by WizardService.calculateFundraising */
                   const result = await WizardService.calculateFundraising(
                       { 
                           mrr: formData.mrr, 
@@ -70,8 +71,7 @@ export const StepTraction: React.FC<StepTractionProps> = ({ formData, setFormDat
                       },
                       formData.industry || 'Tech',
                       formData.stage || 'Seed',
-                      formData.targetRaise || 1000000,
-                      API_KEY
+                      formData.targetRaise || 1000000
                   );
                   if (result) setFundraisingData(result);
               } catch(e) { console.error(e); } 
@@ -88,7 +88,8 @@ export const StepTraction: React.FC<StepTractionProps> = ({ formData, setFormDat
     if (!API_KEY) return;
     setIsSuggestingFunds(true);
     try {
-        const suggestions = await WizardService.suggestUseOfFunds(formData.targetRaise || 1000000, 'Seed', formData.industry || 'Tech', API_KEY);
+        /* Fix: Removed API_KEY argument which is not expected by WizardService.suggestUseOfFunds */
+        const suggestions = await WizardService.suggestUseOfFunds(formData.targetRaise || 1000000, 'Seed', formData.industry || 'Tech');
         if (suggestions.length > 0) {
             update('useOfFunds', suggestions);
         }
@@ -104,9 +105,9 @@ export const StepTraction: React.FC<StepTractionProps> = ({ formData, setFormDat
       setDeepResearchReport(null);
       
       try {
+          /* Fix: Removed API_KEY argument which is not expected by WizardService.performDeepResearch */
           const result = await WizardService.performDeepResearch(
               formData, 
-              API_KEY, 
               (status) => setResearchStatus(status)
           );
           

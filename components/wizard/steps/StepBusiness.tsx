@@ -48,7 +48,8 @@ export const StepBusiness: React.FC<StepBusinessProps> = ({ formData, setFormDat
     setIsGenerating(true);
     toast("AI is researching competitors...", "info");
     try {
-      const suggestions = await WizardService.analyzeBusiness(formData, API_KEY);
+      /* Fix: Removed API_KEY argument which is not expected by WizardService.analyzeBusiness */
+      const suggestions = await WizardService.analyzeBusiness(formData);
       if (suggestions) {
         setFormData((prev: any) => ({
           ...prev,
@@ -226,7 +227,7 @@ export const StepBusiness: React.FC<StepBusinessProps> = ({ formData, setFormDat
             <h3 className="font-bold text-lg mb-2">Need a Pitch Deck?</h3>
             <p className="text-purple-100 text-sm mb-4">Our AI can generate a slide deck from your profile in seconds.</p>
             <button className="bg-white text-purple-700 px-6 py-2 rounded-lg font-bold text-sm hover:bg-purple-50 transition-colors shadow-sm">
-                Launch Deck Editor
+                 Launch Deck Editor
             </button>
          </div>
       </div>

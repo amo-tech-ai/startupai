@@ -43,7 +43,8 @@ export const StepContext: React.FC<StepContextProps> = ({ formData, setFormData,
           industry: formData.industry,
       };
 
-      const result = await WizardService.analyzeContext(inputs, API_KEY);
+      /* Fix: Removed API_KEY argument which is not expected by WizardService.analyzeContext */
+      const result = await WizardService.analyzeContext(inputs);
       
       if (result && result.summary_screen) {
         

@@ -61,7 +61,8 @@ export const DealDetailDrawer: React.FC<DealDetailDrawerProps> = ({ isOpen, deal
         Notes: ${formData.notes || 'None'}.
       `;
       
-      const draft = await WizardService.refineText("Draft an email", context, API_KEY);
+      /* Fix: Removed API_KEY argument which is not expected by WizardService.refineText */
+      const draft = await WizardService.refineText("Draft an email", context);
       if (draft) {
         setGeneratedEmail(draft.replace(/"/g, '')); // Cleanup quotes
         success("Draft generated!");

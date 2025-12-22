@@ -1,4 +1,3 @@
-
 import { supabase } from '../../lib/supabaseClient';
 import { Deal, Task, Contact } from '../../types';
 import { mapDealFromDB, mapDealToDB, mapTaskFromDB, mapTaskToDB, mapContactFromDB, mapContactToDB } from '../../lib/mappers';
@@ -13,7 +12,8 @@ export const CrmService = {
     const { data } = await supabase
         .from('crm_deals')
         .select('*')
-        .eq('startup_id', startupId);
+        .eq('startup_id', startupId)
+        .is('deleted_at', null); // Filter out soft-deleted deals
         
     return data ? data.map(mapDealFromDB) : [];
   },
@@ -39,12 +39,21 @@ export const CrmService = {
     await supabase.from('crm_deals').update(payload).eq('id', id);
   },
 
+  async softDeleteDeal(id: string): Promise<void> {
+    if (!supabase) return;
+    await supabase.from('crm_deals').update({ deleted_at: new Date().toISOString() }).eq('id', id);
+  },
+
   /**
    * CONTACTS
    */
   async getContacts(startupId: string): Promise<Contact[]> {
     if (!supabase) return [];
-    const { data } = await supabase.from('crm_contacts').select('*').eq('startup_id', startupId);
+    const { data } = await supabase
+        .from('crm_contacts')
+        .select('*')
+        .eq('startup_id', startupId)
+        .is('deleted_at', null);
     return data ? data.map(mapContactFromDB) : [];
   },
 
@@ -57,15 +66,14 @@ export const CrmService = {
   async updateContact(id: string, updates: Partial<Contact>, startupId: string): Promise<void> {
     if (!supabase) return;
     const payload = mapContactToDB(updates, startupId);
-    // Remove undefined fields to avoid overwriting with null/default if not intended
     Object.keys(payload).forEach(key => (payload as any)[key] === undefined && delete (payload as any)[key]);
-    
     await supabase.from('crm_contacts').update(payload).eq('id', id);
   },
 
   async deleteContact(id: string): Promise<void> {
     if (!supabase) return;
-    await supabase.from('crm_contacts').delete().eq('id', id);
+    // For contacts, we perform a soft delete to preserve interaction history
+    await supabase.from('crm_contacts').update({ deleted_at: new Date().toISOString() }).eq('id', id);
   },
 
   /**

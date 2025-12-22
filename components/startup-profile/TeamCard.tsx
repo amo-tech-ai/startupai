@@ -54,7 +54,8 @@ export const TeamCard: React.FC<TeamCardProps> = ({ viewMode, founders, onSave }
       if (!API_KEY || !formData.name || !formData.bio) return;
       setIsRewriting(true);
       try {
-          const newBio = await WizardService.rewriteBio(formData.name, formData.bio, formData.title || 'Founder', API_KEY);
+          /* Fix: Removed API_KEY argument which is not expected by WizardService.rewriteBio */
+          const newBio = await WizardService.rewriteBio(formData.name, formData.bio, formData.title || 'Founder');
           if (newBio) setFormData(prev => ({ ...prev, bio: newBio }));
       } finally {
           setIsRewriting(false);

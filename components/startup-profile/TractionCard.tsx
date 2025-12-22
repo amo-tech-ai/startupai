@@ -73,7 +73,8 @@ export const TractionCard: React.FC<TractionCardProps> = ({ viewMode, profile, m
       if (!API_KEY || !mrr) return;
       setIsLoadingValuation(true);
       try {
-          const result = await WizardService.estimateValuation(profile?.industry || 'Tech', profile?.stage || 'Seed', mrr, API_KEY);
+          /* Fix: Removed API_KEY argument which is not expected by WizardService.estimateValuation */
+          const result = await WizardService.estimateValuation(profile?.industry || 'Tech', profile?.stage || 'Seed', mrr);
           if (result) setAiValuation(result);
       } finally {
           setIsLoadingValuation(false);

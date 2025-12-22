@@ -45,7 +45,8 @@ export const OverviewCard: React.FC<OverviewCardProps> = ({ viewMode, profile, o
     if (!API_KEY) return;
     setIsRefining(true);
     try {
-      const refined = await WizardService.refineText(formData.tagline, 'tagline', API_KEY);
+      /* Fix: Removed API_KEY argument which is not expected by WizardService.refineText */
+      const refined = await WizardService.refineText(formData.tagline, 'tagline');
       if (refined) setFormData({ ...formData, tagline: refined });
     } catch (e) {
       error("AI refinement failed");

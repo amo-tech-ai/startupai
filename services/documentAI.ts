@@ -1,106 +1,42 @@
-
-import { GoogleGenAI, Type } from "@google/genai";
-import { DocSection } from '../types';
 import { supabase } from "../lib/supabaseClient";
+import { DocSection } from '../types';
+
+/**
+ * DOCUMENT INTELLIGENCE SERVICE
+ * ----------------------------
+ * Proxies all drafting and refinement to Edge Functions to keep
+ * proprietary document structures and API keys secure.
+ */
 
 export const DocumentAI = {
   /**
    * Generates a full document draft based on startup profile.
    */
   async generateDraft(
-    apiKey: string, 
     docType: string, 
     profileContext: any
   ): Promise<DocSection[] | null> {
     
-    // 1. Try Supabase Edge Function
-    if (supabase) {
-        try {
-            const { data, error } = await supabase.functions.invoke('ai-helper', {
-                body: { action: 'generate_document_draft', payload: { docType, profileContext } }
-            });
-            if (!error && data && data.sections) {
-                return data.sections.map((s: any, idx: number) => ({
-                    id: String(idx + 1),
-                    title: s.title,
-                    content: s.content
-                }));
-            }
-        } catch (err) {
-            console.warn("Document AI Edge Function failed, fallback active.", err);
-        }
-    }
-
-    // 2. Client Fallback
-    const ai = new GoogleGenAI({ apiKey });
-    
-    const context = `
-      Startup Name: ${profileContext.name}
-      Tagline: ${profileContext.tagline}
-      Mission: ${profileContext.mission}
-      Problem: ${profileContext.problem}
-      Solution: ${profileContext.solution}
-      Target Market: ${profileContext.targetMarket}
-      Business Model: ${profileContext.businessModel}
-    `;
-
-    const isFinancial = docType.toLowerCase().includes('financial') || docType.toLowerCase().includes('model');
-    const tableInstruction = isFinancial 
-        ? "For financials, content MUST contain HTML tables." 
-        : "";
-
-    const prompt = `
-      You are a professional venture capital analyst.
-      Task: Write a full ${docType} for the startup described below.
-      
-      Context:
-      ${context}
-
-      Requirements:
-      1. Create 4-6 distinct sections.
-      2. Use HTML tags (<h3>, <p>, <ul>, <li>, <table>) for content.
-      ${tableInstruction}
-    `;
+    if (!supabase) throw new Error("Backend unavailable");
 
     try {
-      const response = await ai.models.generateContent({
-        model: 'gemini-3-pro-preview',
-        contents: prompt,
-        config: { 
-            responseMimeType: 'application/json',
-            responseSchema: {
-                type: Type.OBJECT,
-                properties: {
-                    sections: {
-                        type: Type.ARRAY,
-                        items: {
-                            type: Type.OBJECT,
-                            properties: {
-                                title: { type: Type.STRING },
-                                content: { type: Type.STRING, description: "HTML content string" }
-                            },
-                            required: ["title", "content"]
-                        }
-                    }
-                },
-                required: ["sections"]
-            },
-            thinkingConfig: { thinkingBudget: 2048 }
+        const { data, error } = await supabase.functions.invoke('ai-helper', {
+            body: { action: 'generate_document_draft', payload: { docType, profileContext } }
+        });
+        
+        if (error) throw error;
+        
+        if (data && data.sections) {
+            return data.sections.map((s: any, idx: number) => ({
+                id: String(idx + 1),
+                title: s.title,
+                content: s.content
+            }));
         }
-      });
-
-      const data = JSON.parse(response.text || '{}');
-      if (data.sections && Array.isArray(data.sections)) {
-          return data.sections.map((s: any, idx: number) => ({
-              id: String(idx + 1),
-              title: s.title,
-              content: s.content
-          }));
-      }
-      return null;
-    } catch (error) {
-      console.error("Doc Gen Error:", error);
-      throw error;
+        return null;
+    } catch (err) {
+        console.error("Document AI Error:", err);
+        throw err;
     }
   },
 
@@ -108,50 +44,22 @@ export const DocumentAI = {
    * Refines a specific section of text based on an instruction.
    */
   async refineSection(
-    apiKey: string,
     content: string,
     instruction: 'clearer' | 'expand' | 'shorten' | 'grammar'
   ): Promise<string | null> {
     
-    // 1. Try Supabase Edge Function
-    if (supabase) {
-        try {
-            const { data, error } = await supabase.functions.invoke('ai-helper', {
-                body: { action: 'refine_document_section', payload: { content, instruction } }
-            });
-            if (!error && data) return data.content;
-        } catch (err) {
-            console.warn("Document Refine Edge Function failed, fallback active.", err);
-        }
-    }
-
-    // 2. Client Fallback
-    const ai = new GoogleGenAI({ apiKey });
-
-    let promptInstruction = "";
-    switch (instruction) {
-        case 'clearer': promptInstruction = "Rewrite this text to be more professional, clear, and concise."; break;
-        case 'expand': promptInstruction = "Expand on these points with more detail, examples, and context."; break;
-        case 'shorten': promptInstruction = "Summarize this content into a punchy version."; break;
-        case 'grammar': promptInstruction = "Fix all grammar, spelling, and punctuation errors."; break;
-    }
-
-    const prompt = `
-      Task: ${promptInstruction}
-      Input (HTML): ${content}
-      Return ONLY the rewritten HTML content.
-    `;
+    if (!supabase) throw new Error("Backend unavailable");
 
     try {
-      const response = await ai.models.generateContent({
-        model: 'gemini-3-pro-preview',
-        contents: prompt,
-      });
-      
-      return response.text?.trim() || null;
-    } catch (error) {
-      console.error("Doc Refine Error:", error);
-      throw error;
+        const { data, error } = await supabase.functions.invoke('ai-helper', {
+            body: { action: 'refine_document_section', payload: { content, instruction } }
+        });
+        
+        if (error) throw error;
+        return data?.content || null;
+    } catch (err) {
+        console.error("Document Refine Error:", err);
+        throw err;
     }
   }
 };

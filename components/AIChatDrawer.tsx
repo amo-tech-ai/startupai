@@ -74,8 +74,8 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({ isOpen, onClose }) =
         parts: [{ text: m.content }]
       }));
 
+      /* Fix: Removed API_KEY argument which is not expected by ChatAI.sendMessage */
       const responseText = await ChatAI.sendMessage(
-        API_KEY,
         apiHistory,
         userMsg.content,
         { profile, metrics, deals, tasks } // Pass full context

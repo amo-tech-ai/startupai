@@ -79,7 +79,8 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({ doc, onBack }) =
             businessModel: profile.businessModel
         };
 
-        const newSections = await DocumentAI.generateDraft(API_KEY, doc.type, profileContext);
+        /* Fix: Removed API_KEY argument which is not expected by DocumentAI.generateDraft */
+        const newSections = await DocumentAI.generateDraft(doc.type, profileContext);
         
         if (newSections) {
             setSections(newSections);
@@ -106,7 +107,8 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({ doc, onBack }) =
       info("Refining section with AI...");
 
       try {
-          const refinedContent = await DocumentAI.refineSection(API_KEY, activeSection.content, action);
+          /* Fix: Removed API_KEY argument which is not expected by DocumentAI.refineSection */
+          const refinedContent = await DocumentAI.refineSection(activeSection.content, action);
           if (refinedContent) {
               setSections(prev => prev.map(s => s.id === activeSectionId ? { ...s, content: refinedContent } : s));
               success("Section updated!");
@@ -209,7 +211,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({ doc, onBack }) =
                             className="prose prose-slate max-w-none text-lg text-slate-600 outline-none p-2 rounded hover:bg-slate-50/50 focus:bg-white"
                             contentEditable
                             suppressContentEditableWarning
-                            onBlur={(e) => updateSectionContent(section.id, e.currentTarget.innerHTML)}
+                            onBlur={(e) => updateSectionContent(e.currentTarget.innerHTML)}
                             dangerouslySetInnerHTML={{ __html: section.content }}
                         />
                     </div>

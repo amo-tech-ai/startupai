@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 import { initialDatabaseState } from '../../data/mockDatabase';
@@ -31,6 +30,7 @@ export const useSupabaseData = () => {
   const [docs, setDocs] = useState<InvestorDoc[]>(initialDatabaseState.docs);
   const [events, setEvents] = useState<EventData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [connectionStatus, setConnectionStatus] = useState<'connected' | 'reconnecting' | 'offline'>('connected');
   
   const realtimeChannelRef = useRef<any>(null);
   const { toast, success, error } = useToast();
@@ -99,7 +99,10 @@ export const useSupabaseData = () => {
                       const channel = supabase.channel(`startup-${p.id}`)
                         .on('postgres_changes', { event: '*', schema: 'public', table: 'crm_deals', filter: `startup_id=eq.${p.id}` }, (payload: any) => {
                             if (payload.eventType === 'INSERT') setDeals(prev => [...prev, mapDealFromDB(payload.new)]);
-                            else if (payload.eventType === 'UPDATE') setDeals(prev => prev.map(d => d.id === payload.new.id ? mapDealFromDB(payload.new) : d));
+                            else if (payload.eventType === 'UPDATE') {
+                                if (payload.new.deleted_at) setDeals(prev => prev.filter(d => d.id !== payload.new.id));
+                                else setDeals(prev => prev.map(d => d.id === payload.new.id ? mapDealFromDB(payload.new) : d));
+                            }
                             else if (payload.eventType === 'DELETE') setDeals(prev => prev.filter(d => d.id !== payload.old.id));
                         })
                         .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks', filter: `startup_id=eq.${p.id}` }, (payload: any) => {
@@ -111,7 +114,10 @@ export const useSupabaseData = () => {
                             const newEvents = await EventService.getAll(p.id);
                             setEvents(newEvents);
                         })
-                        .subscribe();
+                        .subscribe((status: string) => {
+                            if (status === 'SUBSCRIBED') setConnectionStatus('connected');
+                            if (status === 'TIMED_OUT' || status === 'CHANNEL_ERROR') setConnectionStatus('reconnecting');
+                        });
                         
                       realtimeChannelRef.current = channel;
                       setIsLoading(false);
@@ -150,6 +156,6 @@ export const useSupabaseData = () => {
     insights, setInsights, activities, setActivities,
     tasks, setTasks, decks, setDecks, deals, setDeals,
     contacts, setContacts, docs, setDocs, events, setEvents,
-    isLoading
+    isLoading, connectionStatus
   };
 };

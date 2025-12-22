@@ -62,7 +62,8 @@ const Tasks: React.FC = () => {
             goal: profile.fundingGoal ? `Raise $${profile.fundingGoal.toLocaleString()}` : 'Scale Revenue'
         };
 
-        const newTasks = await TaskAI.generateRoadmap(API_KEY, profileContext);
+        /* Fix: Removed API_KEY argument which is not expected by TaskAI.generateRoadmap */
+        const newTasks = await TaskAI.generateRoadmap(profileContext);
 
         if (newTasks && newTasks.length > 0) {
             newTasks.forEach(task => addTask(task));

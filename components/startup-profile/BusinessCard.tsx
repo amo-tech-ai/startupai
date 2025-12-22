@@ -41,7 +41,8 @@ export const BusinessCard: React.FC<BusinessCardProps> = ({ viewMode, profile, o
       if (!API_KEY) return;
       setIsSuggesting(true);
       try {
-          const result = await WizardService.analyzeBusiness({ ...profile, ...formData }, API_KEY);
+          /* Fix: Removed API_KEY argument which is not expected by WizardService.analyzeBusiness */
+          const result = await WizardService.analyzeBusiness({ ...profile, ...formData });
           if (result && result.competitors) {
               setFormData(prev => ({ ...prev, competitors: result.competitors }));
           }

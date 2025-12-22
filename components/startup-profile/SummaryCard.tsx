@@ -39,7 +39,8 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({ profile, viewMode = 'e
       if (!API_KEY || !profile) return;
       setIsGenerating(true);
       try {
-          const summary = await WizardService.generateSummary(profile, API_KEY);
+          /* Fix: Removed API_KEY argument which is not expected by WizardService.generateSummary */
+          const summary = await WizardService.generateSummary(profile);
           // Note: In a real app we'd save this back. 
           // For now just show toast as we don't have a direct save handler passed here.
           if (summary) {

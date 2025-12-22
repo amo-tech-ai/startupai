@@ -26,9 +26,9 @@ export const ResearchCard: React.FC<ResearchCardProps> = ({ profile, onSave, vie
     setResearchStatus("Initializing Agent...");
     
     try {
+        /* Fix: Removed API_KEY argument which is not expected by WizardService.performDeepResearch */
         const result = await WizardService.performDeepResearch(
             profile, 
-            API_KEY, 
             (status) => setResearchStatus(status)
         );
         

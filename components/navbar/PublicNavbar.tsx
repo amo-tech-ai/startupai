@@ -7,6 +7,38 @@ import { useNavigate, Link } from 'react-router-dom';
 // Workaround for strict type checking
 const MotionDiv = motion.div as any;
 
+// Fix: Defined interfaces for helper components to ensure correct prop typing
+interface NavLinkProps {
+  to: string;
+  label: string;
+}
+
+interface MobileNavLinkProps {
+  to: string;
+  onClick: () => void;
+  children: React.ReactNode;
+}
+
+// Fix: Moved helper components to the top and typed them as React.FC
+const NavLink: React.FC<NavLinkProps> = ({ to, label }) => (
+  <Link 
+    to={to} 
+    className="px-4 py-2 text-[15px] font-medium text-slate-600 hover:text-slate-900 transition-colors"
+  >
+    {label}
+  </Link>
+);
+
+const MobileNavLink: React.FC<MobileNavLinkProps> = ({ to, onClick, children }) => (
+  <Link 
+    to={to} 
+    onClick={onClick} 
+    className="block w-full py-3 text-lg font-medium text-slate-900 border-b border-slate-100 last:border-0"
+  >
+    {children}
+  </Link>
+);
+
 const featuresData = {
   core: [
     { name: 'Startup Wizard', desc: 'Zero to profile in 5 minutes.', icon: <Zap size={20} />, path: '/onboarding' },
@@ -232,6 +264,7 @@ export const PublicNavbar: React.FC = () => {
 
             {/* Mobile Links */}
             <div className="flex-1 p-6 space-y-2">
+              {/* Fix: Passed children text explicitly within the tag */}
               <MobileNavLink to="/" onClick={() => setMobileMenuOpen(false)}>Platform</MobileNavLink>
               
               {/* Features Accordion */}
@@ -269,6 +302,7 @@ export const PublicNavbar: React.FC = () => {
                 </AnimatePresence>
               </div>
 
+              {/* Fix: Passed children text explicitly within the tag */}
               <MobileNavLink to="/pricing" onClick={() => setMobileMenuOpen(false)}>Pricing</MobileNavLink>
               
               {/* Resources Accordion */}
@@ -299,6 +333,7 @@ export const PublicNavbar: React.FC = () => {
                 </AnimatePresence>
               </div>
 
+              {/* Fix: Passed children text explicitly within the tag */}
               <MobileNavLink to="/dashboard" onClick={() => setMobileMenuOpen(false)}>Dashboard</MobileNavLink>
             </div>
 
@@ -315,23 +350,3 @@ export const PublicNavbar: React.FC = () => {
     </>
   );
 };
-
-// Helper Sub-components
-const NavLink = ({ to, label }: { to: string, label: string }) => (
-  <Link 
-    to={to} 
-    className="px-4 py-2 text-[15px] font-medium text-slate-600 hover:text-slate-900 transition-colors"
-  >
-    {label}
-  </Link>
-);
-
-const MobileNavLink = ({ to, onClick, children }: { to: string, onClick: () => void, children: React.ReactNode }) => (
-  <Link 
-    to={to} 
-    onClick={onClick} 
-    className="block w-full py-3 text-lg font-medium text-slate-900 border-b border-slate-100 last:border-0"
-  >
-    {children}
-  </Link>
-);

@@ -3,7 +3,8 @@ import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
 
 interface Props {
-  children: ReactNode;
+  // Fix: Made children optional to avoid JSX typing issues
+  children?: ReactNode;
 }
 
 interface State {
@@ -38,6 +39,9 @@ export class ErrorBoundary extends Component<Props, State> {
   };
 
   public render() {
+    // Fix: Destructured children from props to ensure correct this.props access in TypeScript
+    const { children } = this.props;
+
     if (this.state.hasError) {
       return (
         <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
@@ -75,6 +79,6 @@ export class ErrorBoundary extends Component<Props, State> {
       );
     }
 
-    return this.props.children;
+    return children;
   }
 }

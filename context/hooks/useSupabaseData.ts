@@ -30,10 +30,10 @@ export const useSupabaseData = () => {
   const [docs, setDocs] = useState<InvestorDoc[]>(initialDatabaseState.docs);
   const [events, setEvents] = useState<EventData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [connectionStatus, setConnectionStatus] = useState<'connected' | 'reconnecting' | 'offline'>('connected');
+  const [connectionStatus, setConnectionStatus] = useState<'online' | 'reconnecting' | 'offline'>('online');
   
   const realtimeChannelRef = useRef<any>(null);
-  const { toast, success, error } = useToast();
+  const { toast } = useToast();
 
   const loadGuestData = useCallback(() => {
       const storedGuest = localStorage.getItem('guest_profile');
@@ -93,10 +93,10 @@ export const useSupabaseData = () => {
                       setContacts(results[7]);
                       setEvents(results[8]);
 
-                      // Realtime Multi-Channel Setup
+                      // Multi-Table Realtime Orchestration
                       if (realtimeChannelRef.current) supabase.removeChannel(realtimeChannelRef.current);
                       
-                      const channel = supabase.channel(`startup-${p.id}`)
+                      const channel = supabase.channel(`startup-ops-${p.id}`)
                         .on('postgres_changes', { event: '*', schema: 'public', table: 'crm_deals', filter: `startup_id=eq.${p.id}` }, (payload: any) => {
                             if (payload.eventType === 'INSERT') setDeals(prev => [...prev, mapDealFromDB(payload.new)]);
                             else if (payload.eventType === 'UPDATE') {
@@ -110,13 +110,14 @@ export const useSupabaseData = () => {
                             else if (payload.eventType === 'UPDATE') setTasks(prev => prev.map(t => t.id === payload.new.id ? mapTaskFromDB(payload.new) : t));
                             else if (payload.eventType === 'DELETE') setTasks(prev => prev.filter(t => t.id !== payload.old.id));
                         })
-                        .on('postgres_changes', { event: '*', schema: 'public', table: 'events', filter: `startup_id=eq.${p.id}` }, async () => {
-                            const newEvents = await EventService.getAll(p.id);
-                            setEvents(newEvents);
+                        .on('postgres_changes', { event: '*', schema: 'public', table: 'investor_docs', filter: `startup_id=eq.${p.id}` }, async () => {
+                             const newDocs = await DocumentService.getAll(p.id);
+                             setDocs(newDocs);
                         })
                         .subscribe((status: string) => {
-                            if (status === 'SUBSCRIBED') setConnectionStatus('connected');
-                            if (status === 'TIMED_OUT' || status === 'CHANNEL_ERROR') setConnectionStatus('reconnecting');
+                            if (status === 'SUBSCRIBED') setConnectionStatus('online');
+                            if (status === 'TIMED_OUT') setConnectionStatus('reconnecting');
+                            if (status === 'CHANNEL_ERROR') setConnectionStatus('offline');
                         });
                         
                       realtimeChannelRef.current = channel;

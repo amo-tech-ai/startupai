@@ -1,3 +1,4 @@
+
 import React, { Suspense } from 'react';
 import { createHashRouter, Outlet } from 'react-router-dom';
 import PublicLayout from './layouts/PublicLayout';
@@ -45,6 +46,7 @@ const PageLoader = () => (
  * we ensure that all providers have access to the React Router context.
  */
 const Root = () => (
+  // Fix: Wrapped with ErrorBoundary which now has optional children to satisfy compiler
   <ErrorBoundary>
     <ToastProvider>
       <NotificationProvider>

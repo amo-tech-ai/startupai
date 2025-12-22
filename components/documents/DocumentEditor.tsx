@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Sparkles, Loader2 } from 'lucide-react';
@@ -211,7 +210,8 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({ doc, onBack }) =
                             className="prose prose-slate max-w-none text-lg text-slate-600 outline-none p-2 rounded hover:bg-slate-50/50 focus:bg-white"
                             contentEditable
                             suppressContentEditableWarning
-                            onBlur={(e) => updateSectionContent(e.currentTarget.innerHTML)}
+                            // Fixed: Added section.id as the first argument to updateSectionContent
+                            onBlur={(e) => updateSectionContent(section.id, e.currentTarget.innerHTML)}
                             dangerouslySetInnerHTML={{ __html: section.content }}
                         />
                     </div>

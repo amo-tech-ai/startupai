@@ -13,7 +13,7 @@ const MotionDiv = motion.div as any;
 
 export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose }) => {
   const [query, setQuery] = useState('');
-  const { deals, contacts, docs, decks, events } = useData();
+  const { deals, contacts, docs, decks } = useData();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -36,12 +36,12 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose 
   const filteredItems = useMemo(() => {
     const q = query.toLowerCase();
     
-    // 1. Filter Navigation
+    // 1. Filter Navigation Shortcuts
     const navs = navigationItems.filter(i => i.title.toLowerCase().includes(q));
 
     if (!q) return navs;
 
-    // 2. Search Data Context
+    // 2. Search Application Data Context
     const dataResults = [
         ...deals.filter(d => d.company.toLowerCase().includes(q)).map(d => ({ 
             icon: <Briefcase size={18} className="text-indigo-500" />, 
@@ -73,13 +73,23 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose 
         })),
     ];
 
-    return [...navs, ...dataResults].slice(0, 8);
+    return [...navs, ...dataResults].slice(0, 10);
   }, [query, deals, contacts, docs, decks]);
 
   const handleAction = (path: string) => {
     navigate(path);
     onClose();
   };
+
+  useEffect(() => {
+    const down = (e: KeyboardEvent) => {
+        if (isOpen && e.key === 'Enter' && filteredItems.length > 0) {
+            handleAction(filteredItems[0].path);
+        }
+    }
+    window.addEventListener('keydown', down);
+    return () => window.removeEventListener('keydown', down);
+  }, [isOpen, filteredItems]);
 
   return (
     <AnimatePresence>
@@ -105,7 +115,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose 
                     autoFocus
                     value={query}
                     onChange={e => setQuery(e.target.value)}
-                    placeholder="Search commands, deals, or decks..."
+                    placeholder="Search commands, deals, or documents..."
                     className="flex-1 bg-transparent border-none focus:ring-0 text-slate-800 text-lg outline-none"
                 />
                 <div className="flex items-center gap-1.5 px-2 py-1 bg-slate-100 rounded-lg text-slate-400 border border-slate-200">
@@ -149,8 +159,8 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose 
                     <span className="flex items-center gap-1"><ArrowRight size={10}/> Navigate</span>
                     <span className="flex items-center gap-1"><CheckCircle size={10}/> Select</span>
                 </div>
-                <div className="flex items-center gap-1">
-                   <Command size={10} /> + K to close
+                <div className="flex items-center gap-1 font-mono">
+                   Cmd + K
                 </div>
             </div>
           </MotionDiv>

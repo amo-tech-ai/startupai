@@ -1,20 +1,23 @@
-
 # Changelog
 
-## [v3.5.0] - Production Hardening & Security
-### Features
-- **Secure Data Room**: Files in `data-room` bucket are now private by default. Access is granted via **Signed URLs** generated on-demand.
-- **Real-time Multiplayer**: CRM and Event dashboards now subscribe to Supabase Postgres Changes. Updates from other team members appear instantly.
-- **Branded Dashboard**: The Navbar now dynamically pulls the **Startup Logo** for a white-label OS experience.
-- **AI Audit Logs**: The `ai-helper` function now records latency, status, and tool usage to the `ai_runs` table.
-
-## [v3.4.0] - Events & Lifecycle
+## [v4.0.0] - The Agentic OS Milestone
 ### Added
-- **Event Command Center**: Full lifecycle management for startup events.
-- **AI Logistics**: Google Search Grounding for date conflicts and venue scouting.
-- **ROI Analytics**: Post-event success reporting using Gemini Thinking mode.
+- **3-Panel Interaction Model**: Global Left (Scope), Main (Execution), Right (Intelligence).
+- **Gemini 3 Pro Orchestrator**: Multi-tool agentic routing (Search + Code Execution + Thinking).
+- **Proposed Actions Governance**: Human-in-the-loop approval system for AI-driven DB writes.
+- **Multimodal Live Session**: Real-time voice and screen-share consulting via Gemini 2.5 Flash Native.
+- **Agent Hub Dashboard**: Audit logs for every autonomous AI run (`ai_runs`).
 
-## [v2.1.1] - Stability & Performance Patch
-### Critical Fixes
-- **Vite Sovereignty**: Removed `importmap` from `index.html` to align with production build rules.
-- **Chart Layouts**: Fixed `ResponsiveContainer` collapse issues.
+### Improved
+- **Financial Intelligence**: Added Python-driven forensic audit for raw CSV transaction processing.
+- **Startup Intelligence Brief**: Onboarding Step 2 now provides a high-fidelity market memo before data entry.
+- **CRM Intelligence**: Added `ai_score` and `strategic_hook` to investor leads.
+
+### Fixed
+- **React 19 Concurrency**: Resolved minified error #31 by enforcing singleton provider layouts.
+- **Vite Sovereignty**: Completely removed all Import Maps to align with production build guardrails.
+- **Soft Deletes**: Implemented `deleted_at` across CRM and Document modules.
+
+## [v3.5.0] - Production Hardening
+- **Secure Data Room**: Signed URL generation for private S3-compatible buckets.
+- **Real-time Multiplayer**: Subscriptions to Postgres changes for CRM and Tasks.

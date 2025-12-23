@@ -11,7 +11,11 @@ export interface DataContextType {
   tasks: Task[];
   decks: Deck[];
   deals: Deal[];
+  // Fix: Added archivedDeals to support CRM archive view
+  archivedDeals: Deal[];
   contacts: Contact[];
+  // Fix: Added archivedContacts to support CRM archive view
+  archivedContacts: Contact[];
   docs: InvestorDoc[];
   events: EventData[];
   

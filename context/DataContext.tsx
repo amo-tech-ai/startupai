@@ -32,7 +32,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     tasks, setTasks,
     decks, setDecks,
     deals, setDeals,
+    // Fix: Added archivedDeals and archivedContacts extraction from useSupabaseData
+    archivedDeals, setArchivedDeals,
     contacts, setContacts,
+    archivedContacts, setArchivedContacts,
     docs, setDocs,
     events, setEvents,
     isLoading
@@ -84,7 +87,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   return (
     <DataContext.Provider value={{ 
-      profile, userProfile, founders, metrics, insights, activities, tasks, decks, deals, contacts, docs, events,
+      // Fix: Added archivedDeals and archivedContacts to provider value
+      profile, userProfile, founders, metrics, insights, activities, tasks, decks, deals, archivedDeals, contacts, archivedContacts, docs, events,
       isLoading,
       ...actions,
       undoAction,

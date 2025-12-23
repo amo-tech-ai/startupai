@@ -1,122 +1,78 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Send, Sparkles, User, Bot, Loader2, Trash2 } from 'lucide-react';
+import { X, Send, Sparkles, User, Bot, Loader2, Brain, Cpu } from 'lucide-react';
 import { ChatAI } from '../services/chatAI';
 import { useData } from '../context/DataContext';
 import { API_KEY } from '../lib/env';
-import { ChatMessage } from '../types';
+import { ChatMessage, EventData, Deck, InvestorDoc } from '../types';
 import { generateUUID } from '../lib/utils';
+import { useParams, useLocation } from 'react-router-dom';
 
-// Workaround for strict type checking
 const MotionDiv = motion.div as any;
+const CHAT_STORAGE_KEY = 'startup_ai_chat_history_v3';
 
 interface AIChatDrawerProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-const CHAT_STORAGE_KEY = 'startup_ai_chat_history';
-
 export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({ isOpen, onClose }) => {
-  const { profile, metrics, deals, tasks } = useData(); // Added deals, tasks
+  const { profile, metrics, deals, tasks, events, decks, docs } = useData();
+  const { id, deckId, docId } = useParams();
+  const location = useLocation();
   const [input, setInput] = useState('');
   
-  // Initialize from storage or default welcome
+  const focusedEntity = useMemo(() => {
+    if (location.pathname.startsWith('/events/')) {
+        const data = events.find(e => e.id === id);
+        return { type: 'event' as const, data, label: data?.name };
+    }
+    if (location.pathname.startsWith('/pitch-decks/')) {
+        const data = decks.find(d => d.id === deckId);
+        return { type: 'deck' as const, data, label: data?.title };
+    }
+    if (location.pathname.startsWith('/documents/')) {
+        const data = docs.find(d => d.id === docId);
+        return { type: 'doc' as const, data, label: data?.title };
+    }
+    return null;
+  }, [events, decks, docs, id, deckId, docId, location.pathname]);
+
   const [messages, setMessages] = useState<ChatMessage[]>(() => {
-      const saved = sessionStorage.getItem(CHAT_STORAGE_KEY);
+      const saved = localStorage.getItem(CHAT_STORAGE_KEY);
       if (saved) {
-          try {
-              return JSON.parse(saved);
-          } catch(e) { console.error("Failed to parse chat history"); }
+          try { return JSON.parse(saved); } catch(e) {}
       }
-      return [{ 
-          id: 'welcome', 
-          role: 'model', 
-          content: `Hi! I'm your Startup Copilot. I have access to your metrics, CRM pipeline, and roadmap. How can I help you grow ${profile?.name || 'your startup'} today?`, 
-          timestamp: new Date().toISOString() 
-      }];
+      return [{ id: 'welcome', role: 'model', content: `Hi! I'm your Startup Copilot. I'm synced to your roadmap. How can I help you grow today?`, timestamp: new Date().toISOString() }];
   });
 
   const [isTyping, setIsTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Auto-save to sessionStorage
-  useEffect(() => {
-      sessionStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(messages));
-  }, [messages]);
-
-  // Scroll to bottom on new messages
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [messages, isOpen, isTyping]);
+  useEffect(() => { localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(messages)); }, [messages]);
+  useEffect(() => { if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight; }, [messages, isOpen, isTyping]);
 
   const handleSend = async () => {
     if (!input.trim() || !API_KEY) return;
-
-    const userMsg: ChatMessage = {
-      id: generateUUID(),
-      role: 'user',
-      content: input,
-      timestamp: new Date().toISOString()
-    };
-
+    const userMsg: ChatMessage = { id: generateUUID(), role: 'user', content: input, timestamp: new Date().toISOString() };
     setMessages(prev => [...prev, userMsg]);
     setInput('');
     setIsTyping(true);
 
     try {
-      // Convert internal history to API format
-      const apiHistory = messages.map(m => ({
-        role: m.role,
-        parts: [{ text: m.content }]
-      }));
-
-      /* Fix: Removed API_KEY argument which is not expected by ChatAI.sendMessage */
-      const responseText = await ChatAI.sendMessage(
-        apiHistory,
-        userMsg.content,
-        { profile, metrics, deals, tasks } // Pass full context
-      );
-
-      const aiMsg: ChatMessage = {
-        id: generateUUID(),
-        role: 'model',
-        content: responseText || "I'm having trouble thinking right now. Try again?",
-        timestamp: new Date().toISOString()
-      };
-
-      setMessages(prev => [...prev, aiMsg]);
+      const apiHistory = messages.map(m => ({ role: m.role, parts: [{ text: m.content }] }));
+      const responseText = await ChatAI.sendMessage(apiHistory, userMsg.content, { 
+          profile, metrics, deals, tasks, 
+          event: focusedEntity?.type === 'event' ? focusedEntity.data as EventData : null,
+          deck: focusedEntity?.type === 'deck' ? focusedEntity.data as Deck : null,
+          doc: focusedEntity?.type === 'doc' ? focusedEntity.data as InvestorDoc : null
+      });
+      setMessages(prev => [...prev, { id: generateUUID(), role: 'model', content: responseText || "Issue connecting...", timestamp: new Date().toISOString() }]);
     } catch (e) {
-      console.error(e);
-      setMessages(prev => [...prev, { 
-        id: generateUUID(), 
-        role: 'model', 
-        content: "Sorry, I encountered an error connecting to Gemini. Please check your API Key.", 
-        timestamp: new Date().toISOString() 
-      }]);
+      setMessages(prev => [...prev, { id: generateUUID(), role: 'model', content: "AI Connection Error.", timestamp: new Date().toISOString() }]);
     } finally {
       setIsTyping(false);
-    }
-  };
-
-  const handleClear = () => {
-      const welcomeMsg = [{ 
-          id: 'welcome', 
-          role: 'model', 
-          content: `Hi! I'm your Startup Copilot. Context reset.`, 
-          timestamp: new Date().toISOString() 
-      } as ChatMessage];
-      setMessages(welcomeMsg);
-      sessionStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(welcomeMsg));
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
     }
   };
 
@@ -124,99 +80,54 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({ isOpen, onClose }) =
     <AnimatePresence>
       {isOpen && (
         <>
-          <MotionDiv
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-40"
-          />
-          <MotionDiv
-            initial={{ x: '100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '100%' }}
-            transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-            className="fixed top-0 right-0 h-full w-full max-w-md bg-white shadow-2xl z-50 flex flex-col"
-          >
-            {/* Header */}
-            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-white shadow-sm z-10">
+          <MotionDiv initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-40" />
+          <MotionDiv initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} className="fixed top-0 right-0 h-full w-full max-w-md bg-white shadow-2xl z-50 flex flex-col">
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-white shadow-sm">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-500/20">
-                  <Sparkles size={20} />
-                </div>
+                <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white"><Sparkles size={20} /></div>
                 <div>
                   <h2 className="font-bold text-slate-900">Startup Copilot</h2>
-                  <p className="text-xs text-slate-500 flex items-center gap-1">
-                    <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                    Online • Gemini 3 Pro
-                  </p>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Active Memory</p>
+                  </div>
                 </div>
               </div>
-              <div className="flex items-center gap-1">
-                <button onClick={handleClear} className="p-2 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 transition-colors" title="Clear Chat">
-                    <Trash2 size={18} />
-                </button>
-                <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full text-slate-400 transition-colors">
-                    <X size={20} />
-                </button>
-              </div>
+              <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full text-slate-400"><X size={20} /></button>
             </div>
 
-            {/* Chat Area */}
+            <div className="px-6 py-2 border-b border-slate-100 bg-slate-50 flex gap-2 overflow-x-auto hide-scrollbar">
+                <div className="flex items-center gap-1.5 px-2 py-1 bg-white border border-slate-200 rounded-full shrink-0">
+                    <Brain size={10} className="text-indigo-500" />
+                    <span className="text-[10px] font-bold text-slate-600 uppercase">Context: {profile?.name}</span>
+                </div>
+                {focusedEntity && (
+                    <div className="flex items-center gap-1.5 px-2 py-1 bg-indigo-50 border border-indigo-100 rounded-full shrink-0 animate-in zoom-in-50">
+                        <Cpu size={10} className="text-indigo-600" />
+                        <span className="text-[10px] font-bold text-indigo-700 uppercase truncate max-w-[120px]">{focusedEntity.label}</span>
+                    </div>
+                )}
+            </div>
+
             <div className="flex-1 overflow-y-auto p-4 space-y-6 bg-slate-50" ref={scrollRef}>
               {messages.map((msg) => (
                 <div key={msg.id} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 border ${msg.role === 'user' ? 'bg-white border-slate-200 text-slate-600' : 'bg-indigo-100 border-indigo-200 text-indigo-600'}`}>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 border ${msg.role === 'user' ? 'bg-white border-slate-200 text-slate-600' : 'bg-indigo-600 border-indigo-700 text-white'}`}>
                     {msg.role === 'user' ? <User size={14} /> : <Bot size={14} />}
                   </div>
-                  <div className={`max-w-[85%] p-3.5 rounded-2xl text-sm leading-relaxed shadow-sm ${
-                    msg.role === 'user' 
-                      ? 'bg-white border border-slate-200 text-slate-800 rounded-tr-none' 
-                      : 'bg-indigo-600 text-white rounded-tl-none'
-                  }`}>
-                    {msg.content.split('\n').map((line, i) => (
-                        <p key={i} className="mb-1 last:mb-0">{line}</p>
-                    ))}
+                  <div className={`max-w-[85%] p-3.5 rounded-2xl text-sm leading-relaxed shadow-sm ${msg.role === 'user' ? 'bg-white border border-slate-200 text-slate-800 rounded-tr-none' : 'bg-indigo-600 text-white rounded-tl-none'}`}>
+                    {msg.content}
                   </div>
                 </div>
               ))}
-              
-              {isTyping && (
-                <div className="flex gap-3">
-                   <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center shrink-0 text-indigo-600">
-                      <Bot size={14} />
-                   </div>
-                   <div className="bg-indigo-600 p-3.5 rounded-2xl rounded-tl-none flex items-center gap-1 w-16">
-                      <div className="w-2 h-2 bg-white/50 rounded-full animate-bounce"></div>
-                      <div className="w-2 h-2 bg-white/50 rounded-full animate-bounce delay-75"></div>
-                      <div className="w-2 h-2 bg-white/50 rounded-full animate-bounce delay-150"></div>
-                   </div>
-                </div>
-              )}
+              {isTyping && <div className="animate-pulse flex gap-2 p-4 text-slate-400 text-xs italic"><Bot size={14}/> Copilot is thinking...</div>}
             </div>
 
-            {/* Input Area */}
             <div className="p-4 bg-white border-t border-slate-200">
-              <div className="relative flex items-end gap-2 bg-slate-50 border border-slate-200 rounded-xl p-2 focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-500 transition-all">
-                <textarea
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Ask anything..."
-                  className="w-full bg-transparent border-none focus:ring-0 text-sm max-h-32 resize-none py-2 px-2"
-                  rows={1}
-                />
-                <button 
-                  onClick={handleSend}
-                  disabled={!input.trim() || isTyping}
-                  className="p-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  {isTyping ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
-                </button>
+              <div className="relative flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl p-2 focus-within:ring-2 focus-within:ring-indigo-500/20 transition-all">
+                <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSend()} placeholder="Ask about your strategy..." className="flex-1 bg-transparent border-none focus:ring-0 text-sm py-2 px-2" />
+                <button onClick={handleSend} disabled={!input.trim() || isTyping} className="p-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"><Send size={18} /></button>
               </div>
-              <p className="text-[10px] text-center text-slate-400 mt-2">
-                AI can make mistakes. Verify important information.
-              </p>
             </div>
           </MotionDiv>
         </>

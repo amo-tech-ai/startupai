@@ -1,8 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
 import { CommandPalette } from '../components/ui/CommandPalette';
+import { LiveSessionManager } from '../components/LiveSessionManager';
 
 const AppLayout: React.FC = () => {
   const [isCommandOpen, setIsCommandOpen] = useState(false);
@@ -28,6 +30,7 @@ const AppLayout: React.FC = () => {
         </main>
       </div>
       <CommandPalette isOpen={isCommandOpen} onClose={() => setIsCommandOpen(false)} />
+      <LiveSessionManager />
     </div>
   );
 };

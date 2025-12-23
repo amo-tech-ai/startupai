@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { GoogleGenAI } from "npm:@google/genai";
 
@@ -15,7 +14,6 @@ serve(async (req) => {
   try {
     const { history, message, context, apiKey } = await req.json();
     
-    // Prioritize server-side key, fallback to passed key (for dev/demo flex)
     const googleApiKey = Deno.env.get('GOOGLE_API_KEY') || Deno.env.get('API_KEY') || apiKey;
     
     if (!googleApiKey) {
@@ -24,7 +22,7 @@ serve(async (req) => {
 
     const ai = new GoogleGenAI({ apiKey: googleApiKey });
 
-    // Construct System Context
+    // 1. Startup Profile Context
     const profileContext = context.profile ? `
       Startup Name: ${context.profile.name}
       Description: ${context.profile.tagline}
@@ -34,48 +32,64 @@ serve(async (req) => {
       Target Market: ${context.profile.targetMarket}
     ` : "Startup Profile: Not fully set up.";
 
+    // 2. Metrics Context
     const latestMetric = context.metrics && context.metrics.length > 0 
         ? context.metrics[context.metrics.length - 1] 
         : null;
         
     const metricsContext = latestMetric ? `
-      MRR: $${latestMetric.mrr}
-      Active Users: ${latestMetric.activeUsers}
-      Burn Rate: $${latestMetric.burnRate || 0}
-      Cash: $${latestMetric.cashBalance || 0}
+      Financial Snapshot:
+      - MRR: $${latestMetric.mrr}
+      - Active Users: ${latestMetric.activeUsers}
+      - Burn Rate: $${latestMetric.burnRate || 0}
+      - Cash: $${latestMetric.cashBalance || 0}
     ` : "Metrics: No data available.";
 
-    // CRM Context Construction
-    const deals = context.deals || [];
-    const pipelineValue = deals.reduce((acc: number, d: any) => acc + (d.stage !== 'Closed' ? d.value : 0), 0);
-    const dealContext = deals.length > 0 ? `
-      Active Pipeline Value: $${pipelineValue}
-      Top Deals:
-      ${deals.slice(0, 5).map((d: any) => `- ${d.company} (${d.stage}): $${d.amount || d.value}`).join('\n')}
-    ` : "CRM: No active deals.";
-
-    // Task Context Construction
-    const tasks = context.tasks || [];
-    const taskContext = tasks.length > 0 ? `
-      Active Tasks:
-      ${tasks.filter((t: any) => t.status !== 'Done').slice(0, 5).map((t: any) => `- [${t.priority}] ${t.title}`).join('\n')}
-    ` : "Tasks: No pending tasks.";
+    // 3. Current Focused Entity Context (Event, Deck, or Doc)
+    let focusedEntityContext = "";
+    if (context.event) {
+        focusedEntityContext = `
+          CURRENT FOCUS: EVENT PLANNING
+          Event Name: ${context.event.name}
+          Type: ${context.event.type}
+          Date: ${context.event.date}
+          City: ${context.event.city}
+          Status: ${context.event.status}
+          Description: ${context.event.description}
+          Budget Total: $${context.event.budget_total}
+        `;
+    } else if (context.deck) {
+        focusedEntityContext = `
+          CURRENT FOCUS: PITCH DECK
+          Title: ${context.deck.title}
+          Template: ${context.deck.template}
+          Slide Count: ${context.deck.slides?.length || 0}
+        `;
+    } else if (context.doc) {
+        focusedEntityContext = `
+          CURRENT FOCUS: INVESTOR DOCUMENT
+          Title: ${context.doc.title}
+          Type: ${context.doc.type}
+          Status: ${context.doc.status}
+        `;
+    }
 
     const systemInstruction = `
       You are the "StartupAI Copilot", an expert venture capital advisor and operational co-founder.
       You are talking to the founder of the startup described below.
       
-      CONTEXT:
+      STARTUP CONTEXT:
       ${profileContext}
       ${metricsContext}
-      ${dealContext}
-      ${taskContext}
+      
+      ${focusedEntityContext}
 
-      ROLE:
+      GOAL:
       - Be concise, actionable, and encouraging but realistic.
+      - If an event is being planned, offer logistical advice or marketing hooks.
+      - If a deck is open, offer narrative or design feedback.
+      - Use Paul Graham / Y Combinator principles for advice.
       - If asked about metrics, refer to the data provided.
-      - If asked for advice, use Paul Graham / Y Combinator principles.
-      - Do not invent data if it's missing from the context; ask the user to provide it.
     `;
 
     const chat = ai.chats.create({

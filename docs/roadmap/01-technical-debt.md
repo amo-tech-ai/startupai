@@ -1,17 +1,15 @@
+
 # 🪵 Technical Debt Registry
 
 ## 1. AI Implementation Gaps
-*   **Prompt Leakage**: System instructions are defined in frontend service files. These should be moved entirely into Edge Functions to prevent reverse engineering of proprietary prompts.
-*   **Thinking Budget Tuning**: `thinkingBudget` is set to 2048 across most tasks. High-latency strategy tasks may benefit from 4096, while UI tweaks should use 0 (Gemini 3 Flash).
+*   **Prompt Leakage**: System instructions are currently defined in frontend service files. For production security, these should be moved entirely into Edge Functions to prevent reverse engineering of proprietary prompt IP.
+*   **Thinking Budget Tuning**: Most Gemini 3 Pro calls are using a default `thinkingBudget`. Strategic narrative tasks should be tuned to `4096` tokens, while UI logic should remain at `0` (Flash) to minimize latency.
+*   **Tool Choice Determinism**: Need a middleware to decide when to trigger Search Grounding vs. internal RAG to reduce token costs.
 
 ## 2. Architecture Anti-patterns
-*   **Prop Drilling (Limited)**: `displayProfile` in `StartupProfilePage` is passed through multiple layers. 
-*   **Mock Fallbacks**: `mockDatabase.ts` and guest mode logic is robust but adds bloat to the final bundle. Consider code-splitting guest vs auth paths.
+*   **Prop Drilling**: The `displayProfile` object in `StartupProfilePage` is becoming large. Move to a dedicated `useStartupProfile` context hook to isolate company-level state.
+*   **Optimistic UI vs Sockets**: CRM Kanban uses optimistic UI for drag-and-drop, but missing a "Revert" state if the network request fails.
 
-## 3. Performance Bottlenecks
-*   **Image Bloat**: Marketing Generator creates raw Base64 strings. Large events with many assets will slow down the `postgres_changes` payload. 
-*   **Recommendation**: Move all Image Gen to background tasks that write only a Storage UUID to the database.
-
-## 4. UI/UX Refinement
-*   **Command Palette (Cmd+K)**: Is not yet aware of search results, only navigation.
-*   **Soft Deletes**: Critical data loss risk in CRM/Docs.
+## 3. Data Integrity
+*   **Soft Deletes**: Critical data (Deals, Contacts) is at risk of accidental permanent deletion. Implement `deleted_at` column across all operational tables.
+*   **JSONB Bloat**: The `wizard_context` in the Events table is storing redundant data. Normalize into sub-tables.

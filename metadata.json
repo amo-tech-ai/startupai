@@ -1,5 +1,7 @@
 {
-  "name": "startupAI - Premium SaaS Homepage",
-  "description": "A high-conversion, premium SaaS homepage featuring rich animations, interactive data visualizations, and a modern component-based architecture.",
-  "requestFramePermissions": []
+  "name": "startupAI - Investor CRM OS",
+  "description": "Intelligent operating system for founders with AI-scored CRM, automated pitch decks, and strategic planning.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
 }

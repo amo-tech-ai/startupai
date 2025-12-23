@@ -46,7 +46,8 @@ export const generateActionPlan = async (apiKey: string, eventData: EventData): 
             }
           }
         },
-        thinkingConfig: { thinkingBudget: 1024 }
+        // Gemini 3: Using high depth for operational logic
+        thinkingConfig: { thinkingLevel: 'high' }
       }
     });
 

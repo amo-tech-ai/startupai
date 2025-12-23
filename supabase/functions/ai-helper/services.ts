@@ -41,7 +41,8 @@ export class DeepResearchAgent {
         contents: prompt,
         config: { 
             tools: [{ googleSearch: {} }],
-            thinkingConfig: { thinkingBudget: 4096 }
+            // Gemini 3: Maximize depth for research
+            thinkingConfig: { thinkingLevel: 'high' }
         }
     });
     
@@ -105,10 +106,18 @@ export class StandardAgent {
   }
 
   async runTask(prompt: string, config: any = {}) {
+    // Determine thinking level based on model or task type
+    const modelName = config.model || 'gemini-3-pro-preview';
+    const defaultThinkingConfig = modelName.includes('gemini-3') ? { thinkingLevel: 'high' } : {};
+
     const response = await this.ai.models.generateContent({
-        model: 'gemini-3-pro-preview',
+        model: modelName,
         contents: prompt,
-        config: { responseMimeType: 'application/json', ...config }
+        config: { 
+          responseMimeType: 'application/json', 
+          ...config,
+          thinkingConfig: { ...defaultThinkingConfig, ...config.thinkingConfig }
+        }
     });
     return JSON.parse(cleanJson(response.text));
   }

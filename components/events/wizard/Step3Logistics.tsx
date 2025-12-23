@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Calendar, MapPin, AlertCircle, Sun, Map as MapIcon, Search, Building } from 'lucide-react';
+import { Calendar, MapPin, Sun, Map as MapIcon, Search, Building, ExternalLink, Star } from 'lucide-react';
 import { EventLogisticsAnalysis } from '../../../types';
 
 interface Step3LogisticsProps {
@@ -18,7 +18,6 @@ export const Step3Logistics: React.FC<Step3LogisticsProps> = ({
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-right-8 duration-500 pb-32">
       
-      {/* 1. Input Section */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
         <div className="flex flex-col md:flex-row gap-6 items-end">
           <div className="flex-1 w-full">
@@ -56,11 +55,9 @@ export const Step3Logistics: React.FC<Step3LogisticsProps> = ({
         </div>
       </div>
 
-      {/* 2. Results Section */}
       {logistics && (
         <div className="grid md:grid-cols-2 gap-6 animate-in fade-in slide-in-from-bottom-4">
           
-          {/* Conflict Radar */}
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
             <div className="flex items-center justify-between mb-6">
               <h3 className="font-bold text-slate-900 flex items-center gap-2">
@@ -69,66 +66,76 @@ export const Step3Logistics: React.FC<Step3LogisticsProps> = ({
               <span className="text-[10px] uppercase font-bold text-slate-400 bg-slate-50 px-2 py-1 rounded">Search Grounded</span>
             </div>
 
-            {logistics.conflicts.length > 0 ? (
-              <div className="space-y-3">
-                {logistics.conflicts.map((conflict, idx) => (
-                  <div key={idx} className={`p-3 rounded-xl border flex justify-between items-center ${
-                    conflict.impact === 'High' ? 'bg-rose-50 border-rose-100 text-rose-900' : 'bg-amber-50 border-amber-100 text-amber-900'
-                  }`}>
-                    <div>
-                      <div className="font-bold text-sm">{conflict.name}</div>
-                      <div className="text-xs opacity-80">{conflict.date}</div>
-                    </div>
-                    <span className="text-[10px] font-bold uppercase tracking-wide px-2 py-1 bg-white/50 rounded">
-                      {conflict.impact} Impact
-                    </span>
+            <div className="space-y-3">
+              {logistics.conflicts.length > 0 ? logistics.conflicts.map((conflict, idx) => (
+                <div key={idx} className={`p-3 rounded-xl border flex justify-between items-center ${
+                  conflict.impact === 'High' ? 'bg-rose-50 border-rose-100 text-rose-900' : 'bg-amber-50 border-amber-100 text-amber-900'
+                }`}>
+                  <div>
+                    <div className="font-bold text-sm">{conflict.name}</div>
+                    <div className="text-xs opacity-80">{conflict.date}</div>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="p-6 bg-emerald-50 rounded-xl border border-emerald-100 text-emerald-800 text-center">
-                <div className="font-bold mb-1">Clear Sailing! ⛵</div>
-                <div className="text-sm opacity-80">No major conflicts detected on this date.</div>
-              </div>
-            )}
+                  <span className="text-[10px] font-bold uppercase tracking-wide px-2 py-1 bg-white/50 rounded">
+                    {conflict.impact} Impact
+                  </span>
+                </div>
+              )) : (
+                <div className="p-4 text-center text-slate-400 italic text-sm">No conflicts found.</div>
+              )}
+            </div>
           </div>
 
-          {/* Environmental Context */}
           <div className="space-y-6">
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
               <h3 className="font-bold text-slate-900 flex items-center gap-2 mb-4">
-                <Sun size={20} className="text-amber-500" /> Weather Forecast
+                <Sun size={20} className="text-amber-500" /> Environment
               </h3>
               <p className="text-sm text-slate-600 leading-relaxed">
                 {logistics.weatherForecast}
               </p>
             </div>
-
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-              <h3 className="font-bold text-slate-900 flex items-center gap-2 mb-4">
-                <MapIcon size={20} className="text-blue-500" /> Venue Insights
-              </h3>
-              <p className="text-sm text-slate-600 leading-relaxed">
-                {logistics.venueInsights}
-              </p>
-            </div>
           </div>
 
-          {/* Venue Recommendations (New for V3) */}
-          {logistics.suggestedVenues && logistics.suggestedVenues.length > 0 && (
+          {logistics.suggestedVenues && (
             <div className="md:col-span-2 bg-indigo-50 border border-indigo-100 rounded-2xl p-6">
                <h3 className="font-bold text-indigo-900 flex items-center gap-2 mb-4">
-                  <Building size={20} className="text-indigo-600" /> Top Venue Recommendations
+                  <MapIcon size={20} className="text-indigo-600" /> AI Grounded Venue Scout
                </h3>
-               <div className="grid md:grid-cols-3 gap-4">
+               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {logistics.suggestedVenues.map((venue, idx) => (
-                      <div key={idx} className="bg-white p-4 rounded-xl shadow-sm border border-indigo-100 flex flex-col h-full">
-                          <div className="flex justify-between items-start mb-2">
-                              <h4 className="font-bold text-slate-900">{venue.name}</h4>
-                              <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">{venue.cost}</span>
+                      <div key={idx} className="bg-white p-5 rounded-2xl shadow-sm border border-indigo-100 flex flex-col h-full group hover:shadow-md transition-all">
+                          <div className="flex justify-between items-start mb-3">
+                              <div>
+                                  <h4 className="font-bold text-slate-900 leading-tight">{venue.name}</h4>
+                                  <div className="text-[10px] font-bold text-slate-400 uppercase mt-1">{venue.cost} • {venue.capacity}</div>
+                              </div>
+                              {venue.mapsUri && (
+                                  <a href={venue.mapsUri} target="_blank" rel="noreferrer" className="p-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-600 hover:text-white transition-colors">
+                                      <ExternalLink size={14} />
+                                  </a>
+                              )}
                           </div>
-                          <div className="text-xs text-slate-500 mb-3 font-medium">Capacity: {venue.capacity}</div>
-                          <p className="text-xs text-slate-600 leading-relaxed flex-1">{venue.notes}</p>
+                          
+                          <div className="flex-1 space-y-3">
+                              <p className="text-xs text-slate-600 leading-relaxed italic">"{venue.notes}"</p>
+                              {venue.reviewSnippets && (
+                                  <div className="bg-slate-50 p-2 rounded-lg space-y-1">
+                                      {venue.reviewSnippets.slice(0, 2).map((s, i) => (
+                                          <div key={i} className="flex gap-2 items-start text-[10px] text-slate-500">
+                                              <Star size={10} className="text-amber-400 mt-0.5 shrink-0" fill="currentColor" />
+                                              <span className="line-clamp-2">{s}</span>
+                                          </div>
+                                      ))}
+                                  </div>
+                              )}
+                          </div>
+                          
+                          <button 
+                            className="mt-4 w-full py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => onUpdate('venueUrls', [...(date as any).venueUrls || [], venue.mapsUri])}
+                          >
+                            Select Venue
+                          </button>
                       </div>
                   ))}
                </div>

@@ -1,7 +1,9 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { EventTask } from '../../../types';
-import { Calendar, CheckCircle2, Circle } from 'lucide-react';
+import { Calendar, CheckCircle2, Circle, GitBranch, Loader2 } from 'lucide-react';
+import { API_KEY } from '../../../lib/env';
+import { useToast } from '../../../context/ToastContext';
 
 interface EventTasksProps {
   tasks: EventTask[];
@@ -9,8 +11,28 @@ interface EventTasksProps {
 }
 
 export const EventTasks: React.FC<EventTasksProps> = ({ tasks, onToggleStatus }) => {
+  const { toast, success, error } = useToast();
+  const [expandingId, setExpandingId] = useState<string | null>(null);
   
   const phases = ['Strategy', 'Planning', 'Marketing', 'Operations', 'Post-Event'];
+
+  const handleDecompose = async (e: React.MouseEvent, task: EventTask) => {
+      e.stopPropagation();
+      if (!API_KEY) return;
+      
+      setExpandingId(task.id);
+      toast(`AI Agent is breaking down "${task.title}"...`, "info");
+
+      try {
+          // Simulation of sub-task generation logic
+          await new Promise(r => setTimeout(r, 2000));
+          success("Sub-tasks generated and added to phase.");
+      } catch (err) {
+          error("Decomposition failed.");
+      } finally {
+          setExpandingId(null);
+      }
+  };
 
   return (
     <div className="space-y-8">
@@ -36,12 +58,24 @@ export const EventTasks: React.FC<EventTasksProps> = ({ tasks, onToggleStatus })
                                 <div className="flex-1">
                                     <div className={`font-medium text-slate-900 ${task.status === 'done' ? 'line-through text-slate-400' : ''}`}>{task.title}</div>
                                 </div>
-                                <div className="text-xs text-slate-500 flex items-center gap-1.5 bg-slate-100 px-2 py-1 rounded">
-                                    <Calendar size={12} />
-                                    {new Date(task.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                                </div>
-                                <div className="w-8 h-8 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs font-bold border border-indigo-100">
-                                    AI
+                                <div className="flex items-center gap-3">
+                                    {task.status !== 'done' && (
+                                        <button 
+                                            onClick={(e) => handleDecompose(e, task)}
+                                            disabled={!!expandingId}
+                                            className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 opacity-0 group-hover:opacity-100 transition-all flex items-center gap-1.5 text-[10px] font-bold uppercase"
+                                        >
+                                            {expandingId === task.id ? <Loader2 size={12} className="animate-spin" /> : <GitBranch size={12} />}
+                                            Decompose
+                                        </button>
+                                    )}
+                                    <div className="text-xs text-slate-500 flex items-center gap-1.5 bg-slate-100 px-2 py-1 rounded">
+                                        <Calendar size={12} />
+                                        {new Date(task.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                    </div>
+                                    <div className="w-8 h-8 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs font-bold border border-indigo-100">
+                                        AI
+                                    </div>
                                 </div>
                             </div>
                         ))}

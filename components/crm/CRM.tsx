@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { 
   Search, 
@@ -7,7 +8,6 @@ import {
   Users,
   Briefcase,
   Trash2,
-  RotateCcw,
   Lock
 } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
@@ -22,9 +22,11 @@ import { DealDetailDrawer } from './crm/DealDetailDrawer';
 import { AddContactSidebar } from '../dashboard/AddContactSidebar';
 import { useFeatureAccess } from '../../hooks/useFeatureAccess';
 import { UpgradeModal } from '../ui/UpgradeModal';
+import { UndoToast } from '../ui/UndoToast';
+import { CrmService } from '../../services/supabase/crm';
 
 const CRM: React.FC = () => {
-  const { deals, contacts, addDeal, updateDeal, deleteContact } = useData();
+  const { deals, contacts, addDeal, updateDeal, performSoftDelete } = useData();
   const { canCreateDeal } = useFeatureAccess();
   const [activeTab, setActiveTab] = useState<'pipeline' | 'contacts' | 'trash'>('pipeline');
   const [viewMode, setViewMode] = useState<'board' | 'list'>('board');
@@ -37,12 +39,10 @@ const CRM: React.FC = () => {
   const [initialStage, setInitialStage] = useState<DealStage>('Lead');
   const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null);
 
-  // Stats Calculation
   const totalValue = deals.reduce((acc, deal) => acc + deal.value, 0);
   const activeDeals = deals.filter(d => d.stage !== 'Closed').length;
   const winRate = deals.length > 0 ? Math.round((deals.filter(d => d.stage === 'Closed').length / deals.length) * 100) : 0;
 
-  // Filtering
   const filteredDeals = deals.filter(deal => 
     deal.company.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -67,6 +67,15 @@ const CRM: React.FC = () => {
 
   const handleDealMove = (dealId: string, newStage: DealStage) => {
     updateDeal(dealId, { stage: newStage });
+  };
+
+  const handleDeleteDeal = (id: string) => {
+    performSoftDelete('deal', id, () => CrmService.softDeleteDeal(id));
+    setSelectedDeal(null);
+  };
+
+  const handleDeleteContact = (id: string) => {
+    performSoftDelete('contact', id, () => CrmService.deleteContact(id));
   };
 
   return (
@@ -98,23 +107,14 @@ const CRM: React.FC = () => {
         </div>
 
         <div className="flex gap-6 mb-6 border-b border-slate-100">
-            <button 
-                onClick={() => setActiveTab('pipeline')}
-                className={`pb-3 text-sm font-bold flex items-center gap-2 transition-colors border-b-2 ${activeTab === 'pipeline' ? 'text-indigo-600 border-indigo-600' : 'text-slate-500 border-transparent hover:text-slate-800'}`}
-            >
+            <button onClick={() => setActiveTab('pipeline')} className={`pb-3 text-sm font-bold flex items-center gap-2 transition-colors border-b-2 ${activeTab === 'pipeline' ? 'text-indigo-600 border-indigo-600' : 'text-slate-500 border-transparent hover:text-slate-800'}`}>
                 <Briefcase size={18} /> Pipeline
             </button>
-            <button 
-                onClick={() => setActiveTab('contacts')}
-                className={`pb-3 text-sm font-bold flex items-center gap-2 transition-colors border-b-2 ${activeTab === 'contacts' ? 'text-indigo-600 border-indigo-600' : 'text-slate-500 border-transparent hover:text-slate-800'}`}
-            >
+            <button onClick={() => setActiveTab('contacts')} className={`pb-3 text-sm font-bold flex items-center gap-2 transition-colors border-b-2 ${activeTab === 'contacts' ? 'text-indigo-600 border-indigo-600' : 'text-slate-500 border-transparent hover:text-slate-800'}`}>
                 <Users size={18} /> Contacts
             </button>
-            <button 
-                onClick={() => setActiveTab('trash')}
-                className={`pb-3 text-sm font-bold flex items-center gap-2 transition-colors border-b-2 ${activeTab === 'trash' ? 'text-rose-600 border-rose-600' : 'text-slate-500 border-transparent hover:text-slate-800'}`}
-            >
-                <Trash2 size={18} /> Trash
+            <button onClick={() => setActiveTab('trash')} className={`pb-3 text-sm font-bold flex items-center gap-2 transition-colors border-b-2 ${activeTab === 'trash' ? 'text-rose-600 border-rose-600' : 'text-slate-500 border-transparent hover:text-slate-800'}`}>
+                <Trash2 size={18} /> Archive
             </button>
         </div>
 
@@ -131,11 +131,11 @@ const CRM: React.FC = () => {
                 <DealListView deals={filteredDeals} onDealClick={setSelectedDeal} />
             )
         ) : activeTab === 'contacts' ? (
-            <ContactListView contacts={filteredContacts} onDelete={deleteContact} onEdit={(c) => { setSelectedContact(c); setIsContactSidebarOpen(true); }} />
+            <ContactListView contacts={filteredContacts} onDelete={handleDeleteContact} onEdit={(c) => { setSelectedContact(c); setIsContactSidebarOpen(true); }} />
         ) : (
-            <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center text-slate-500">
-                <RotateCcw size={48} className="mx-auto mb-4 opacity-20" />
-                <p>Deleted items will appear here for 30 days before being purged.</p>
+            <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center text-slate-500 h-full flex flex-col items-center justify-center">
+                <Trash2 size={48} className="mb-4 opacity-10" />
+                <p className="max-w-xs leading-relaxed">Deleted items are archived in your backend and can be recovered by support if needed.</p>
             </div>
         )}
       </div>
@@ -145,7 +145,10 @@ const CRM: React.FC = () => {
       </AnimatePresence>
       <UpgradeModal isOpen={showUpgrade} onClose={() => setShowUpgrade(false)} featureName="Unlimited Deals" />
       <AddContactSidebar isOpen={isContactSidebarOpen} onClose={() => setIsContactSidebarOpen(false)} contact={selectedContact} />
-      <DealDetailDrawer isOpen={!!selectedDeal} deal={selectedDeal} onClose={() => setSelectedDeal(null)} onUpdate={updateDeal} onDelete={() => {}} />
+      <DealDetailDrawer isOpen={!!selectedDeal} deal={selectedDeal} onClose={() => setSelectedDeal(null)} onUpdate={updateDeal} onDelete={handleDeleteDeal} />
+      
+      {/* Production UI Safety */}
+      <UndoToast />
     </div>
   );
 };

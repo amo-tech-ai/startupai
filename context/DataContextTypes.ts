@@ -13,7 +13,7 @@ export interface DataContextType {
   deals: Deal[];
   contacts: Contact[];
   docs: InvestorDoc[];
-  events: EventData[]; // Added events
+  events: EventData[];
   
   createStartup: (data: Partial<StartupProfile>) => Promise<string | null>;
   updateProfile: (data: Partial<StartupProfile>) => Promise<void>;
@@ -47,4 +47,10 @@ export interface DataContextType {
   
   uploadFile: (file: File, bucket: string) => Promise<string | null>;
   isLoading: boolean;
+
+  // Recovery Logic
+  undoAction: any;
+  performSoftDelete: (type: 'deal' | 'contact' | 'task' | 'doc', id: string, action: () => Promise<void>) => void;
+  triggerUndo: () => void;
+  restoreItem: (type: 'deal' | 'contact', id: string) => Promise<void>;
 }

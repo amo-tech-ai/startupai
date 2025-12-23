@@ -1,15 +1,17 @@
 
 import React from 'react';
 import { Contact } from '../../types';
-import { Mail, Phone, Linkedin, Trash2, User, Building2, Edit2 } from 'lucide-react';
+import { Mail, Phone, Linkedin, Trash2, User, Building2, Edit2, RotateCcw } from 'lucide-react';
 
 interface ContactListViewProps {
   contacts: Contact[];
   onDelete: (id: string) => void;
   onEdit?: (contact: Contact) => void;
+  isArchive?: boolean;
+  onRestore?: (id: string) => void;
 }
 
-export const ContactListView: React.FC<ContactListViewProps> = ({ contacts, onDelete, onEdit }) => {
+export const ContactListView: React.FC<ContactListViewProps> = ({ contacts, onDelete, onEdit, isArchive, onRestore }) => {
   
   const getTypeColor = (type?: string) => {
     switch(type) {
@@ -36,7 +38,7 @@ export const ContactListView: React.FC<ContactListViewProps> = ({ contacts, onDe
         <div className="divide-y divide-slate-100">
             {contacts.length === 0 ? (
                 <div className="p-12 text-center text-slate-400 text-sm italic">
-                    No contacts found. Add one from the dashboard.
+                    {isArchive ? "Archive is empty." : "No contacts found."}
                 </div>
             ) : (
                 contacts.map((contact) => (
@@ -75,7 +77,7 @@ export const ContactListView: React.FC<ContactListViewProps> = ({ contacts, onDe
                             <div className="text-sm font-medium text-slate-900">{contact.role || '-'}</div>
                             <div className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
                                 <Building2 size={10} />
-                                <span>{/* Company name usually stored in role e.g. "CEO at Acme" or implied */}
+                                <span>
                                     {contact.role?.includes(' at ') ? contact.role.split(' at ')[1] : 'Company'}
                                 </span>
                             </div>
@@ -104,20 +106,32 @@ export const ContactListView: React.FC<ContactListViewProps> = ({ contacts, onDe
 
                         {/* Actions */}
                         <div className="col-span-1 text-right opacity-0 group-hover:opacity-100 transition-opacity flex justify-end gap-1">
-                            {onEdit && (
+                            {isArchive ? (
                                 <button 
-                                    onClick={() => onEdit(contact)}
-                                    className="p-2 text-slate-300 hover:text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors"
+                                    onClick={() => onRestore?.(contact.id)}
+                                    className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors"
+                                    title="Restore"
                                 >
-                                    <Edit2 size={16} />
+                                    <RotateCcw size={16} />
                                 </button>
+                            ) : (
+                                <>
+                                    {onEdit && (
+                                        <button 
+                                            onClick={() => onEdit(contact)}
+                                            className="p-2 text-slate-300 hover:text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors"
+                                        >
+                                            <Edit2 size={16} />
+                                        </button>
+                                    )}
+                                    <button 
+                                        onClick={() => onDelete(contact.id)}
+                                        className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
+                                </>
                             )}
-                            <button 
-                                onClick={() => onDelete(contact.id)}
-                                className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
-                            >
-                                <Trash2 size={16} />
-                            </button>
                         </div>
                     </div>
                 ))

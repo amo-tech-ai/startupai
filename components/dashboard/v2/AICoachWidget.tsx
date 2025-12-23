@@ -1,9 +1,11 @@
 
-import React from 'react';
-import { Sparkles, ArrowRight, Zap, RefreshCw, Loader2, Check } from 'lucide-react';
+import React, { useState } from 'react';
+import { Sparkles, ArrowRight, Zap, RefreshCw, Loader2, Check, BookOpen, ChevronRight } from 'lucide-react';
 import { AICoachInsight } from '../../../types';
 import { useData } from '../../../context/DataContext';
 import { useToast } from '../../../context/ToastContext';
+import { CoachAI } from '../../../services/coachAI';
+import { API_KEY } from '../../../lib/env';
 
 interface AICoachWidgetProps {
   insights: AICoachInsight[];
@@ -12,8 +14,9 @@ interface AICoachWidgetProps {
 }
 
 export const AICoachWidget: React.FC<AICoachWidgetProps> = ({ insights, onRefresh, isGenerating }) => {
-  const { addTask } = useData();
-  const { success } = useToast();
+  const { profile, addTask, addActivity, setInsights } = useData();
+  const { success, error, toast } = useToast();
+  const [isAnalyzingDeep, setIsAnalyzingDeep] = useState(false);
 
   const handleConvertToTask = (e: React.MouseEvent, insight: AICoachInsight) => {
     e.stopPropagation();
@@ -27,8 +30,35 @@ export const AICoachWidget: React.FC<AICoachWidgetProps> = ({ insights, onRefres
     success("Task added to backlog!");
   };
 
-  // Take top 3 insights or use placeholders if completely empty (and not just loading)
-  // We prefer showing real insights if available
+  const handleDeepAnalysis = async () => {
+    if (!profile || !API_KEY) return;
+    setIsAnalyzingDeep(true);
+    toast("AI is synthesizing your deep research report...", "info");
+
+    try {
+        const prompt = `Based on our Deep Research report: ${JSON.stringify(profile.deepResearchReport || {})}. 
+        Identify 3 high-impact tactical moves we should make this week. 
+        Return as an array of AICoachInsight JSON objects.`;
+        
+        // Use a more specialized call or same as refresh but with report context
+        const context = {
+            id: profile.id,
+            report: profile.deepResearchReport,
+            deepMode: true
+        };
+        
+        const newInsights = await CoachAI.generateInsights(API_KEY, context);
+        if (newInsights) {
+            setInsights([...newInsights, ...insights]);
+            success("Deep strategy insights added!");
+        }
+    } catch (e) {
+        error("Deep analysis failed.");
+    } finally {
+        setIsAnalyzingDeep(false);
+    }
+  };
+
   const displayInsights = insights.length > 0 ? insights.slice(0, 3) : [];
 
   return (
@@ -40,13 +70,26 @@ export const AICoachWidget: React.FC<AICoachWidgetProps> = ({ insights, onRefres
           </div>
           <h3 className="font-serif font-bold text-lg text-[#1A1A1A]">AI Coach</h3>
         </div>
-        <button 
-            onClick={onRefresh}
-            disabled={isGenerating}
-            className="p-2 hover:bg-gray-50 rounded-full transition-colors text-[#6B7280] hover:text-[#1A1A1A] disabled:opacity-50"
-        >
-            {isGenerating ? <Loader2 size={16} className="animate-spin"/> : <RefreshCw size={16} />}
-        </button>
+        <div className="flex items-center gap-2">
+            {profile?.deepResearchReport && (
+                <button 
+                    onClick={handleDeepAnalysis}
+                    disabled={isAnalyzingDeep}
+                    className="text-[10px] font-bold text-[#6B21A8] bg-[#F3E8FF] px-2 py-1 rounded border border-[#E9D5FF] hover:bg-[#E9D5FF] transition-colors flex items-center gap-1"
+                    title="Analyze Research Report"
+                >
+                    {isAnalyzingDeep ? <Loader2 size={10} className="animate-spin"/> : <BookOpen size={10} />}
+                    Deep Analysis
+                </button>
+            )}
+            <button 
+                onClick={onRefresh}
+                disabled={isGenerating}
+                className="p-2 hover:bg-gray-50 rounded-full transition-colors text-[#6B7280] hover:text-[#1A1A1A] disabled:opacity-50"
+            >
+                {isGenerating ? <Loader2 size={16} className="animate-spin"/> : <RefreshCw size={16} />}
+            </button>
+        </div>
       </div>
 
       <div className="space-y-4 relative z-10 flex-1">
@@ -90,6 +133,19 @@ export const AICoachWidget: React.FC<AICoachWidgetProps> = ({ insights, onRefres
             </div>
         )}
       </div>
+      
+      {/* Dynamic Summary Teaser */}
+      {profile?.deepResearchReport && !isGenerating && (
+          <div className="mt-6 pt-6 border-t border-[#E5E5E5] flex items-center justify-between text-xs text-[#6B7280]">
+              <div className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse"></div>
+                  <span>Research indicates a <strong>{profile.deepResearchReport.confidence_score?.level} confidence</strong> market gap.</span>
+              </div>
+              <button onClick={handleDeepAnalysis} className="font-bold text-[#1A1A1A] hover:underline flex items-center">
+                  Explain <ChevronRight size={12}/>
+              </button>
+          </div>
+      )}
     </div>
   );
 };

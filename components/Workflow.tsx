@@ -20,8 +20,8 @@ const Workflow: React.FC = () => {
   // Cycle through steps for the animation loop
   useEffect(() => {
     const interval = setInterval(() => {
-      setActiveStep((prev) => (prev + 1) % 6); // 5 steps + 1 pause state
-    }, 1500);
+      setActiveStep((prev) => (prev + 1) % 7); // 5 steps + 2 pause states for better pacing
+    }, 2000);
     return () => clearInterval(interval);
   }, []);
 
@@ -85,13 +85,19 @@ const Workflow: React.FC = () => {
                         {/* Connecting Line Background */}
                         <div className="hidden md:block absolute top-1/2 left-0 right-0 h-0.5 bg-slate-100 -translate-y-1/2 z-0"></div>
                         
-                        {/* Animated Progress Line */}
-                        <div className="hidden md:block absolute top-1/2 left-0 h-0.5 bg-brand-500 -translate-y-1/2 z-0 transition-all duration-500 ease-linear"
-                             style={{ width: `${Math.min((activeStep / 5) * 100, 100)}%` }}></div>
+                        {/* Animated Progress Line using Framer Motion */}
+                        <MotionDiv 
+                            className="hidden md:block absolute top-1/2 left-0 h-0.5 bg-brand-500 -translate-y-1/2 z-0 origin-left"
+                            initial={{ scaleX: 0 }}
+                            animate={{ scaleX: Math.min(activeStep / 5, 1) }}
+                            transition={{ duration: 0.8, ease: "easeInOut" }}
+                            style={{ width: '100%' }}
+                        />
 
                         {steps.map((step, index) => {
-                            const isActive = index + 1 === activeStep;
-                            const isCompleted = index + 1 < activeStep;
+                            const stepNumber = index + 1;
+                            const isActive = stepNumber === activeStep;
+                            const isCompleted = stepNumber < activeStep;
 
                             return (
                                 <div key={step.id} className="relative z-10 flex flex-col items-center group w-full md:w-auto">
@@ -103,12 +109,14 @@ const Workflow: React.FC = () => {
                                         }`}
                                         animate={{
                                             scale: isActive ? 1.15 : 1,
-                                            y: isActive ? -8 : 0
+                                            y: isActive ? -12 : 0,
+                                            borderColor: (isActive || isCompleted) ? '#FF6A3D' : '#F3F4F6'
                                         }}
                                         transition={{
                                             type: "spring",
-                                            stiffness: 400,
-                                            damping: 20
+                                            stiffness: 300,
+                                            damping: 15, // Lower damping for a noticeable but premium bounce
+                                            mass: 1
                                         }}
                                     >
                                         {/* Status Badge */}
@@ -159,7 +167,7 @@ const Workflow: React.FC = () => {
                                     exit={{ opacity: 0 }}
                                     className="flex items-center gap-2 text-slate-400 font-mono text-xs"
                                 >
-                                    Processing step {activeStep || 1} of 5...
+                                    {activeStep > 0 ? `Processing step ${activeStep} of 5...` : 'Waiting for trigger...'}
                                 </MotionDiv>
                             )}
                         </AnimatePresence>

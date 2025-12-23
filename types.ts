@@ -1,4 +1,3 @@
-
 export type DealStage = 'Lead' | 'Qualified' | 'Meeting' | 'Proposal' | 'Closed';
 
 export interface Deal {
@@ -30,10 +29,15 @@ export interface Founder {
   avatarUrl?: string;
   website?: string;
   isPrimaryContact?: boolean;
-  // AI analysis fields
   headline?: string;
   experience_bullets?: string[];
   skills?: string[];
+}
+
+export interface DocSection {
+  id: string;
+  title: string;
+  content: string;
 }
 
 export interface StartupProfile {
@@ -65,53 +69,21 @@ export interface StartupProfile {
   totalUsers?: number;
   plan?: 'free' | 'founder' | 'growth';
   updatedAt?: string;
-  deepResearchReport?: any; // V3 Feature persistence
+  deepResearchReport?: any; 
 }
 
-export interface UserProfile {
-  id: string;
-  email: string;
-  fullName: string;
-  headline?: string;
-  location?: string;
-  bio?: string;
-  avatarUrl?: string;
-  coverImageUrl?: string;
-  socials: {
-    website?: string;
-    linkedin?: string;
-    twitter?: string;
-    github?: string;
-  };
-  phone?: string;
-  experiences: UserProfileExperience[];
-  education: UserProfileEducation[];
-  skills: string[];
-  plan?: 'free' | 'founder' | 'growth';
-}
-
-export interface UserProfileExperience {
-  id: string;
-  company: string;
-  role: string;
-  startDate: string;
-  endDate: string;
-  current: boolean;
-  description: string;
-}
-
-export interface UserProfileEducation {
-  id: string;
-  school: string;
-  degree: string;
-  year: string;
-  logoUrl?: string;
+export interface StartupProfileDTO {
+  startup_id: string;
+  context: any;
+  founders: any[];
+  metrics: any;
+  competitors: string[];
 }
 
 export interface MetricsSnapshot {
   id: string;
   startupId: string;
-  period: string; // ISO Date or "Oct 2023"
+  period: string; 
   mrr: number;
   activeUsers: number;
   cac?: number;
@@ -122,7 +94,6 @@ export interface MetricsSnapshot {
   recordedAt?: string;
 }
 
-// New Interface for Materialized View
 export interface StartupStats {
   startupId: string;
   currentMrr: number;
@@ -149,7 +120,6 @@ export interface AICoachInsight {
   priority: 'High' | 'Medium' | 'Low';
   status: 'New' | 'Dismissed' | 'Actioned';
   generatedAt: string;
-  generated_at?: string;
 }
 
 export interface Activity {
@@ -196,18 +166,11 @@ export interface Deck {
   format?: string;
 }
 
-export interface DocSection {
-  id: string;
-  title: string;
-  content: string; // HTML
-}
-
 export interface InvestorDoc {
   id: string;
   startupId: string;
-  userId?: string;
   title: string;
-  type: string; // Pitch Deck, One-Pager, etc.
+  type: string;
   content: { sections: DocSection[] };
   status: 'Draft' | 'Review' | 'Final';
   updatedAt: string;
@@ -230,6 +193,45 @@ export interface Contact {
   createdAt?: string;
 }
 
+export interface UserProfileExperience {
+  id: string;
+  company: string;
+  role: string;
+  startDate: string;
+  endDate: string;
+  current: boolean;
+  description: string;
+}
+
+export interface UserProfileEducation {
+  id: string;
+  school: string;
+  degree: string;
+  year: string;
+  logoUrl?: string;
+}
+
+export interface UserProfile {
+  id: string;
+  email: string;
+  fullName: string;
+  headline?: string;
+  location?: string;
+  bio: string;
+  avatarUrl?: string;
+  coverImageUrl?: string;
+  socials: {
+    linkedin?: string;
+    twitter?: string;
+    github?: string;
+    website?: string;
+  };
+  phone?: string;
+  experiences: UserProfileExperience[];
+  education: UserProfileEducation[];
+  skills: string[];
+}
+
 export interface ChatMessage {
   id: string;
   role: 'user' | 'model';
@@ -237,15 +239,24 @@ export interface ChatMessage {
   timestamp: string;
 }
 
-export interface StartupProfileDTO {
-  startup_id: string;
-  context: any;
-  founders: any[];
-  metrics: any;
-  competitors: string[];
+export interface EventBudgetItem {
+  id: string;
+  category: 'Venue' | 'Food' | 'Marketing' | 'Speakers' | 'Ops' | 'Other';
+  item: string;
+  estimated: number;
+  actual: number;
+  status: 'Planned' | 'Pending' | 'Paid';
 }
 
-// --- EVENTS SYSTEM TYPES ---
+export interface EventAttendee {
+  id: string;
+  eventId: string;
+  name: string;
+  email: string;
+  ticketType: string;
+  status: 'Registered' | 'Attended';
+  registeredAt: string;
+}
 
 export interface EventData {
   id?: string;
@@ -260,20 +271,14 @@ export interface EventData {
   sponsorUrls: string[];
   inspirationUrls: string[];
   searchTerms: string[];
-  
-  // AI Generated Data
   strategy?: EventStrategyAnalysis;
   logistics?: EventLogisticsAnalysis;
-  
-  // New V3: ROI Analysis
   roi?: EventROIAnalysis;
-  
-  // Database fields
   status?: 'Planning' | 'Scheduled' | 'Completed';
-  isPublic?: boolean; // Added for Public Landing Page
+  isPublic?: boolean;
   budget_total?: number;
   budget_spent?: number;
-  budget_items?: EventBudgetItem[]; // JSONB content
+  budget_items?: EventBudgetItem[];
   createdAt?: string;
 }
 
@@ -290,11 +295,18 @@ export interface EventLogisticsAnalysis {
   conflicts: Array<{ name: string; date: string; impact: 'High' | 'Medium' | 'Low' }>;
   weatherForecast?: string;
   venueInsights?: string;
-  suggestedVenues?: Array<{ name: string; capacity: string; cost: string; notes: string }>;
+  suggestedVenues?: Array<{ 
+    name: string; 
+    capacity: string; 
+    cost: string; 
+    notes: string;
+    mapsUri?: string;
+    reviewSnippets?: string[];
+  }>;
 }
 
 export interface EventROIAnalysis {
-  score: number; // 0-100
+  score: number;
   costPerAttendee: number;
   summary: string;
   highlights: string[];
@@ -307,7 +319,7 @@ export interface EventTask {
   title: string;
   phase: 'Strategy' | 'Planning' | 'Marketing' | 'Operations' | 'Post-Event';
   status: 'todo' | 'in_progress' | 'done';
-  dueDate: string; // ISO date
+  dueDate: string;
   assignee?: string;
   is_ai_generated?: boolean;
 }
@@ -317,30 +329,10 @@ export interface EventAsset {
   eventId: string;
   type: 'image' | 'copy' | 'email';
   title: string;
-  content: string; // Text content or Image URL
+  content: string;
   createdAt: string;
 }
 
-export interface EventBudgetItem {
-  id: string;
-  category: 'Venue' | 'Food' | 'Marketing' | 'Speakers' | 'Ops' | 'Other';
-  item: string;
-  estimated: number;
-  actual: number;
-  status: 'Planned' | 'Paid' | 'Pending';
-}
-
-export interface EventAttendee {
-  id: string;
-  eventId: string;
-  name: string;
-  email: string;
-  status: 'Registered' | 'Attended' | 'Cancelled';
-  ticketType: string;
-  registeredAt: string;
-}
-
-// --- NOTIFICATIONS ---
 export interface AppNotification {
   id: string;
   title: string;
@@ -351,7 +343,6 @@ export interface AppNotification {
   link?: string;
 }
 
-// --- DATA ROOM ---
 export interface DataRoomFile {
   id: string;
   name: string;
@@ -361,4 +352,29 @@ export interface DataRoomFile {
   uploadedAt: string;
   uploadedBy: string;
   status: 'scanning' | 'clean' | 'infected';
+}
+
+// NEW AGENTIC TYPES
+export type AgentRunStatus = 'queued' | 'running' | 'needs_user' | 'complete' | 'error' | 'canceled';
+
+export interface AgentRun {
+  id: string;
+  orgId: string;
+  agentName: string;
+  status: AgentRunStatus;
+  startedAt: string;
+  completedAt?: string;
+  payload: any;
+  result?: any;
+  warnings?: string[];
+  idempotencyKey: string;
+}
+
+export interface AgentAction {
+  label: string;
+  tool: string;
+  args: any;
+  requiresConfirmation: boolean;
+  confidence: number;
+  reasoning: string;
 }

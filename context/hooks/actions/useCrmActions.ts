@@ -3,6 +3,8 @@ import React from 'react';
 import { generateShortId } from '../../../lib/utils';
 import { Deal, Task, Contact, StartupProfile } from '../../../types';
 import { CrmService } from '../../../services/supabase/crm';
+import { supabase } from '../../../lib/supabaseClient';
+import { mapDealFromDB, mapContactFromDB } from '../../../lib/mappers';
 
 interface CrmActionsProps {
   profile: StartupProfile | null;
@@ -101,6 +103,19 @@ export const useCrmActions = ({
       }
   };
 
+  // --- RECOVERY ---
+  const restoreItem = async (type: 'deal' | 'contact', id: string) => {
+    if (!supabase || isGuestMode()) return;
+    
+    const table = type === 'deal' ? 'crm_deals' : 'crm_contacts';
+    const { data, error } = await supabase.from(table).update({ deleted_at: null }).eq('id', id).select().single();
+    
+    if (!error && data) {
+        if (type === 'deal') setDeals(prev => [...prev, mapDealFromDB(data)]);
+        else setContacts(prev => [...prev, mapContactFromDB(data)]);
+    }
+  };
+
   // --- TASKS ---
   const addTask = (data: Omit<Task, 'id' | 'startupId'>) => {
       const tempId = generateShortId();
@@ -133,5 +148,5 @@ export const useCrmActions = ({
       if(profile?.id && !isGuestMode()) CrmService.deleteTask(id);
   };
 
-  return { addDeal, updateDeal, addContact, updateContact, deleteContact, addTask, updateTask, deleteTask };
+  return { addDeal, updateDeal, addContact, updateContact, deleteContact, addTask, updateTask, deleteTask, restoreItem };
 };

@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 import { initialDatabaseState } from '../../data/mockDatabase';
@@ -26,7 +27,9 @@ export const useSupabaseData = () => {
   const [tasks, setTasks] = useState<Task[]>(initialDatabaseState.tasks);
   const [decks, setDecks] = useState<Deck[]>(initialDatabaseState.decks);
   const [deals, setDeals] = useState<Deal[]>(initialDatabaseState.deals); 
+  const [archivedDeals, setArchivedDeals] = useState<Deal[]>([]);
   const [contacts, setContacts] = useState<Contact[]>(initialDatabaseState.contacts);
+  const [archivedContacts, setArchivedContacts] = useState<Contact[]>([]);
   const [docs, setDocs] = useState<InvestorDoc[]>(initialDatabaseState.docs);
   const [events, setEvents] = useState<EventData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -80,7 +83,10 @@ export const useSupabaseData = () => {
                           DashboardService.getInsights(p.id),
                           DashboardService.getActivities(p.id),
                           CrmService.getContacts(p.id),
-                          EventService.getAll(p.id)
+                          EventService.getAll(p.id),
+                          // Fetch archives
+                          supabase.from('crm_deals').select('*').eq('startup_id', p.id).not('deleted_at', 'is', null),
+                          supabase.from('crm_contacts').select('*').eq('startup_id', p.id).not('deleted_at', 'is', null)
                       ]);
 
                       setDecks(results[0]);
@@ -92,6 +98,9 @@ export const useSupabaseData = () => {
                       setActivities(results[6]);
                       setContacts(results[7]);
                       setEvents(results[8]);
+                      
+                      if (results[9].data) setArchivedDeals(results[9].data.map(mapDealFromDB));
+                      if (results[10].data) setArchivedContacts(results[10].data.map(CrmService.getContacts as any));
 
                       // Multi-Table Realtime Orchestration
                       if (realtimeChannelRef.current) supabase.removeChannel(realtimeChannelRef.current);
@@ -100,10 +109,18 @@ export const useSupabaseData = () => {
                         .on('postgres_changes', { event: '*', schema: 'public', table: 'crm_deals', filter: `startup_id=eq.${p.id}` }, (payload: any) => {
                             if (payload.eventType === 'INSERT') setDeals(prev => [...prev, mapDealFromDB(payload.new)]);
                             else if (payload.eventType === 'UPDATE') {
-                                if (payload.new.deleted_at) setDeals(prev => prev.filter(d => d.id !== payload.new.id));
-                                else setDeals(prev => prev.map(d => d.id === payload.new.id ? mapDealFromDB(payload.new) : d));
+                                if (payload.new.deleted_at) {
+                                    setDeals(prev => prev.filter(d => d.id !== payload.new.id));
+                                    setArchivedDeals(prev => [...prev, mapDealFromDB(payload.new)]);
+                                } else {
+                                    setArchivedDeals(prev => prev.filter(d => d.id !== payload.new.id));
+                                    setDeals(prev => prev.map(d => d.id === payload.new.id ? mapDealFromDB(payload.new) : d));
+                                }
                             }
-                            else if (payload.eventType === 'DELETE') setDeals(prev => prev.filter(d => d.id !== payload.old.id));
+                            else if (payload.eventType === 'DELETE') {
+                                setDeals(prev => prev.filter(d => d.id !== payload.old.id));
+                                setArchivedDeals(prev => prev.filter(d => d.id !== payload.old.id));
+                            }
                         })
                         .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks', filter: `startup_id=eq.${p.id}` }, (payload: any) => {
                             if (payload.eventType === 'INSERT') setTasks(prev => [...prev, mapTaskFromDB(payload.new)]);
@@ -156,7 +173,9 @@ export const useSupabaseData = () => {
     founders, setFounders, metrics, setMetrics,
     insights, setInsights, activities, setActivities,
     tasks, setTasks, decks, setDecks, deals, setDeals,
-    contacts, setContacts, docs, setDocs, events, setEvents,
+    archivedDeals, setArchivedDeals,
+    contacts, setContacts, archivedContacts, setArchivedContacts,
+    docs, setDocs, events, setEvents,
     isLoading, connectionStatus
   };
 };

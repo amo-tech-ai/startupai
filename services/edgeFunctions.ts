@@ -114,8 +114,8 @@ export async function generateDeckEdge(
                 type: Type.ARRAY,
                 items: slideSchema
             },
-            // Enable Thinking for complex strategic reasoning
-            thinkingConfig: { thinkingBudget: 2048 } 
+            // Gemini 3: Using 'high' thinking level for architectural reasoning
+            thinkingConfig: { thinkingLevel: 'high' } 
         }
     });
 
@@ -218,14 +218,15 @@ export async function imageAIEdge(
 
     try {
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash-image',
-            contents: { parts: [{ text: prompt }] }
+          model: 'gemini-2.5-flash-image',
+          contents: { parts: [{ text: prompt }] }
         });
 
         if (response.candidates?.[0]?.content?.parts) {
             for (const part of response.candidates[0].content.parts) {
                 if (part.inlineData) {
-                    return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+                    const base64EncodeString: string = part.inlineData.data;
+                    return `data:${part.inlineData.mimeType};base64,${base64EncodeString}`;
                 }
             }
         }

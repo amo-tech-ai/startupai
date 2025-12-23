@@ -58,7 +58,8 @@ export const analyzeStrategy = async (apiKey: string, eventData: EventData): Pro
           },
           required: ['feasibilityScore', 'reasoning', 'risks', 'suggestedThemes', 'audienceProfile', 'budgetEstimate']
         },
-        thinkingConfig: { thinkingBudget: 2048 }
+        // Gemini 3: High thinking level for complex operational strategy
+        thinkingConfig: { thinkingLevel: 'high' }
       }
     });
 

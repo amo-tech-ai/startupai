@@ -12,7 +12,8 @@ import {
   UserCircle,
   LogIn,
   Building,
-  Calendar
+  Calendar,
+  Sparkles
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
@@ -58,11 +59,14 @@ const Sidebar: React.FC = () => {
 
       {/* Guest Banner */}
       {isGuest && (
-        <div className="mx-3 mt-4 p-3 bg-indigo-900/50 border border-indigo-500/30 rounded-xl text-center">
-            <p className="text-xs text-indigo-200 mb-2 font-medium">You are in Guest Mode</p>
+        <div className="mx-3 mt-4 p-4 bg-gradient-to-br from-indigo-900/50 to-indigo-950/50 border border-indigo-500/20 rounded-xl text-center shadow-inner">
+            <p className="text-[10px] uppercase font-bold text-indigo-400 tracking-widest mb-2 flex items-center justify-center gap-1">
+                <Sparkles size={10}/> Guest Mode
+            </p>
+            <p className="text-xs text-slate-400 mb-3 leading-relaxed">Changes are local to this session.</p>
             <button 
                 onClick={() => navigate('/signup')}
-                className="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg transition-colors"
+                className="w-full py-2 bg-white text-indigo-950 text-xs font-bold rounded-lg transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-black/20"
             >
                 Create Account
             </button>
@@ -70,7 +74,7 @@ const Sidebar: React.FC = () => {
       )}
 
       {/* Navigation */}
-      <nav className="flex-1 py-6 px-3 space-y-1 overflow-y-auto">
+      <nav className="flex-1 py-6 px-3 space-y-1 overflow-y-auto custom-scrollbar">
         {menuItems.map((item) => {
           const isActive = location.pathname === item.path || (item.label === 'Events' && location.pathname.startsWith('/events'));
           return (
@@ -86,7 +90,7 @@ const Sidebar: React.FC = () => {
               <div className={`${isActive ? 'text-primary-400' : 'text-slate-500 group-hover:text-slate-300'}`}>
                 {item.icon}
               </div>
-              <span>{item.label}</span>
+              <span className="text-sm">{item.label}</span>
               
               {/* Active Indicator */}
               {isActive && (
@@ -105,7 +109,7 @@ const Sidebar: React.FC = () => {
                 className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-slate-400 hover:bg-slate-800/50 hover:text-white transition-colors"
             >
                 <LogIn size={20} />
-                <span className="font-medium">Log In</span>
+                <span className="font-medium text-sm">Log In</span>
             </button>
         ) : (
             <button 
@@ -113,7 +117,7 @@ const Sidebar: React.FC = () => {
                 className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-slate-400 hover:bg-slate-800/50 hover:text-rose-400 transition-colors"
             >
             <LogOut size={20} />
-            <span className="font-medium">Sign Out</span>
+            <span className="font-medium text-sm">Sign Out</span>
             </button>
         )}
       </div>

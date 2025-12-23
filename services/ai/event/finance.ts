@@ -30,7 +30,7 @@ export const suggestBudgetBreakdown = async (apiKey: string, total: number, type
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3-pro-preview',
       contents: prompt,
       config: {
         responseMimeType: 'application/json',
@@ -49,7 +49,9 @@ export const suggestBudgetBreakdown = async (apiKey: string, total: number, type
               }
             }
           }
-        }
+        },
+        // Using high thinking for financial estimation
+        thinkingConfig: { thinkingLevel: 'high' }
       }
     });
 
@@ -91,7 +93,8 @@ export const optimizeBudget = async (apiKey: string, items: EventBudgetItem[], t
       contents: prompt,
       config: {
         responseMimeType: 'application/json',
-        thinkingConfig: { thinkingBudget: 2048 } // Use Thinking to make hard tradeoff decisions
+        // Gemini 3: High thinking level for difficult re-allocation decisions
+        thinkingConfig: { thinkingLevel: 'high' }
       }
     });
 
@@ -132,7 +135,9 @@ export const generateROI = async (apiKey: string, event: EventData, attendees: n
             highlights: { type: Type.ARRAY, items: { type: Type.STRING } },
             improvements: { type: Type.ARRAY, items: { type: Type.STRING } }
           }
-        }
+        },
+        // Deep qualitative analysis requires high thinking depth
+        thinkingConfig: { thinkingLevel: 'high' }
       }
     });
 

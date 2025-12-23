@@ -1,9 +1,8 @@
-
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import React, { ErrorInfo, ReactNode } from 'react';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
 
 interface Props {
-  // Fix: Made children optional to avoid JSX typing issues
+  // Explicitly defining children as optional ReactNode to satisfy React 18+ type requirements
   children?: ReactNode;
 }
 
@@ -12,14 +11,23 @@ interface State {
   error: Error | null;
 }
 
-export class ErrorBoundary extends Component<Props, State> {
-  public state: State = {
-    hasError: false,
-    error: null
-  };
+/**
+ * Standard React Error Boundary class component.
+ * Captures UI-level crashes and displays a graceful fallback screen.
+ */
+export class ErrorBoundary extends React.Component<Props, State> {
+  // Fix: Declare props and state explicitly to ensure they are correctly recognized by the TypeScript compiler when inheriting from generic React.Component
+  public props: Props;
+  public state: State;
 
+  // Fix: Explicitly define the constructor and call super(props) to ensure this.state and this.props are properly initialized and available
   constructor(props: Props) {
     super(props);
+    this.props = props;
+    this.state = {
+      hasError: false,
+      error: null
+    };
   }
 
   public static getDerivedStateFromError(error: Error): State {
@@ -39,10 +47,12 @@ export class ErrorBoundary extends Component<Props, State> {
   };
 
   public render() {
-    // Fix: Destructured children from props to ensure correct this.props access in TypeScript
+    // Fix: Access properties through 'this' which are now explicitly typed and correctly recognized by inheriting from React.Component
     const { children } = this.props;
+    const { hasError, error } = this.state;
 
-    if (this.state.hasError) {
+    // Fix: Access state variables safely via the destructured state object
+    if (hasError) {
       return (
         <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
           <div className="bg-white p-8 rounded-2xl shadow-xl border border-slate-200 max-w-md w-full text-center">
@@ -54,9 +64,10 @@ export class ErrorBoundary extends Component<Props, State> {
               Our AI encountered an unexpected state. We've logged this issue.
             </p>
             
-            {this.state.error && (
+            {/* Fix: Safely display error details if available, using recognized state properties */}
+            {error && (
                 <div className="mb-6 p-3 bg-slate-100 rounded-lg text-xs text-slate-600 font-mono text-left overflow-auto max-h-32">
-                    {this.state.error.toString()}
+                    {error.toString()}
                 </div>
             )}
 

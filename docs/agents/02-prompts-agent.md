@@ -1,38 +1,16 @@
-# 🧙‍♂️ StartupAI — Agentic UI/UX Implementation Guide (v4.2)
+# 🧙‍♂️ StartupAI — Agentic UI/UX Implementation Guide (v4.3)
 
-This document contains the multi-step prompts required to build the StartupAI 3-Panel OS. Follow these in sequence to ensure architectural integrity and "Propose-Approve-Execute" governance.
-
----
-
-## 📊 Implementation Progress Tracker
-
-| Sequence | Module | Target Route | Purpose | Status |
-| :--- | :--- | :--- | :--- | :--- |
-| **01** | **The OS Shell** | `AppLayout.tsx` | Global 3-panel layout logic & state sync. | 🔴 Not Started |
-| **02** | **Intelligent Intake** | `/onboarding` | Smart Wizard with real-time research log. | 🔴 Not Started |
-| **03** | **Fundraising CRM** | `/crm` | Kanban + Lead Scoring + Outreach Agent. | 🔴 Not Started |
-| **04** | **Pitch Engine** | `/pitch-decks` | Narrative Architect + Nano Visualizer. | 🔴 Not Started |
-| **05** | **Forensic Traction** | `/startup-profile` | Python-driven financial audit dashboard. | 🔴 Not Started |
-| **06** | **Governance Hub** | `RightPanel.tsx` | The human-approval gate for all AI writes. | 🔴 Not Started |
+This document contains the multi-step prompts required to build the StartupAI 3-Panel OS. 
 
 ---
 
-## 🏗️ 3-Panel Layout Logic (Design Frames)
+## 🏗️ 3-Panel Layout Logic (The OS Shell)
 
-### 1. Left Panel: **The Navigator (Scope)**
-*   **Width:** 280px (fixed)
-*   **Behavior:** Filters the entire application context.
-*   **Logic:** Clicking an entity here (e.g., *Project Alpha*) updates the URL and global `activeEntity` state. No editing allowed.
-
-### 2. Main Panel: **The Canvas (Execution)**
-*   **Width:** Flexible (1fr)
-*   **Behavior:** The primary workspace. Standard CRUD operations.
-*   **Logic:** Renders editors, Kanbans, or tables. Syncs in real-time to Supabase.
-
-### 3. Right Panel: **The Intelligence Hub (Strategy)**
-*   **Width:** 380px (fixed)
-*   **Behavior:** Collapsible. Displays active Agent "Thinking Traces" and "Proposed Action Cards."
-*   **Logic:** Triggers Edge Functions. Holds the `Controller` gate.
+| Panel | Role | width | Interaction Model |
+| :--- | :--- | :--- | :--- |
+| **LEFT** | Navigator | 280px | **Scope Control:** Updates global `activeEntity`. |
+| **MAIN** | Canvas | 1fr | **Execution:** Real-time editor / CRUD workspace. |
+| **RIGHT** | Intelligence | 380px | **Governance:** Approval gate for AI Proposals. |
 
 ---
 
@@ -42,66 +20,55 @@ This document contains the multi-step prompts required to build the StartupAI 3-
 > **Role:** Senior UI/UX Architect
 > **Task:** Design a responsive 3-panel layout in React using Tailwind CSS.
 > **Requirements:**
-> 1. Create a `ThreePanelLayout` component with `Left` (fixed), `Main` (scrollable), and `Right` (sticky) sections.
-> 2. Implement a `usePanel` hook to toggle the visibility of the Right Panel.
-> 3. Ensure the mobile view stacks `Left` into a hamburger drawer and `Right` into a bottom sheet.
+> 1. Create a `ThreePanelLayout` component with `Navigator` (Left), `Canvas` (Main), and `IntelligenceHub` (Right).
+> 2. Implement a `useScope` context to track `orgId` and `entityId` across all three panels.
+> 3. Ensure the mobile view stacks `Navigator` into a drawer and `IntelligenceHub` into a collapsible bottom tray.
 > 4. Use high-contrast neutrals (#1A1A1A, #F7F7F5) with Brand Orange accents.
 
-### Prompt 2: The Onboarding Wizard (Intake Agent)
+### Prompt 2: The Agent Intelligence Brief (Intake)
 > **Role:** Agentic Systems Designer
-> **Task:** Create a 6-step Wizard for `/onboarding`.
-> **Features:**
-> 1. **Step 1:** URL input that triggers `The Scout` (Gemini 3 Pro) to perform search-grounded market research.
-> 2. **UI Frame:** Show a terminal-style "Research Log" in the Right Panel during analysis.
-> 3. **Step 2:** "Intelligence Brief" screen that presents AI-detected competitors and TAM/SAM/SOM.
-> 4. **Workflow:** Every AI suggestion must have a "Verify & Apply" button (Controller Gate).
+> **Task:** Implement the Step 2 Onboarding logic.
+> **Logic:**
+> 1. Invoke a Supabase Edge Function that uses **Gemini 3 Pro** with `thinkingLevel: "high"`.
+> 2. Perform **Search Grounding** based on the URL provided in Step 1.
+> 3. Instead of direct writes, return a `ProposedAction` JSON object to pre-fill the Profile.
+> 4. UI: Show a "Reasoning Summary" and "Sources Found" in the Right Panel before the user clicks "Apply Brief."
 
-### Prompt 3: The Governance UI (Right Panel)
+### Prompt 3: The Governance UI (ProposedAction Card)
 > **Role:** Frontend Security Engineer
 > **Task:** Build the `ProposedActionCard` for the Right Intelligence Panel.
-> **Logic:**
-> 1. Fetch pending actions from the `proposed_actions` table.
-> 2. Display a "Diff" view (Original vs. AI Suggestion).
-> 3. Include a "Reasoning" section using Gemini 3 "Thinking" output.
-> 4. The "Approve" button must call a Supabase Edge Function to commit the write.
+> **Requirements:**
+> 1. Fetch pending actions from the `proposed_actions` table for the active `startupId`.
+> 2. Display a "Diff" visualization showing what data the AI wants to change in the Main Canvas.
+> 3. The "Approve" button must call the `execute-action` Edge Function, which performs a validated DB write.
+> 4. Show a "Confidence Score" and "AI Reasoning" bullets on every card.
 
 ---
 
-## 📊 Screen Registry & Agent Mapping
+## 🛠️ Gemini 3 Technical Wiring Prompts
 
-| Screen | Core Feature | Advanced (AI) | Purpose | Real-World Use Case |
-| :--- | :--- | :--- | :--- | :--- |
-| **Dashboard** | KPI Cards | **AI Coach Digest** | Daily Ops Pulse | Agent detects low runway; proposes a "Series A Sprint" task list. |
-| **CRM** | Kanban Pipeline | **Thesis Scorer** | Investor Matching | Scout finds 5 VCs who funded law-tech; drafts custom hooks. |
-| **Pitch Deck** | Slide Editor | **Narrative Architect**| Narrative Design | Agent rewrites "Problem" slide based on recent market trends found via Search. |
-| **Events** | Logistics List | **Conflict Radar** | Event Ops | Agent identifies 3 conflicting tech conferences; suggests date shift. |
-
----
-
-## 🛠️ Gemini 3 Feature Wiring (FE/BE)
-
-### Prompt: Search Grounding Wiring
-> **System:** Gemini 3 Pro
-> **Tool:** `googleSearch`
-> **Instruction:** "Research current SaaS multiples for [Industry] in Q2 2025. Return citations as URL links. Map the `groundingMetadata` to the `ProposedAction.citations` array in the UI."
-
-### Prompt: Forensic Code Execution Wiring
+### Prompt: Financial Forensic Analyst
 > **System:** Gemini 3 Pro
 > **Tool:** `codeExecution`
-> **Instruction:** "Analyze this CSV of transactions. Calculate MRR, Net Churn, and Runway. If an anomaly > 20% is found, flag it. Write the logic in Python/Pandas. Return JSON for the dashboard."
+> **Instruction:** "Analyze this CSV of transactions. Use the Python code execution tool with Pandas to compute MRR and monthly burn. Return the result in a strict JSON schema matching `ProposedAction`. Flag any anomaly > 20% in the reasoning field."
 
-### Prompt: Structured Presentation Wiring
+### Prompt: Market Scout (Grounding)
+> **System:** Gemini 3 Pro
+> **Tool:** `googleSearch`
+> **Config:** `thinkingLevel: "high"`
+> **Instruction:** "Research current SaaS multiples for [Industry] in Q2 2025. You MUST return citations as URL links. Map results to the `ProposedAction.payload` for a Valuation Update. Ensure citations are included in the metadata."
+
+### Prompt: Deck narrative Architect
 > **System:** Gemini 3 Pro
 > **Tool:** `responseSchema`
-> **Instruction:** "Construct a 12-slide Sequoia deck structure. Enforce a JSON schema where each slide contains: `title`, `bullets[]`, and `visual_prompt` (16:9 for Nano Visualizer)."
+> **Instruction:** "Construct a 10-slide YC-standard deck. Enforce a JSON schema where each slide contains: `title`, `bullets[]`, and `visual_prompt` for Nano Visualizer. Ensure thinkingLevel is high to maintain narrative flow across all slides."
 
 ---
 
-## 🧜‍♂️ User Journey: "The Seed Round Sprint"
+## 🧪 Acceptance Verification Checklist
 
-1.  **Discovery:** Founder alex enters `alex.ai` in the **Intake Wizard**.
-2.  **Scout:** AI (Pro) scrapes the site and searches for comps.
-3.  **Governance:** Alex reviews the "Intelligence Brief" in the **Right Panel**, clicks **Approve**.
-4.  **Architect:** **The Architect** proposes a 10-slide deck.
-5.  **Visualizer:** **The Visualizer** generates 3 core visual assets.
-6.  **Operation:** Alex exports the PDF and the **CRM** is auto-hydrated with 15 target investors.
+1. [ ] **Isolation:** Confirm agent triggers pass `org_id` to the Edge Function for RLS validation.
+2. [ ] **No Side Effects:** Verify that running an agent creates a row in `proposed_actions` but DOES NOT change any other table.
+3. [ ] **Human Gate:** Confirm the `execute-action` function rejects any request where `status` != 'approved' by the user.
+4. [ ] **Grounding:** Verify that citations appear in the UI for every Scout Agent run.
+5. [ ] **Responsiveness:** Verify the "Thinking" state pulse animation triggers within 200ms of agent launch.

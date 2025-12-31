@@ -1,6 +1,6 @@
-# 🤖 StartupAI Agentic OS — Master Plan (v4.2)
+# 🤖 StartupAI Agentic OS — Master Plan (v4.3)
 
-This document defines the specialized AI workers (Agents) that power the StartupAI ecosystem. Every agent operates under the **"Propose-Approve-Execute"** governance model, ensuring human control over all autonomous actions.
+This document defines the specialized AI workers (Agents) that power the StartupAI ecosystem. Every agent operates under a strict **"Propose-Approve-Execute"** governance model.
 
 ---
 
@@ -8,87 +8,66 @@ This document defines the specialized AI workers (Agents) that power the Startup
 
 | Agent Category | Status | Model | Key Tooling | Priority |
 | :--- | :--- | :--- | :--- | :--- |
-| **Orchestrator** | 🟢 Ready | Gemini 3 Pro | Thinking + Function Calling | P0 |
-| **Market Scout** | 🟢 Ready | Gemini 3 Pro | Google Search + URL Context | P0 |
-| **Deck Architect** | 🟢 Ready | Gemini 3 Pro | Structured Outputs | P0 |
-| **Ops Planner** | 🟡 Testing | Gemini 3 Flash | Function Calling | P1 |
-| **Financial Analyst**| 🟡 Testing | Gemini 3 Pro | Code Execution (Python) | P1 |
-| **CRM Scorer** | 🔴 Backlog | Gemini 3 Flash | Reasoning | P2 |
-| **Data Retriever** | 🔴 Backlog | Gemini 2.5 | RAG + Signed URLs | P2 |
+| **Orchestrator** | 🟢 Ready | Gemini 3 Pro | thinkingLevel: "high" | P0 |
+| **Market Scout** | 🟢 Ready | Gemini 3 Pro | Search + Citations | P0 |
+| **Deck Architect** | 🟢 Ready | Gemini 3 Pro | responseSchema (JSON) | P0 |
+| **Analyst** | 🟡 Testing | Gemini 3 Pro | codeExecution (Python) | P1 |
+| **Operator** | 🟡 Testing | Gemini 3 Flash | thinkingLevel: "minimal" | P1 |
+| **Lead Scorer** | 🔴 Backlog | Gemini 3 Pro | reasoning (Pro) | P2 |
+| **Visualizer** | 🔴 Backlog | Nano Banana Pro | imageConfig | P2 |
 
 ---
 
-## 🧙‍♂️ Core Agent Registry
+## 🏛️ The Governance Lifecycle (The "Proposed Actions" Rule)
+AI agents in StartupAI are **FORBIDDEN** from writing directly to core business tables. All agent outputs are stored as "Proposals" first.
 
-| Agent Type | Role in StartupAI | Gemini 3 Model | Approved Tools Used |
-| :--- | :--- | :--- | :--- |
-| **Orchestrator** | Routes user intent to specialized agents. | Pro | Thinking, Function Calling |
-| **Planner** | Generates pitch structures and event roadmaps. | Pro | Text Gen, Structured Outputs |
-| **Analyst** | Performs financial forensics and risk audits. | Pro | Code Execution, Thinking |
-| **Scorer** | Calculates Health, ROI, and Fit scores (0-100). | Flash | Structured Outputs |
-| **Controller** | Enforces the human approval gate in the Right Panel. | N/A (Logic) | Human-in-the-loop Gate |
-| **Extractor** | Hydrates profiles from URLs and LinkedIn. | Pro | URL Context, Search Grounding |
-| **Content/Comms** | Drafts investor emails and marketing copy. | Flash | Text Gen, Nano Banana |
+1. **Trigger:** User action or system event invokes an Edge Function.
+2. **Propose:** The Agent generates a `ProposedAction` JSON object and writes it to the `proposed_actions` table.
+3. **Approve:** The human founder reviews the reasoning, diff, and confidence score in the Right Panel.
+4. **Execute:** Clicking "Approve" triggers a dedicated Edge Function (`execute-action`) that performs an idempotent transaction to commit the write to the database.
 
----
-
-## 🧜‍♂️ System Workflows
-
-### The Governance Lifecycle (Mandatory)
-AI agents in StartupAI are **never** permitted to write directly to the database without a human intermediary.
-
-```mermaid
-flowchart LR
-    subgraph UI_Panel_M [Main Canvas]
-        A[User Input/Trigger]
-    end
-
-    subgraph UI_Panel_R [Right Panel: Intelligence]
-        B[Agent Reasoning] --> C[AI Proposal Card]
-        C --> D{Controller Gate}
-    end
-
-    D -->|Approved| E[Execute: DB Write]
-    D -->|Rejected| F[Dismiss/Revise]
-    E -->|Realtime Update| A
-```
-
-### End-to-End Flow: The "Seed Round" Agent Chain
-1.  **Scout (Intake):** Scrapes URL and searches for 2025 market benchmarks.
-2.  **Analyst (Math):** Uses Code Execution to verify runway based on cash/burn inputs.
-3.  **Planner (Drafting):** Architect generates a 12-slide Sequoia deck structure.
-4.  **Controller (Approval):** User reviews the full "Fundraising Kit" in the Right Panel and clicks **Apply All**.
+### `proposed_actions` Table Schema
+| Column | Type | Description |
+| :--- | :--- | :--- |
+| **id** | UUID | Primary Key |
+| **startup_id** | UUID | Reference to Startup (RLS by Org) |
+| **type** | Enum | email, stage_move, task_creation, deck_update |
+| **label** | Text | Human-friendly title (e.g., "Draft Outreach") |
+| **payload** | JSONB | The actual data to be committed |
+| **status** | Enum | proposed, approved, rejected, executed |
+| **reasoning** | Text | Brief summary of AI logic (replaces raw trace) |
+| **confidence**| Float | 0.0 - 1.0 AI confidence score |
+| **idempotency_key** | Text | Prevents duplicate executions |
 
 ---
 
-## 🛠️ Feature → AI Mapping (Audit v4.2)
+## 🧙‍♂️ Core Agent Registry (Corrected Model-Task Mapping)
 
-| Item | Screen | Model | Gemini Tools | Agents | Inputs | Output | Approval |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Smart Onboarding** | Wizard | Pro | URL Context, Search | Scout, Extractor | URL, Keywords | Hydrated Profile | Controller |
-| **Pitch Engine** | Deck Editor | Pro | Structured Output | Architect | Startup Profile | JSON Slides | Controller |
-| **Financial Audit** | Dashboard | Pro | Code Execution | Analyst | CSV Export | Burn/Runway Data | Controller |
-| **Event Roadmap** | Event Hub | Flash | Function Calling | Planner, Operator | Event Goal/Date | Kanban Tasks | Controller |
-| **Outreach Draft** | CRM | Flash | Text Gen | Content/Comms | Investor Thesis | Email Hook | Controller |
+| Agent Type | Gemini Model | Tooling Logic |
+| :--- | :--- | :--- |
+| **Scout** | Gemini 3 Pro | **Search Grounding** for benchmarks and investor fit. |
+| **Analyst** | Gemini 3 Pro | **Code Execution** for MRR/Burn forensics. Deterministic math. |
+| **Architect** | Gemini 3 Pro | **responseSchema** for Sequoia/YC narrative structure. |
+| **Operator** | Gemini 3 Flash | **Function Calling** for UI-level task decomposition. |
+| **Visualizer** | Nano Banana | **imageConfig** for 16:9 brand-aligned slide assets. |
+| **Content** | Gemini 3 Flash | Fast text drafts for emails and UI copy. |
+
+---
+
+## 🛠️ Feature → AI Mapping
+
+| Item | Screen | Model | Gemini Tools | Output Type |
+| :--- | :--- | :--- | :--- | :--- |
+| **Market Research** | Profile | Pro | Search | ProposedAction |
+| **Financial Audit** | Dashboard | Pro | Code Ex | ProposedAction |
+| **Slide Refinement** | Deck Editor | Pro | Text Gen | ProposedAction |
+| **Event Roadmap** | Events | Flash | Func Call | ProposedAction |
 
 ---
 
 ## 📐 UX Design Rules for Agents
 
-1.  **The "Right Panel" Rule:** All AI thinking, logs, and proposal cards MUST live in the Right Panel (Intelligence Hub).
-2.  **The "Thinking" State:** During high-depth reasoning (Pro models), the UI must show a "Thinking Trace" or skeleton loader.
-3.  **Source Transparency:** Any data found via **Search Grounding** must display a citation link icon.
-4.  **Deterministic Math:** Never use LLM text generation for financials; always route through the **Analyst Agent** using Python **Code Execution**.
-
----
-
-## ⚡ Sequential Multi-Step Prompts for Implementation
-
-### Prompt 1: The Orchestrator Setup
-> "Build the `ai-helper` Edge Function using Gemini 3 Pro. Implement a router that detects if a query is 'Quick' (Flash) or 'Complex' (Pro). Pro calls must include `thinkingBudget: 2048`. All responses must be wrapped in a `ProposedAction` JSON schema."
-
-### Prompt 2: The Forensic Analyst
-> "Implement the Analyst Agent in `forensics.ts`. Use Gemini 3 Pro **Code Execution** to parse raw transaction strings. The agent must write a Python script using Pandas to calculate MRR and Burn, returning a structured JSON of metrics and anomalies."
-
-### Prompt 3: The Right Panel UI
-> "Design a React component `ProposedActionCard` for the Right Panel. It should show the AI's reasoning, a diff of the proposed change, and a large 'Approve' button that triggers the `execute-action` Edge Function."
+1. **The "Right Panel" Rule:** All AI reasoning and proposal cards MUST live in the Right Panel.
+2. **Thinking Awareness:** During `thinkingLevel: "high"` calls, show a "Reasoning..." status bar with citations.
+3. **Source Transparency:** Any data found via Search must display a citation link icon.
+4. **No Invisible writes:** The "Approve" button is the only path to the database.

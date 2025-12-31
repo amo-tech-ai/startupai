@@ -2,7 +2,6 @@
   "name": "startupAI - Investor CRM OS",
   "description": "Intelligent operating system for founders with AI-scored CRM, automated pitch decks, and strategic planning.",
   "requestFramePermissions": [
-    "microphone",
     "camera",
     "geolocation"
   ]

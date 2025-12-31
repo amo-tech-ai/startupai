@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mic, MicOff, X, Zap, Sparkles, Volume2, User, Bot, Loader2, Waves, Monitor } from 'lucide-react';
@@ -135,7 +134,7 @@ export const LiveSessionManager: React.FC = () => {
           drawWave();
         },
         onmessage: async (message: LiveServerMessage) => {
-          const audioData = message.serverContent?.modelTurn?.parts[0]?.inlineData?.data;
+          const audioData = message.serverContent?.modelTurn?.parts?.[0]?.inlineData?.data;
           if (audioData && audioContextRef.current) {
             nextStartTimeRef.current = Math.max(nextStartTimeRef.current, audioContextRef.current.currentTime);
             const buffer = await decodeAudioData(decode(audioData), audioContextRef.current, 24000, 1);

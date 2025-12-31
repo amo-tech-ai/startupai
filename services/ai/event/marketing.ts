@@ -1,4 +1,3 @@
-
 import { GoogleGenAI } from "@google/genai";
 import { EventData } from "../../../types";
 import { EventPrompts } from "../../../lib/prompts/eventPrompts";
@@ -7,9 +6,7 @@ import { supabase } from "../../../lib/supabaseClient";
 export const generateMarketingAssets = async (apiKey: string, eventData: EventData, assetType: 'Social' | 'Email' | 'Poster'): Promise<{ imageUrl: string, copy: string } | null> => {
   const ai = new GoogleGenAI({ apiKey });
   
-  // 1. Generate Image (Client-side usually preferred for Base64 handling, but we could move to Edge returning Signed URL)
-  // For MVP, we'll keep Image Gen client-side to avoid timeout limits on standard edge functions with heavy media gen
-  // or until we implement storage upload directly from Edge.
+  // 1. Generate Image (Client-side usually preferred for Base64 handling)
   const imagePrompt = EventPrompts.generateImage(eventData, assetType);
   let imageUrl = '';
   
@@ -22,10 +19,13 @@ export const generateMarketingAssets = async (apiKey: string, eventData: EventDa
       }
     });
 
-    for (const part of imageRes.candidates[0].content.parts) {
-      if (part.inlineData) {
-        imageUrl = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
-        break;
+    const parts = imageRes.candidates?.[0]?.content?.parts;
+    if (parts) {
+      for (const part of parts) {
+        if (part.inlineData) {
+          imageUrl = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+          break;
+        }
       }
     }
   } catch (e) {

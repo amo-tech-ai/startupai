@@ -1,4 +1,3 @@
-
 import React, { Suspense } from 'react';
 import { createHashRouter, Outlet } from 'react-router-dom';
 import PublicLayout from './layouts/PublicLayout';
@@ -10,6 +9,7 @@ import { ToastProvider } from './context/ToastContext';
 import { NotificationProvider } from './context/NotificationContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
+// Lazy Pages
 const Home = React.lazy(() => import('./components/Home'));
 const FeaturesPage = React.lazy(() => import('./components/FeaturesPage'));
 const HowItWorks = React.lazy(() => import('./components/HowItWorks'));
@@ -28,8 +28,11 @@ const StartupWizard = React.lazy(() => import('./components/StartupWizard'));
 const PublicStartupProfile = React.lazy(() => import('./components/PublicStartupProfile'));
 const PublicEventPage = React.lazy(() => import('./components/PublicEventPage'));
 const EventWizard = React.lazy(() => import('./components/events/EventWizard'));
+const EventsDashboard = React.lazy(() => import('./components/events/EventsDashboard').then(m => ({ default: m.EventsDashboard })));
 const EventDetailsPage = React.lazy(() => import('./components/events/EventDetailsPage'));
 const BlueprintPage = React.lazy(() => import('./components/blueprint/BlueprintPage'));
+const AgentHub = React.lazy(() => import('./components/AgentHub'));
+const AgentDetailView = React.lazy(() => import('./components/agents/AgentDetailView'));
 const NotFound = React.lazy(() => import('./components/NotFound'));
 
 const PageLoader = () => (
@@ -38,6 +41,11 @@ const PageLoader = () => (
   </div>
 );
 
+/**
+ * The Root component wraps the entire application tree in the necessary 
+ * context providers. By rendering this inside the RouterProvider (as a route element),
+ * we ensure that all providers have access to the React Router context.
+ */
 const Root = () => (
   <ErrorBoundary>
     <ToastProvider>
@@ -88,7 +96,7 @@ export const router = createHashRouter([
         children: [
           { path: 'dashboard', element: <Suspense fallback={<PageLoader />}><Dashboard /></Suspense> },
           { path: 'startup-profile', element: <Suspense fallback={<PageLoader />}><StartupProfilePage /></Suspense> },
-          { path: 'events', element: <Suspense fallback={<PageLoader />}><Dashboard /></Suspense> }, // Placeholder mapping
+          { path: 'events', element: <Suspense fallback={<PageLoader />}><EventsDashboard /></Suspense> },
           { path: 'events/:id', element: <Suspense fallback={<PageLoader />}><EventDetailsPage /></Suspense> },
           { path: 'events/new', element: <Suspense fallback={<PageLoader />}><EventWizard /></Suspense> },
           { path: 'pitch-decks', element: <Suspense fallback={<PageLoader />}><PitchDecks /></Suspense> },
@@ -97,6 +105,8 @@ export const router = createHashRouter([
           { path: 'documents', element: <Suspense fallback={<PageLoader />}><Documents /></Suspense> },
           { path: 'documents/:docId', element: <Suspense fallback={<PageLoader />}><Documents /></Suspense> },
           { path: 'tasks', element: <Suspense fallback={<PageLoader />}><Tasks /></Suspense> },
+          { path: 'agents', element: <Suspense fallback={<PageLoader />}><AgentHub /></Suspense> },
+          { path: 'agents/:agentId', element: <Suspense fallback={<PageLoader />}><AgentDetailView /></Suspense> },
           { path: 'settings', element: <Suspense fallback={<PageLoader />}><Settings /></Suspense> },
           { path: 'settings/:tab', element: <Suspense fallback={<PageLoader />}><Settings /></Suspense> },
           { path: 'profile', element: <Suspense fallback={<PageLoader />}><Profile /></Suspense> },

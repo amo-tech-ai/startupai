@@ -1,4 +1,3 @@
-
 export type DealStage = 'Lead' | 'Qualified' | 'Meeting' | 'Proposal' | 'Closed';
 
 export interface Deal {
@@ -25,6 +24,21 @@ export interface Deal {
   deleted_at?: string;
 }
 
+export interface AgentDefinition {
+  id: string;
+  name: string;
+  role: string;
+  description: string;
+  icon: React.ReactNode;
+  colorClass: string;
+  techStack: string;
+  // Metadata for v4.1 Detail View
+  model: string;
+  edgeFunction: string;
+  memoryScope: string;
+  capabilities: string[];
+}
+
 export interface Founder {
   id: string;
   startupId?: string;
@@ -41,10 +55,22 @@ export interface Founder {
   skills?: string[];
 }
 
-export interface DocSection {
+export interface UserProfileExperience {
   id: string;
-  title: string;
-  content: string;
+  company: string;
+  role: string;
+  startDate: string;
+  endDate: string;
+  current: boolean;
+  description: string;
+}
+
+export interface UserProfileEducation {
+  id: string;
+  school: string;
+  degree: string;
+  year: string;
+  logoUrl?: string;
 }
 
 export interface StartupProfile {
@@ -77,6 +103,46 @@ export interface StartupProfile {
   plan?: 'free' | 'founder' | 'growth';
   updatedAt?: string;
   deepResearchReport?: any; 
+}
+
+export interface StartupProfileDTO {
+  startup_id: string;
+  context: {
+    name: string;
+    tagline?: string;
+    description?: string;
+    mission?: string;
+    website_url?: string;
+    logo_url?: string;
+    cover_image_url?: string;
+    industry?: string;
+    year_founded?: number;
+    stage?: string;
+    problem_statement?: string;
+    solution_statement?: string;
+    business_model?: string;
+    pricing_model?: string;
+    funding_goal?: number;
+    is_raising: boolean;
+    is_public: boolean;
+    target_market?: string;
+    competitors?: string[];
+    key_features?: string[];
+    use_of_funds?: string[];
+    deep_research_report?: any;
+  };
+  founders: Array<{
+    id: string;
+    full_name: string;
+    role: string;
+    bio: string;
+    linkedin_url?: string;
+    email?: string;
+    avatar_url?: string;
+    is_primary: boolean;
+  }>;
+  metrics?: any;
+  competitors?: string[];
 }
 
 export interface MetricsSnapshot {
@@ -175,6 +241,12 @@ export interface InvestorDoc {
   updatedAt: string;
 }
 
+export interface DocSection {
+  id: string;
+  title: string;
+  content: string;
+}
+
 export type ContactType = 'Lead' | 'Investor' | 'Customer' | 'Partner' | 'Other';
 
 export interface Contact {
@@ -225,6 +297,15 @@ export interface ChatMessage {
   timestamp: string;
 }
 
+export interface EventAsset {
+  id: string;
+  eventId: string;
+  type: 'image' | 'copy' | 'email';
+  title: string;
+  content: string;
+  createdAt: string;
+}
+
 export interface EventData {
   id?: string;
   startupId?: string;
@@ -235,6 +316,9 @@ export interface EventData {
   duration: number;
   city: string;
   venueUrls: string[];
+  sponsorUrls: string[];
+  inspirationUrls: string[];
+  searchTerms: string[];
   status?: string;
   isPublic?: boolean;
   strategy?: any;
@@ -245,7 +329,18 @@ export interface EventData {
   budget_items?: any[];
 }
 
-export type AgentRunStatus = 'queued' | 'running' | 'needs_user' | 'needs_approval' | 'complete' | 'error' | 'canceled';
+export interface EventTask {
+  id: string;
+  eventId: string;
+  title: string;
+  phase: 'Strategy' | 'Planning' | 'Marketing' | 'Operations' | 'Post-Event';
+  status: 'todo' | 'in_progress' | 'done';
+  dueDate: string;
+  assignee?: string;
+  is_ai_generated?: boolean;
+}
+
+export type AgentRunStatus = 'queued' | 'running' | 'needs_user' | 'approved' | 'executing' | 'complete' | 'error' | 'canceled';
 
 export interface AgentRun {
   id: string;
@@ -276,4 +371,75 @@ export interface ProposedAction {
   confidence: number;
   createdAt: string;
   idempotencyKey?: string;
+}
+
+export interface EventStrategyAnalysis {
+  feasibilityScore: number;
+  reasoning: string;
+  risks: Array<{ title: string; severity: 'High' | 'Medium' | 'Low' }>;
+  suggestedThemes: string[];
+  audienceProfile: string;
+  budgetEstimate: { low: number; high: number; currency: string };
+}
+
+export interface EventLogisticsAnalysis {
+  conflicts: Array<{ name: string; date: string; impact: 'High' | 'Medium' | 'Low' }>;
+  weatherForecast: string;
+  venueInsights: string;
+  suggestedVenues: Array<{
+    name: string;
+    capacity: string;
+    cost: string;
+    notes: string;
+    mapsUri?: string;
+    reviewSnippets?: string[];
+  }>;
+}
+
+export interface EventBudgetItem {
+  id: string;
+  category: 'Venue' | 'Food' | 'Marketing' | 'Speakers' | 'Ops' | 'Other' | string;
+  item: string;
+  estimated: number;
+  actual: number;
+  status: 'Planned' | 'Pending' | 'Paid';
+}
+
+export interface EventROIAnalysis {
+  score: number;
+  costPerAttendee: number;
+  summary: string;
+  highlights: string[];
+  improvements: string[];
+}
+
+export interface EventAttendee {
+  id: string;
+  eventId: string;
+  name: string;
+  email: string;
+  ticketType: string;
+  status: 'Registered' | 'Attended';
+  registeredAt: string;
+}
+
+export interface AppNotification {
+  id: string;
+  title: string;
+  message: string;
+  type: 'info' | 'success' | 'warning' | 'error';
+  timestamp: string;
+  read: boolean;
+  link?: string;
+}
+
+export interface DataRoomFile {
+  id: string;
+  name: string;
+  size: number;
+  type: string;
+  url: string;
+  uploadedAt: string;
+  uploadedBy: string;
+  status: 'clean' | 'scanning' | 'flagged';
 }

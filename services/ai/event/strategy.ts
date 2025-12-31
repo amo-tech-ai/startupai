@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { EventData, EventStrategyAnalysis } from "../../../types";
 import { EventPrompts } from "../../../lib/prompts/eventPrompts";
@@ -59,7 +58,7 @@ export const analyzeStrategy = async (apiKey: string, eventData: EventData): Pro
           required: ['feasibilityScore', 'reasoning', 'risks', 'suggestedThemes', 'audienceProfile', 'budgetEstimate']
         },
         // Gemini 3: High thinking level for complex operational strategy
-        thinkingConfig: { thinkingLevel: 'high' }
+        thinkingConfig: { thinkingBudget: 2048 }
       }
     });
 

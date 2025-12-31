@@ -1,25 +1,16 @@
-
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Bot, 
   Search, 
   Filter, 
-  Plus, 
   Activity, 
   Clock, 
   DollarSign, 
-  ShieldCheck, 
-  AlertCircle, 
-  ChevronRight,
-  Terminal,
-  Play,
-  RotateCcw,
-  CheckCircle2,
   Cpu
 } from 'lucide-react';
 import { useData } from '../context/DataContext';
-import { AgentRun, AgentRunStatus } from '../types';
+import { AgentRun } from '../types';
 import { RunTable } from './agents/RunTable';
 import { RunDetail } from './agents/RunDetail';
 import { AgentSidebar } from './agents/AgentSidebar';
@@ -29,7 +20,6 @@ const AgentHub: React.FC = () => {
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Mock Data for the Hub (In Prod, this pulls from the 'ai_runs' table)
   const [runs] = useState<AgentRun[]>([
     {
       id: 'run_1',
@@ -46,7 +36,8 @@ const AgentHub: React.FC = () => {
       id: 'run_2',
       orgId: 'org_1',
       agentName: 'Pitch Deck Architect',
-      status: 'needs_approval',
+      // Fix: Change 'needs_approval' to 'needs_user' to match AgentRunStatus type
+      status: 'needs_user',
       startedAt: new Date(Date.now() - 600000).toISOString(),
       payload: { template: 'Sequoia' },
       idempotencyKey: 'def-456'
@@ -66,7 +57,6 @@ const AgentHub: React.FC = () => {
 
   return (
     <div className="flex h-full bg-slate-50 overflow-hidden">
-      {/* MAIN CANVAS */}
       <div className="flex-1 flex flex-col min-w-0">
         <header className="px-8 py-6 bg-white border-b border-slate-200 shrink-0">
           <div className="flex justify-between items-end">
@@ -86,7 +76,6 @@ const AgentHub: React.FC = () => {
         </header>
 
         <div className="flex-1 flex overflow-hidden">
-          {/* List Section */}
           <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
             <div className="max-w-5xl mx-auto space-y-6">
               <div className="flex items-center gap-4 mb-2">
@@ -113,7 +102,6 @@ const AgentHub: React.FC = () => {
             </div>
           </div>
 
-          {/* Details Overlay Panel */}
           <AnimatePresence>
             {selectedRun && (
               <RunDetail 
@@ -124,8 +112,6 @@ const AgentHub: React.FC = () => {
           </AnimatePresence>
         </div>
       </div>
-
-      {/* RIGHT SIDEBAR */}
       <AgentSidebar />
     </div>
   );

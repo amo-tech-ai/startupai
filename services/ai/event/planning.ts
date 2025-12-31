@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { EventData } from "../../../types";
 import { EventPrompts } from "../../../lib/prompts/eventPrompts";
@@ -47,7 +46,7 @@ export const generateActionPlan = async (apiKey: string, eventData: EventData): 
           }
         },
         // Gemini 3: Using high depth for operational logic
-        thinkingConfig: { thinkingLevel: 'high' }
+        thinkingConfig: { thinkingBudget: 2048 }
       }
     });
 

@@ -1,41 +1,30 @@
-
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React from 'react';
 import { 
   Cpu, 
-  Search, 
-  Layout, 
-  Zap, 
-  BarChart3, 
-  Info,
   Microscope,
   Compass,
   PenTool,
   Image as ImageIcon,
-  Activity
+  Zap,
+  ChevronRight
 } from 'lucide-react';
+import { AgentCard } from '../../agents/AgentCard';
+import { AgentDefinition } from '../../../types';
 
-const MotionDiv = motion.div as any;
-
-interface Agent {
-  id: string;
-  name: string;
-  role: string;
-  description: string;
-  icon: React.ReactNode;
-  color: string;
-  tech: string;
-}
-
-const agents: Agent[] = [
+// Fix: Added missing properties (model, edgeFunction, memoryScope, capabilities) to each agent to satisfy the AgentDefinition interface
+const agents: AgentDefinition[] = [
   {
     id: 'analyst',
     name: 'The Analyst',
     role: 'Financial Forensics',
     description: 'Scans transaction data and Stripe exports to calculate true burn rate, MRR, and runway with Python-driven precision.',
     icon: <Microscope size={18} />,
-    color: 'text-emerald-600 bg-emerald-50 border-emerald-100',
-    tech: 'Gemini 3 Pro + Code Execution'
+    colorClass: 'text-emerald-600 bg-emerald-50 border-emerald-100',
+    techStack: 'Gemini 3 Pro + Code Execution',
+    model: 'gemini-3-pro-preview',
+    edgeFunction: 'analyze_financials',
+    memoryScope: 'metrics_history',
+    capabilities: ['Transaction Parsing', 'Runway Projection', 'Anomaly Detection']
   },
   {
     id: 'scout',
@@ -43,8 +32,12 @@ const agents: Agent[] = [
     role: 'Market Intelligence',
     description: 'Performs real-time competitive analysis and VC thesis matching using live Google Search Grounding for 2025 benchmarks.',
     icon: <Compass size={18} />,
-    color: 'text-blue-600 bg-blue-50 border-blue-100',
-    tech: 'Gemini 3 Pro + Search Grounding'
+    colorClass: 'text-blue-600 bg-blue-50 border-blue-100',
+    techStack: 'Gemini 3 Pro + Search Grounding',
+    model: 'gemini-3-pro-preview',
+    edgeFunction: 'market_research',
+    memoryScope: 'competitor_landscape',
+    capabilities: ['Google Search Grounding', 'VC Thesis Matching', 'Sector Benchmarking']
   },
   {
     id: 'architect',
@@ -52,8 +45,12 @@ const agents: Agent[] = [
     role: 'Narrative & Pitch',
     description: 'Structures complex business visions into Sequoia-standard pitch narratives using high-depth thinking models.',
     icon: <PenTool size={18} />,
-    color: 'text-purple-600 bg-purple-50 border-purple-100',
-    tech: 'Gemini 3 Pro + High Thinking'
+    colorClass: 'text-purple-600 bg-purple-50 border-purple-100',
+    techStack: 'Gemini 3 Pro + High Thinking',
+    model: 'gemini-3-pro-preview',
+    edgeFunction: 'deck_generator',
+    memoryScope: 'startup_context',
+    capabilities: ['Narrative Architecting', 'High Thinking Depth', 'Slide Structure JSON']
   },
   {
     id: 'visualizer',
@@ -61,8 +58,12 @@ const agents: Agent[] = [
     role: 'Asset Generation',
     description: 'Instantly creates 16:9 investor visuals and brand-aligned social assets for demo days and product launches.',
     icon: <ImageIcon size={18} />,
-    color: 'text-rose-600 bg-rose-50 border-rose-100',
-    tech: 'Gemini 2.5 Flash Image'
+    colorClass: 'text-rose-600 bg-rose-50 border-rose-100',
+    techStack: 'Gemini 2.5 Flash Image',
+    model: 'gemini-2.5-flash-image',
+    edgeFunction: 'image_gen',
+    memoryScope: 'brand_assets',
+    capabilities: ['Text-to-Image (16:9)', 'Brand Alignment', 'Infographic Generation']
   },
   {
     id: 'operator',
@@ -70,13 +71,20 @@ const agents: Agent[] = [
     role: 'Task Automation',
     description: 'Automates logistics and workback schedules, identifying date conflicts and creating tactical founder roadmaps.',
     icon: <Zap size={18} />,
-    color: 'text-amber-600 bg-amber-50 border-amber-100',
-    tech: 'Gemini 3 Flash'
+    colorClass: 'text-amber-600 bg-amber-50 border-amber-100',
+    techStack: 'Gemini 3 Flash',
+    model: 'gemini-3-flash-preview',
+    edgeFunction: 'task_orchestration',
+    memoryScope: 'operational_tasks',
+    capabilities: ['Roadmap Generation', 'Conflict Detection', 'Workback Scheduling']
   }
 ];
 
 export const AgentCatalogue: React.FC = () => {
-  const [hoveredAgent, setHoveredAgent] = useState<string | null>(null);
+  const handleLaunchAgent = (agentId: string) => {
+    console.log(`Launching agent: ${agentId}`);
+    // Future implementation: Trigger specific agent workflow
+  };
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-[#E5E5E5] p-6 relative overflow-hidden">
@@ -92,53 +100,11 @@ export const AgentCatalogue: React.FC = () => {
 
       <div className="space-y-2">
         {agents.map((agent) => (
-          <div
-            key={agent.id}
-            className="relative"
-            onMouseEnter={() => setHoveredAgent(agent.id)}
-            onMouseLeave={() => setHoveredAgent(null)}
-          >
-            <MotionDiv
-              whileHover={{ x: 4 }}
-              className={`flex items-center gap-3 p-3 rounded-xl border transition-all cursor-help ${
-                hoveredAgent === agent.id 
-                ? 'bg-slate-50 border-indigo-200 shadow-sm' 
-                : 'bg-white border-transparent'
-              }`}
-            >
-              <div className={`p-2 rounded-lg border ${agent.color} shrink-0`}>
-                {agent.icon}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-bold text-[#1A1A1A]">{agent.name}</div>
-                <div className="text-[10px] text-slate-500 font-medium uppercase tracking-tighter">{agent.role}</div>
-              </div>
-              <div className={`transition-opacity duration-300 ${hoveredAgent === agent.id ? 'opacity-100' : 'opacity-0'}`}>
-                 <Info size={14} className="text-indigo-400" />
-              </div>
-            </MotionDiv>
-
-            <AnimatePresence>
-              {hoveredAgent === agent.id && (
-                <MotionDiv
-                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  className="absolute left-0 right-0 top-full z-50 mt-2 p-4 bg-slate-900 text-white rounded-xl shadow-2xl border border-slate-800"
-                >
-                  <p className="text-xs leading-relaxed text-slate-300 mb-3">
-                    {agent.description}
-                  </p>
-                  <div className="flex items-center justify-between border-t border-slate-800 pt-3">
-                    <span className="text-[10px] font-mono text-indigo-400 uppercase tracking-widest">Engine</span>
-                    <span className="text-[10px] font-bold text-slate-400">{agent.tech}</span>
-                  </div>
-                  {/* Tooltip Arrow */}
-                  <div className="absolute -top-1 left-6 w-2 h-2 bg-slate-900 border-l border-t border-slate-800 rotate-45"></div>
-                </MotionDiv>
-              )}
-            </AnimatePresence>
-          </div>
+          <AgentCard 
+            key={agent.id} 
+            agent={agent} 
+            onAction={handleLaunchAgent} 
+          />
         ))}
       </div>
 
@@ -151,7 +117,3 @@ export const AgentCatalogue: React.FC = () => {
     </div>
   );
 };
-
-const ChevronRight = ({ size, className }: any) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m9 18 6-6-6-6"/></svg>
-);

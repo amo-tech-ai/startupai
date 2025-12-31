@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Building2, Globe, DollarSign, Save, Check } from 'lucide-react';
 import { useData } from '../../context/DataContext';
@@ -23,9 +22,9 @@ export const GeneralSettings: React.FC = () => {
       setFormData({
         name: profile.name,
         websiteUrl: profile.websiteUrl || '',
-        tagline: profile.tagline,
-        mission: profile.mission,
-        fundingGoal: profile.fundingGoal
+        tagline: profile.tagline || '',
+        mission: profile.mission || '',
+        fundingGoal: profile.fundingGoal || 0
       });
     }
   }, [profile]);

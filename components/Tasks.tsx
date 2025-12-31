@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useData } from '../context/DataContext';
 import { TaskStatus } from '../types';
@@ -58,11 +57,10 @@ const Tasks: React.FC = () => {
         const profileContext = {
             name: profile.name,
             stage: profile.stage,
-            targetMarket: profile.targetMarket,
+            targetMarket: profile.targetMarket ?? '',
             goal: profile.fundingGoal ? `Raise $${profile.fundingGoal.toLocaleString()}` : 'Scale Revenue'
         };
 
-        /* Fix: Removed API_KEY argument which is not expected by TaskAI.generateRoadmap */
         const newTasks = await TaskAI.generateRoadmap(profileContext);
 
         if (newTasks && newTasks.length > 0) {

@@ -1,6 +1,4 @@
-
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-/* Added missing ArrowRight to imports from lucide-react */
 import { TrendingUp, Edit2, DollarSign, Users, Loader2, FileUp, ArrowRight, Sparkles, CheckCircle2, X, Calculator, Settings2, ShieldCheck, BrainCircuit } from 'lucide-react';
 import { AreaChart, Area, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
 import { FinancialForensics } from '../../services/ai/finance/forensics';
@@ -111,7 +109,7 @@ export const TractionCard: React.FC<TractionCardProps> = ({ viewMode, profile, m
               contents: prompt,
               config: { 
                   responseMimeType: 'application/json',
-                  thinkingConfig: { thinkingLevel: 'high' } 
+                  thinkingConfig: { thinkingBudget: 2048 } 
               }
           });
 
@@ -203,7 +201,7 @@ export const TractionCard: React.FC<TractionCardProps> = ({ viewMode, profile, m
                             <span className="text-[10px] font-bold text-emerald-400 border border-emerald-400/30 px-1.5 py-0.5 rounded">{scenarioAudit.confidence}% Confidence</span>
                         </div>
                         <p className="text-xs text-slate-400 leading-relaxed italic">"{scenarioAudit.feedback}"</p>
-                        <div className="flex flex-wrap gap-2 mt-3">
+                        <div className="flex wrap gap-2 mt-3">
                             {scenarioAudit.flags.map(f => (
                                 <span key={f} className="text-[9px] font-bold uppercase bg-slate-700 px-2 py-0.5 rounded text-indigo-300 border border-indigo-500/20">{f}</span>
                             ))}

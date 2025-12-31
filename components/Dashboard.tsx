@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useData } from '../context/DataContext';
 import { API_KEY } from '../lib/env';
@@ -21,6 +20,7 @@ import { SetupChecklist } from './dashboard/v2/SetupChecklist';
 import { ActivityFeed } from './dashboard/ActivityFeed';
 import { WelcomeHeader } from './dashboard/WelcomeHeader';
 import { AddContactSidebar } from './dashboard/AddContactSidebar';
+import { AgentCatalogue } from './dashboard/v2/AgentCatalogue';
 
 const Dashboard: React.FC = () => {
   const { profile, metrics, insights, activities, deals, decks, setInsights, addActivity } = useData();
@@ -32,7 +32,6 @@ const Dashboard: React.FC = () => {
 
   const isGuest = profile?.userId === 'guest' || profile?.userId === 'mock';
 
-  // Load Optimized Stats
   useEffect(() => {
     const loadStats = async () => {
       if (profile && !isGuest) {
@@ -41,9 +40,8 @@ const Dashboard: React.FC = () => {
       }
     };
     loadStats();
-  }, [profile, isGuest, metrics]); // Reload if metrics change locally
+  }, [profile, isGuest, metrics]);
 
-  // Fallback Health Calculation (if stats not loaded or in guest mode)
   const healthData = stats ? {
       score: stats.profileScore,
       metrics: {
@@ -52,9 +50,8 @@ const Dashboard: React.FC = () => {
           runwayHealthy: stats.runwayMonths > 6,
           profileComplete: stats.profileScore > 75
       },
-      missing: [] // Simplified for now
+      missing: []
   } : (() => {
-      // Original client-side logic for guest mode
       let score = 0;
       const missing: string[] = [];
       const mrr = metrics[metrics.length - 1]?.mrr || 0;
@@ -78,7 +75,6 @@ const Dashboard: React.FC = () => {
       };
   })();
 
-  // --- AI COACH LOGIC ---
   const refreshInsights = async () => {
     if (!profile || !API_KEY) {
         if (!API_KEY) error("API Key missing");
@@ -125,8 +121,6 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="p-6 md:p-10 lg:p-12 max-w-[1600px] mx-auto space-y-10 animate-in fade-in duration-700 bg-[#F7F7F5] min-h-screen text-[#1A1A1A]">
-      
-      {/* Top Banner for Guests */}
       {isGuest && (
         <div className="bg-[#1A1A1A] rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-white shadow-md">
             <div className="flex items-center gap-3">
@@ -145,7 +139,6 @@ const Dashboard: React.FC = () => {
         </div>
       )}
 
-      {/* Header */}
       <WelcomeHeader 
         profile={profile} 
         onNewDeck={() => navigate('/pitch-decks')}
@@ -153,58 +146,26 @@ const Dashboard: React.FC = () => {
         onCreateDoc={() => navigate('/documents')}
       />
 
-      {/* 3-Column Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          
-          {/* MAIN COLUMN (8 Cols) */}
           <div className="lg:col-span-8 space-y-8">
-              {/* 1. Command Center - Now uses Server-Side Stats */}
               <FounderCommandCenter metrics={metrics} stats={stats} />
-
-              {/* 2. AI Coach */}
-              <AICoachWidget 
-                  insights={insights} 
-                  isGenerating={isGeneratingInsights} 
-                  onRefresh={refreshInsights} 
-              />
-
-              {/* 3. CRM & Milestones Row */}
+              <AICoachWidget insights={insights} isGenerating={isGeneratingInsights} onRefresh={refreshInsights} />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <CRMSnapshot deals={deals} />
                   <MilestonesTimeline milestones={milestones} />
               </div>
           </div>
-
-          {/* SIDEBAR COLUMN (4 Cols) */}
           <div className="lg:col-span-4 space-y-8">
-              {/* 1. Alerts */}
               <SmartAlerts />
-
-              {/* 2. Health Score */}
-              <HealthScorecard 
-                  score={healthData.score} 
-                  metrics={healthData.metrics} 
-                  missing={healthData.missing} 
-              />
-
-              {/* 3. Setup Checklist */}
+              <HealthScorecard score={healthData.score} metrics={healthData.metrics} missing={healthData.missing} />
+              <AgentCatalogue />
               <SetupChecklist profile={profile} />
-
-              {/* 4. AI Digest */}
               <AIInsightsDigest />
-
-              {/* 5. Recent Activity */}
               <ActivityFeed activities={activities} />
           </div>
       </div>
-
       <div className="h-12"></div>
-
-      {/* Render the Sidebar */}
-      <AddContactSidebar 
-        isOpen={isContactSidebarOpen} 
-        onClose={() => setIsContactSidebarOpen(false)} 
-      />
+      <AddContactSidebar isOpen={isContactSidebarOpen} onClose={() => setIsContactSidebarOpen(false)} />
     </div>
   );
 };

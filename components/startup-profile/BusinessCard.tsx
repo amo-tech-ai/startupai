@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Target, Edit2, Loader2, Sparkles, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { WizardService } from '../../services/wizardAI';
@@ -41,10 +40,9 @@ export const BusinessCard: React.FC<BusinessCardProps> = ({ viewMode, profile, o
       if (!API_KEY) return;
       setIsSuggesting(true);
       try {
-          /* Fix: Removed API_KEY argument which is not expected by WizardService.analyzeBusiness */
           const result = await WizardService.analyzeBusiness({ ...profile, ...formData });
           if (result && result.competitors) {
-              setFormData(prev => ({ ...prev, competitors: result.competitors }));
+              setFormData((prev: any) => ({ ...prev, competitors: result.competitors }));
           }
       } finally {
           setIsSuggesting(false);
@@ -52,11 +50,11 @@ export const BusinessCard: React.FC<BusinessCardProps> = ({ viewMode, profile, o
   };
 
   // Helper for tag inputs
-  const TagInput = ({ values, onChange, placeholder }: any) => (
-    <div className="flex flex-wrap gap-2 p-2 border border-slate-200 rounded-lg bg-white focus-within:ring-2 focus-within:ring-indigo-500">
+  const TagInput = ({ values, onChange, placeholder }: { values: string[], onChange: (vals: string[]) => void, placeholder: string }) => (
+    <div className="flex flex-wrap gap-2 p-2 border border-slate-200 rounded-lg bg-white focus-within:ring-2 focus-within:ring-indigo-50">
         {values.map((v: string, i: number) => (
             <span key={i} className="bg-slate-100 text-slate-700 px-2 py-1 rounded text-xs flex items-center gap-1">
-                {v} <button onClick={() => onChange(values.filter((_: any, idx: number) => idx !== i))} className="hover:text-red-500">×</button>
+                {v} <button onClick={() => onChange(values.filter((_, idx) => idx !== i))} className="hover:text-red-500">×</button>
             </span>
         ))}
         <input 
@@ -142,12 +140,12 @@ export const BusinessCard: React.FC<BusinessCardProps> = ({ viewMode, profile, o
                             {isSuggesting ? <Loader2 size={10} className="animate-spin"/> : <Sparkles size={10}/>} Suggest
                         </button>
                     </div>
-                    <TagInput values={formData.competitors} onChange={vals => setFormData({...formData, competitors: vals})} placeholder="Add competitor..." />
+                    <TagInput values={formData.competitors} onChange={(vals: string[]) => setFormData((prev: any) => ({...prev, competitors: vals}))} placeholder="Add competitor..." />
                 </div>
 
                 <div>
                     <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Key Features</label>
-                    <TagInput values={formData.keyFeatures} onChange={vals => setFormData({...formData, keyFeatures: vals})} placeholder="Add feature..." />
+                    <TagInput values={formData.keyFeatures} onChange={(vals: string[]) => setFormData((prev: any) => ({...prev, keyFeatures: vals}))} placeholder="Add feature..." />
                 </div>
 
                 <div className="flex justify-end gap-2 pt-2">

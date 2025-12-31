@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { API_KEY } from "../../../lib/env";
 import { cleanJson } from "../../../lib/utils";
@@ -48,7 +47,7 @@ export const FinancialForensics = {
           tools: [{ codeExecution: {} }],
           responseMimeType: 'application/json',
           // High depth is required for multi-step forensic logic and reliable code generation
-          thinkingConfig: { thinkingLevel: 'high' }
+          thinkingConfig: { thinkingBudget: 4096 }
         }
       });
 

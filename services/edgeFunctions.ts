@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, Type, Schema } from "@google/genai";
 import { Deck, Slide, StartupProfile } from '../types';
 import { supabase } from '../lib/supabaseClient';
@@ -114,8 +113,8 @@ export async function generateDeckEdge(
                 type: Type.ARRAY,
                 items: slideSchema
             },
-            // Gemini 3: Using 'high' thinking level for architectural reasoning
-            thinkingConfig: { thinkingLevel: 'high' } 
+            // Gemini 3: Using thinkingBudget for architectural reasoning
+            thinkingConfig: { thinkingBudget: 4096 } 
         }
     });
 

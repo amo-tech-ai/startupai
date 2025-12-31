@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { EventData, EventBudgetItem, EventROIAnalysis } from "../../../types";
 import { EventPrompts } from "../../../lib/prompts/eventPrompts";
@@ -50,8 +49,8 @@ export const suggestBudgetBreakdown = async (apiKey: string, total: number, type
             }
           }
         },
-        // Using high thinking for financial estimation
-        thinkingConfig: { thinkingLevel: 'high' }
+        // Using thinkingBudget for financial estimation
+        thinkingConfig: { thinkingBudget: 2048 }
       }
     });
 
@@ -94,7 +93,7 @@ export const optimizeBudget = async (apiKey: string, items: EventBudgetItem[], t
       config: {
         responseMimeType: 'application/json',
         // Gemini 3: High thinking level for difficult re-allocation decisions
-        thinkingConfig: { thinkingLevel: 'high' }
+        thinkingConfig: { thinkingBudget: 2048 }
       }
     });
 
@@ -137,7 +136,7 @@ export const generateROI = async (apiKey: string, event: EventData, attendees: n
           }
         },
         // Deep qualitative analysis requires high thinking depth
-        thinkingConfig: { thinkingLevel: 'high' }
+        thinkingConfig: { thinkingBudget: 2048 }
       }
     });
 

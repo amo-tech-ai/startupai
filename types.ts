@@ -16,6 +16,12 @@ export interface Deal {
   contactPerson?: string;
   contactEmail?: string;
   lastContactDate?: string;
+  // AI Intelligence Vectors
+  ai_score?: number;
+  ai_reasoning?: string;
+  strategic_hook?: string;
+  last_enriched_at?: string;
+  deleted_at?: string;
 }
 
 export interface Founder {
@@ -34,10 +40,28 @@ export interface Founder {
   skills?: string[];
 }
 
-export interface DocSection {
+/**
+ * Fix: Added UserProfileExperience to resolve error in components/profile/ExperienceSection.tsx
+ */
+export interface UserProfileExperience {
   id: string;
-  title: string;
-  content: string;
+  company: string;
+  role: string;
+  startDate: string;
+  endDate: string;
+  current: boolean;
+  description: string;
+}
+
+/**
+ * Fix: Added UserProfileEducation to resolve error in components/profile/EducationSection.tsx
+ */
+export interface UserProfileEducation {
+  id: string;
+  school: string;
+  degree: string;
+  year: string;
+  logoUrl?: string;
 }
 
 export interface StartupProfile {
@@ -72,12 +96,47 @@ export interface StartupProfile {
   deepResearchReport?: any; 
 }
 
+/**
+ * Fix: Added StartupProfileDTO to resolve error in hooks/useStartupProfile.ts
+ */
 export interface StartupProfileDTO {
   startup_id: string;
-  context: any;
-  founders: any[];
-  metrics: any;
-  competitors: string[];
+  context: {
+    name: string;
+    tagline?: string;
+    description?: string;
+    mission?: string;
+    website_url?: string;
+    logo_url?: string;
+    cover_image_url?: string;
+    industry?: string;
+    year_founded?: number;
+    stage?: string;
+    problem_statement?: string;
+    solution_statement?: string;
+    business_model?: string;
+    pricing_model?: string;
+    funding_goal?: number;
+    is_raising: boolean;
+    is_public: boolean;
+    target_market?: string;
+    competitors?: string[];
+    key_features?: string[];
+    use_of_funds?: string[];
+    deep_research_report?: any;
+  };
+  founders: Array<{
+    id: string;
+    full_name: string;
+    role: string;
+    bio: string;
+    linkedin_url?: string;
+    email?: string;
+    avatar_url?: string;
+    is_primary: boolean;
+  }>;
+  metrics?: any;
+  competitors?: string[];
 }
 
 export interface MetricsSnapshot {
@@ -176,6 +235,12 @@ export interface InvestorDoc {
   updatedAt: string;
 }
 
+export interface DocSection {
+  id: string;
+  title: string;
+  content: string;
+}
+
 export type ContactType = 'Lead' | 'Investor' | 'Customer' | 'Partner' | 'Other';
 
 export interface Contact {
@@ -191,24 +256,11 @@ export interface Contact {
   tags?: string[];
   notes?: string;
   createdAt?: string;
-}
-
-export interface UserProfileExperience {
-  id: string;
-  company: string;
-  role: string;
-  startDate: string;
-  endDate: string;
-  current: boolean;
-  description: string;
-}
-
-export interface UserProfileEducation {
-  id: string;
-  school: string;
-  degree: string;
-  year: string;
-  logoUrl?: string;
+  deleted_at?: string;
+  // AI Intelligence Vectors
+  fit_score?: number;
+  sentiment_score?: number; 
+  warm_hook?: string;
 }
 
 export interface UserProfile {
@@ -227,8 +279,8 @@ export interface UserProfile {
     website?: string;
   };
   phone?: string;
-  experiences: UserProfileExperience[];
-  education: UserProfileEducation[];
+  experiences: any[];
+  education: any[];
   skills: string[];
 }
 
@@ -239,23 +291,13 @@ export interface ChatMessage {
   timestamp: string;
 }
 
-export interface EventBudgetItem {
-  id: string;
-  category: 'Venue' | 'Food' | 'Marketing' | 'Speakers' | 'Ops' | 'Other';
-  item: string;
-  estimated: number;
-  actual: number;
-  status: 'Planned' | 'Pending' | 'Paid';
-}
-
-export interface EventAttendee {
+export interface EventAsset {
   id: string;
   eventId: string;
-  name: string;
-  email: string;
-  ticketType: string;
-  status: 'Registered' | 'Attended';
-  registeredAt: string;
+  type: 'image' | 'copy' | 'email';
+  title: string;
+  content: string;
+  createdAt: string;
 }
 
 export interface EventData {
@@ -268,49 +310,20 @@ export interface EventData {
   duration: number;
   city: string;
   venueUrls: string[];
+  /**
+   * Fix: Added missing properties to EventData to resolve errors in core.ts and useEventWizard.ts
+   */
   sponsorUrls: string[];
   inspirationUrls: string[];
   searchTerms: string[];
-  strategy?: EventStrategyAnalysis;
-  logistics?: EventLogisticsAnalysis;
-  roi?: EventROIAnalysis;
-  status?: 'Planning' | 'Scheduled' | 'Completed';
+  status?: string;
   isPublic?: boolean;
+  strategy?: any;
+  logistics?: any;
+  roi?: any;
   budget_total?: number;
   budget_spent?: number;
-  budget_items?: EventBudgetItem[];
-  createdAt?: string;
-}
-
-export interface EventStrategyAnalysis {
-  feasibilityScore: number;
-  reasoning: string;
-  risks: Array<{ title: string; severity: 'High' | 'Medium' | 'Low' }>;
-  suggestedThemes: string[];
-  audienceProfile: string;
-  budgetEstimate: { low: number; high: number; currency: string };
-}
-
-export interface EventLogisticsAnalysis {
-  conflicts: Array<{ name: string; date: string; impact: 'High' | 'Medium' | 'Low' }>;
-  weatherForecast?: string;
-  venueInsights?: string;
-  suggestedVenues?: Array<{ 
-    name: string; 
-    capacity: string; 
-    cost: string; 
-    notes: string;
-    mapsUri?: string;
-    reviewSnippets?: string[];
-  }>;
-}
-
-export interface EventROIAnalysis {
-  score: number;
-  costPerAttendee: number;
-  summary: string;
-  highlights: string[];
-  improvements: string[];
+  budget_items?: any[];
 }
 
 export interface EventTask {
@@ -324,38 +337,7 @@ export interface EventTask {
   is_ai_generated?: boolean;
 }
 
-export interface EventAsset {
-  id: string;
-  eventId: string;
-  type: 'image' | 'copy' | 'email';
-  title: string;
-  content: string;
-  createdAt: string;
-}
-
-export interface AppNotification {
-  id: string;
-  title: string;
-  message: string;
-  type: 'info' | 'success' | 'warning' | 'error';
-  timestamp: string;
-  read: boolean;
-  link?: string;
-}
-
-export interface DataRoomFile {
-  id: string;
-  name: string;
-  size: number;
-  type: string;
-  url: string;
-  uploadedAt: string;
-  uploadedBy: string;
-  status: 'scanning' | 'clean' | 'infected';
-}
-
-// NEW AGENTIC TYPES
-export type AgentRunStatus = 'queued' | 'running' | 'needs_user' | 'complete' | 'error' | 'canceled';
+export type AgentRunStatus = 'queued' | 'running' | 'needs_user' | 'needs_approval' | 'complete' | 'error' | 'canceled';
 
 export interface AgentRun {
   id: string;
@@ -370,11 +352,112 @@ export interface AgentRun {
   idempotencyKey: string;
 }
 
-export interface AgentAction {
+export type ActionStatus = 'proposed' | 'approved' | 'rejected' | 'executed';
+export type ActionType = 'email' | 'stage_move' | 'task_creation';
+
+export interface ProposedAction {
+  id: string;
+  startupId: string;
+  entityId: string; 
+  type: ActionType;
   label: string;
-  tool: string;
-  args: any;
-  requiresConfirmation: boolean;
-  confidence: number;
+  description: string;
+  payload: any; 
+  status: ActionStatus;
   reasoning: string;
+  confidence: number;
+  createdAt: string;
+  idempotencyKey?: string;
+}
+
+/**
+ * Fix: Added EventStrategyAnalysis to resolve errors in Step2Strategy.tsx and strategy.ts
+ */
+export interface EventStrategyAnalysis {
+  feasibilityScore: number;
+  reasoning: string;
+  risks: Array<{ title: string; severity: 'High' | 'Medium' | 'Low' }>;
+  suggestedThemes: string[];
+  audienceProfile: string;
+  budgetEstimate: { low: number; high: number; currency: string };
+}
+
+/**
+ * Fix: Added EventLogisticsAnalysis to resolve errors in Step3Logistics.tsx and logistics.ts
+ */
+export interface EventLogisticsAnalysis {
+  conflicts: Array<{ name: string; date: string; impact: 'High' | 'Medium' | 'Low' }>;
+  weatherForecast: string;
+  venueInsights: string;
+  suggestedVenues: Array<{
+    name: string;
+    capacity: string;
+    cost: string;
+    notes: string;
+    mapsUri?: string;
+    reviewSnippets?: string[];
+  }>;
+}
+
+/**
+ * Fix: Added EventBudgetItem to resolve errors in eventPrompts.ts, EventBudget.tsx, and finance.ts
+ */
+export interface EventBudgetItem {
+  id: string;
+  category: 'Venue' | 'Food' | 'Marketing' | 'Speakers' | 'Ops' | 'Other' | string;
+  item: string;
+  estimated: number;
+  actual: number;
+  status: 'Planned' | 'Pending' | 'Paid';
+}
+
+/**
+ * Fix: Added EventROIAnalysis to resolve errors in finance.ts
+ */
+export interface EventROIAnalysis {
+  score: number;
+  costPerAttendee: number;
+  summary: string;
+  highlights: string[];
+  improvements: string[];
+}
+
+/**
+ * Fix: Added EventAttendee to resolve errors in EventAttendees.tsx and attendees.ts
+ */
+export interface EventAttendee {
+  id: string;
+  eventId: string;
+  name: string;
+  email: string;
+  ticketType: string;
+  status: 'Registered' | 'Attended';
+  registeredAt: string;
+}
+
+/**
+ * Fix: Added AppNotification to resolve error in context/NotificationContext.tsx
+ */
+export interface AppNotification {
+  id: string;
+  title: string;
+  message: string;
+  type: 'info' | 'success' | 'warning' | 'error';
+  timestamp: string;
+  read: boolean;
+  link?: string;
+}
+
+/**
+ * Fix: Added DataRoomFile to resolve error in components/documents/DataRoom.tsx
+ */
+export interface DataRoomFile {
+  id: string;
+  name: string;
+  size: number;
+  type: string;
+  url: string;
+  uploadedAt: string;
+  uploadedBy: string;
+  status: 'clean' | 'scanning' | 'flagged';
 }

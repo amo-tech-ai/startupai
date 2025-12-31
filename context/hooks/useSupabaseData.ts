@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 import { initialDatabaseState } from '../../data/mockDatabase';
@@ -14,7 +13,7 @@ import { CrmService } from '../../services/supabase/crm';
 import { DocumentService } from '../../services/supabase/documents';
 import { DashboardService } from '../../services/supabase/dashboard';
 import { EventService } from '../../services/supabase/events';
-import { mapDealFromDB, mapTaskFromDB } from '../../lib/mappers';
+import { mapDealFromDB, mapTaskFromDB, mapContactFromDB } from '../../lib/mappers';
 import { useToast } from '../ToastContext';
 
 export const useSupabaseData = () => {
@@ -84,7 +83,6 @@ export const useSupabaseData = () => {
                           DashboardService.getActivities(p.id),
                           CrmService.getContacts(p.id),
                           EventService.getAll(p.id),
-                          // Fetch archives
                           supabase.from('crm_deals').select('*').eq('startup_id', p.id).not('deleted_at', 'is', null),
                           supabase.from('crm_contacts').select('*').eq('startup_id', p.id).not('deleted_at', 'is', null)
                       ]);
@@ -100,44 +98,35 @@ export const useSupabaseData = () => {
                       setEvents(results[8]);
                       
                       if (results[9].data) setArchivedDeals(results[9].data.map(mapDealFromDB));
-                      if (results[10].data) setArchivedContacts(results[10].data.map(CrmService.getContacts as any));
+                      if (results[10].data) setArchivedContacts(results[10].data.map(mapContactFromDB));
 
-                      // Multi-Table Realtime Orchestration
-                      if (realtimeChannelRef.current) supabase.removeChannel(realtimeChannelRef.current);
+                      // Realtime Orchestration - Safety Check
+                      if (supabase && realtimeChannelRef.current) supabase.removeChannel(realtimeChannelRef.current);
                       
-                      const channel = supabase.channel(`startup-ops-${p.id}`)
-                        .on('postgres_changes', { event: '*', schema: 'public', table: 'crm_deals', filter: `startup_id=eq.${p.id}` }, (payload: any) => {
-                            if (payload.eventType === 'INSERT') setDeals(prev => [...prev, mapDealFromDB(payload.new)]);
-                            else if (payload.eventType === 'UPDATE') {
-                                if (payload.new.deleted_at) {
-                                    setDeals(prev => prev.filter(d => d.id !== payload.new.id));
-                                    setArchivedDeals(prev => [...prev, mapDealFromDB(payload.new)]);
-                                } else {
-                                    setArchivedDeals(prev => prev.filter(d => d.id !== payload.new.id));
-                                    setDeals(prev => prev.map(d => d.id === payload.new.id ? mapDealFromDB(payload.new) : d));
+                      if (supabase) {
+                          const channel = supabase.channel(`startup-ops-${p.id}`)
+                            .on('postgres_changes', { event: '*', schema: 'public', table: 'crm_deals', filter: `startup_id=eq.${p.id}` }, (payload: any) => {
+                                if (payload.eventType === 'INSERT') setDeals(prev => [...prev, mapDealFromDB(payload.new)]);
+                                else if (payload.eventType === 'UPDATE') {
+                                    if (payload.new.deleted_at) {
+                                        setDeals(prev => prev.filter(d => d.id !== payload.new.id));
+                                        setArchivedDeals(prev => [...prev, mapDealFromDB(payload.new)]);
+                                    } else {
+                                        setArchivedDeals(prev => prev.filter(d => d.id !== payload.new.id));
+                                        setDeals(prev => prev.map(d => d.id === payload.new.id ? mapDealFromDB(payload.new) : d));
+                                    }
                                 }
-                            }
-                            else if (payload.eventType === 'DELETE') {
-                                setDeals(prev => prev.filter(d => d.id !== payload.old.id));
-                                setArchivedDeals(prev => prev.filter(d => d.id !== payload.old.id));
-                            }
-                        })
-                        .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks', filter: `startup_id=eq.${p.id}` }, (payload: any) => {
-                            if (payload.eventType === 'INSERT') setTasks(prev => [...prev, mapTaskFromDB(payload.new)]);
-                            else if (payload.eventType === 'UPDATE') setTasks(prev => prev.map(t => t.id === payload.new.id ? mapTaskFromDB(payload.new) : t));
-                            else if (payload.eventType === 'DELETE') setTasks(prev => prev.filter(t => t.id !== payload.old.id));
-                        })
-                        .on('postgres_changes', { event: '*', schema: 'public', table: 'investor_docs', filter: `startup_id=eq.${p.id}` }, async () => {
-                             const newDocs = await DocumentService.getAll(p.id);
-                             setDocs(newDocs);
-                        })
-                        .subscribe((status: string) => {
-                            if (status === 'SUBSCRIBED') setConnectionStatus('online');
-                            if (status === 'TIMED_OUT') setConnectionStatus('reconnecting');
-                            if (status === 'CHANNEL_ERROR') setConnectionStatus('offline');
-                        });
-                        
-                      realtimeChannelRef.current = channel;
+                            })
+                            .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks', filter: `startup_id=eq.${p.id}` }, (payload: any) => {
+                                if (payload.eventType === 'INSERT') setTasks(prev => [...prev, mapTaskFromDB(payload.new)]);
+                                else if (payload.eventType === 'UPDATE') setTasks(prev => prev.map(t => t.id === payload.new.id ? mapTaskFromDB(payload.new) : t));
+                            })
+                            .subscribe((status: string) => {
+                                if (status === 'SUBSCRIBED') setConnectionStatus('online');
+                            });
+                            
+                          realtimeChannelRef.current = channel;
+                      }
                       setIsLoading(false);
                       return;
                   }
@@ -163,7 +152,7 @@ export const useSupabaseData = () => {
         });
         return () => {
             subscription.unsubscribe();
-            if (realtimeChannelRef.current) supabase.removeChannel(realtimeChannelRef.current);
+            if (realtimeChannelRef.current && supabase) supabase.removeChannel(realtimeChannelRef.current);
         };
     }
   }, [loadData, loadGuestData]);

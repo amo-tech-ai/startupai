@@ -1,15 +1,14 @@
-
 import React, { useState, useEffect } from 'react';
 import { Search, Plus, List, Users, Briefcase, Trash2, Lock } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
 import { useData } from '../../context/DataContext';
 import { Deal, DealStage, Contact, ProposedAction } from '../../types';
-import { PipelineStats } from './crm/PipelineStats';
-import { KanbanBoard } from './crm/KanbanBoard';
-import { DealListView } from './crm/DealListView';
-import { ContactListView } from './crm/ContactListView';
-import { NewDealModal } from './crm/NewDealModal';
-import { DealDetailDrawer } from './crm/DealDetailDrawer';
+import { PipelineStats } from './PipelineStats';
+import { KanbanBoard } from './KanbanBoard';
+import { DealListView } from './DealListView';
+import { ContactListView } from './ContactListView';
+import { NewDealModal } from './NewDealModal';
+import { DealDetailDrawer } from './DealDetailDrawer';
 import { CopilotCommandCenter } from './CopilotCommandCenter';
 import { ProposedActionModal } from './ProposedActionModal';
 import { AddContactSidebar } from '../dashboard/AddContactSidebar';
@@ -48,11 +47,14 @@ const CRM: React.FC = () => {
     deal.company.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const filteredContacts = contacts.filter((c: Contact) => 
+    `${c.firstName} ${c.lastName}`.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   const handleRefreshScoring = async () => {
     setIsEnriching(true);
     info("AI Agent scanning market data for leads...");
     
-    // In Production, this calls Edge Function: analyze_investor_pipeline
     await new Promise(resolve => setTimeout(resolve, 3000));
     
     deals.forEach((d, idx) => {
@@ -70,7 +72,6 @@ const CRM: React.FC = () => {
   };
 
   const handleDraftEmail = (deal: Deal) => {
-      // Mock generating a proposal for the modal
       const proposal: ProposedAction = {
           id: `prop_${deal.id}`,
           startupId: profile?.id || '',
@@ -92,7 +93,6 @@ const CRM: React.FC = () => {
           await GovernanceService.updateActionStatus(id, 'approved', payload);
           success("Action executed successfully.");
       } catch (e) {
-          // Simulation fallback for dev
           success("Action executed (Demo Mode).");
       }
   };
@@ -152,7 +152,7 @@ const CRM: React.FC = () => {
         {activeTab === 'pipeline' ? (
             <KanbanBoard deals={filteredDeals} onAddDeal={() => setIsDealModalOpen(true)} onDealMove={(id, stage) => updateDeal(id, { stage })} onDealClick={setSelectedDeal} />
         ) : activeTab === 'contacts' ? (
-            <ContactListView contacts={contacts} onDelete={(id) => performSoftDelete('contact', id, () => CrmService.deleteContact(id))} onEdit={(c) => { setSelectedContact(c); setIsContactSidebarOpen(true); }} />
+            <ContactListView contacts={filteredContacts} onDelete={(id) => performSoftDelete('contact', id, () => CrmService.deleteContact(id))} onEdit={(c) => { setSelectedContact(c); setIsContactSidebarOpen(true); }} />
         ) : (
             <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center text-slate-500 h-full flex flex-col items-center justify-center">
                 <Trash2 size={48} className="mb-4 opacity-10" />

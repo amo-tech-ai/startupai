@@ -1,4 +1,3 @@
-
 import { GoogleGenAI } from "@google/genai";
 
 /**
@@ -24,8 +23,8 @@ export async function generateText(prompt: string, model: string = 'gemini-3-pro
       contents: prompt,
       config: {
         systemInstruction,
-        // Gemini 3: Replace thinkingBudget with thinkingLevel for dynamic reasoning depth
-        thinkingConfig: model.includes('gemini-3') ? { thinkingLevel: 'high' } : undefined
+        // Gemini 3 standard: Replace thinkingLevel with thinkingBudget (tokens)
+        thinkingConfig: model.includes('gemini-3') ? { thinkingBudget: 2048 } : undefined
       }
     });
     return response.text;
@@ -46,7 +45,7 @@ export async function generateWithSearch(prompt: string) {
       config: {
         tools: [{ googleSearch: {} }],
         // Maximize reasoning depth for research tasks
-        thinkingConfig: { thinkingLevel: 'high' }
+        thinkingConfig: { thinkingBudget: 4096 }
       }
     });
     
